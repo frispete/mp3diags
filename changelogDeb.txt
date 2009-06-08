@@ -1,0 +1,10 @@
+
+  * added missing dependency for SVG icons
+  * fixed a bug that could cause removal of audio data
+  * fixed a bug that prevented single-image-saving from working
+  * Ubuntu binaries
+  * minor UI tweaks
+  * improved font handling
+  * initial version
+
+ -- Marian Ciobanu <ciobi@inbox.com>  Sat, 06 Jun 2009 10:00:00 +0200
