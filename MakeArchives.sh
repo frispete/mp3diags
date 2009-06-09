@@ -6,22 +6,22 @@ function initialize
 {
     echo Initializing ...
     rm -f -r package/out
-    mkdir -p package/out/Ubuntu
-    mkdir -p package/out/Rpm
+    mkdir -p package/out/deb
+    mkdir -p package/out/rpm
 
     Ver=`pwd | sed -e 's%/.*/%%' -e 's% .*%%'`
     Ver=`cat Release.txt`.$Ver
 
     echo Version: $Ver
 
-    cat package/Rpm/MP3Diags.spec | sed "s+%define version .*$+%define version $Ver+" > package/out/Rpm/MP3Diags.spec
-    cat changelogRpm.txt >> package/out/Rpm/MP3Diags.spec
+    cat package/rpm/MP3Diags.spec | sed "s+%define version .*$+%define version $Ver+" > package/out/rpm/MP3Diags.spec
+    cat changelogRpm.txt >> package/out/rpm/MP3Diags.spec
 
-    cat package/Ubuntu/debian.changelog | sed "s%QQQVERQQQ%$Ver%g" > package/out/Ubuntu/debian.changelog
-    cat changelogDeb.txt >> package/out/Ubuntu/debian.changelog
-    cp -p package/Ubuntu/debian.control package/out/Ubuntu
-    cp -p package/Ubuntu/debian.rules package/out/Ubuntu
-    cat package/Ubuntu/MP3Diags.dsc | sed "s%QQQVERQQQ%$Ver%g" > package/out/Ubuntu/MP3Diags.dsc
+    cat package/deb/debian.changelog | sed "s%QQQVERQQQ%$Ver%g" > package/out/deb/debian.changelog
+    cat changelogDeb.txt >> package/out/deb/debian.changelog
+    cp -p package/deb/debian.control package/out/deb
+    cp -p package/deb/debian.rules package/out/deb
+    cat package/deb/MP3Diags.dsc | sed "s%QQQVERQQQ%$Ver%g" > package/out/deb/MP3Diags.dsc
 }
 
 
@@ -52,9 +52,9 @@ function createLinuxSrc
     done
 
     mkdir -p $LongDestDir/package/rpm
-    cp -p package/out/Rpm/* $LongDestDir/package/rpm
+    cp -p package/out/rpm/* $LongDestDir/package/rpm
     mkdir -p $LongDestDir/package/deb
-    cp -p package/out/Ubuntu/* $LongDestDir/package/deb
+    cp -p package/out/deb/* $LongDestDir/package/deb
 
     cd package/out
     tar czf $DestDir.tar.gz $DestDir
