@@ -135,3 +135,5 @@ LINE: * initial version
 dpkg-genchanges: warning: the current version (0.99.01.009) is smaller than the previous one (unknown1)
 
 */
+
+ttt0 getting prog: switch 32 and 64 bit to i386, AMD64, ...

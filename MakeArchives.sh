@@ -118,10 +118,10 @@ function fixVersion
 }
 
 
-function createNoCountDoc
+function createDoc
 {
     echo Creating non-counted documentation
-    DestDir=MP3DiagsNoCountDoc-$Ver
+    DestDir=MP3DiagsDoc-$Ver
     LongDestDir=package/out/$DestDir
     rm -f -r $LongDestDir
     mkdir -p $LongDestDir
@@ -143,10 +143,10 @@ function createNoCountDoc
 }
 
 
-function createDoc
+function createClicknetDoc
 {
-    echo Creating documentation
-    DestDir=MP3DiagsDoc-$Ver
+    echo Creating Clicknet documentation
+    DestDir=MP3DiagsClicknetDoc-$Ver
     LongDestDir=package/out/$DestDir
     rm -f -r $LongDestDir
     mkdir -p $LongDestDir
@@ -205,8 +205,8 @@ initialize
 createLinuxSrc
 createWindowsSrc
 #updateDwnldLinks
-createNoCountDoc
 createDoc
+createClicknetDoc
 createSfDoc
 
 #FileName=`find . -maxdepth 1 -mindepth 1 -type d | sed s#./##`
