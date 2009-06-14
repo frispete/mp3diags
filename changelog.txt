@@ -1,5 +1,16 @@
 ---------------------------------------------------------------------------
 
+14.06.2009 - 0.99.02.012
+- added support for UTF8 in ID3V240
+- added maximize button to most windows in Windows (but could not get this to work with Gnome)
+- removed "What's this" button from most windows
+- now the main window shows the session name if more than 1 session was defined
+- now the main window shows up maximized in Gnome and Windows if it was maximized when it was closed
+- changed documentation links to point to new site, at SourceForge
+- minor documentation improvements
+
+---------------------------------------------------------------------------
+
 06.06.2009 - 0.99.02.011
 - added dependency to guarantee that SVG icons can be displayed on non-KDE desktops
 - fixed an assertion in "Sessions / Save as"

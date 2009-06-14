@@ -9,8 +9,9 @@ function initialize
     mkdir -p package/out/deb
     mkdir -p package/out/rpm
 
-    Ver=`pwd | sed -e 's%/.*/%%' -e 's% .*%%'`
-    Ver=`cat Release.txt`.$Ver
+    #Ver=`pwd | sed -e 's%/.*/%%' -e 's% .*%%'`
+    #Ver=`cat Release.txt`.$Ver
+    Ver=`cat Release.txt`
 
     echo Version: $Ver
 
@@ -37,8 +38,12 @@ function createLinuxSrc
     cp -pr src $LongDestDir
     rm -f -r $LongDestDir/src/debug
     rm -f -r $LongDestDir/src/release
+    rm -f -r $LongDestDir/src/.svn
+    rm -f -r $LongDestDir/src/images/.svn
+    rm -f -r $LongDestDir/src/licences/.svn
     cp -p COPYING $LongDestDir
     cp -p Install.sh $LongDestDir
+    cp -p changelog.txt $LongDestDir
     #cp mp3diags.kdevelop $LongDestDir
     cat mp3diags.kdevelop | grep -v "cwd" | grep -v "home" > $LongDestDir/mp3diags.kdevelop
     cp -p mp3diags.pro $LongDestDir
@@ -55,6 +60,7 @@ function createLinuxSrc
     cp -p package/out/rpm/* $LongDestDir/package/rpm
     mkdir -p $LongDestDir/package/deb
     cp -p package/out/deb/* $LongDestDir/package/deb
+    rm -f -r $LongDestDir/desktop/.svn
 
     cd package/out
     tar czf $DestDir.tar.gz $DestDir
@@ -76,8 +82,12 @@ function createWindowsSrc
     cp -pr src $LongDestDir
     rm -f -r $LongDestDir/src/debug
     rm -f -r $LongDestDir/src/release
+    rm -f -r $LongDestDir/src/.svn
+    rm -f -r $LongDestDir/src/images/.svn
+    rm -f -r $LongDestDir/src/licences/.svn
     cp -p COPYING $LongDestDir
-    #cp -p Install.sh $LongDestDir ttt0 install
+    cp -p changelog.txt $LongDestDir
+    #cp -p Install.sh $LongDestDir
     #cp mp3diags.kdevelop $LongDestDir
     #cat mp3diags.kdevelop | grep -v "cwd" | grep -v "home" > $LongDestDir/mp3diags.kdevelop
     #cp -p mp3diags.pro $LongDestDir

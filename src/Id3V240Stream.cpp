@@ -35,7 +35,7 @@ using namespace pearl;
 
 // !!! Note that the exceptions thrown by Id3V240Frame::Id3V240Frame() pass through Id3V240Stream, so they should have a type suited for this situation.
 // Also note that by the time Id3V240Frame::Id3V240Frame() gets executed, it was already decided that we deal with an Id3V240Stream. Now we should see if it is valid or broken.
-//ttt0 encoding in 01-Pigs.mp3
+
 
 
 // since broken applications may use all 8 bits for size, although only 7 should be used, this tries to figure out if the size is correct
@@ -248,9 +248,23 @@ string Id3V240Frame::getUtf8String() const
         return utf8FromBomUtf16(pData + 1, m_nMemDataSize - 1);
     }
 
-    if (2 == pData[0] || 3 == pData[0])
+    if (3 == pData[0])
     {
-        CB_THROW1 (UnsupportedId3V2Frame()); //ttt1 add support for UTF-16BE and UTF-8 (2 = "UTF-16BE [UTF-16] encoded Unicode [UNICODE] without BOM". 3 = "UTF-8 [UTF-8] encoded Unicode [UNICODE]");
+        string s (pData + 1, m_nMemDataSize - 1);
+        if (!s.empty())
+        {
+            char c (s[s.size() - 1]);
+            if (0 == c) // this string is supposed to be 0-terminated; silently remove the ending null, if it's there; // ttt2 perhaps have warning, but only if somebody actually cares
+            {
+                s.erase(s.size() - 1);
+            }
+        }
+        return s;
+    }
+
+    if (2 == pData[0])
+    {
+        CB_THROW1 (UnsupportedId3V2Frame()); //ttt1 add support for UTF-16BE and UTF-8 (2 = "UTF-16BE [UTF-16] encoded Unicode [UNICODE] without BOM");
     }
 
     CB_THROW1 (NotId3V2Frame());

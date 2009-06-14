@@ -24,9 +24,11 @@
 
 #include  "AboutDlgImpl.h"
 
+#include  "Helpers.h"
+
 extern const char* APP_VER;
 
-AboutDlgImpl::AboutDlgImpl(QWidget* pParent /*= 0*/) : QDialog(pParent), Ui::AboutDlg()
+AboutDlgImpl::AboutDlgImpl(QWidget* pParent /*= 0*/) : QDialog(pParent, getDialogWndFlags()), Ui::AboutDlg()
 {
     setupUi(this);
 
