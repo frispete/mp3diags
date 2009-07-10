@@ -45,22 +45,27 @@ class NoteListElem : public ListElem
 public:
     NoteListElem(const Note* pNote, CommonData* pCommonData) : m_pNote(pNote), m_pCommonData(pCommonData) {}
     const Note* getNote() const { return m_pNote; }
+    const CommonData* getCommonData() const { return m_pCommonData; }
 };
 
 
-class NoteListPainter : public ListPainter
+class NoteListPainterBase : public ListPainter
 {
     /*override*/ int getColCount() const { return 2; }
     /*override*/ std::string getColTitle(int nCol) const;
-    /*override*/ QColor getColor(int nIndex, int nCol, QColor origColor) const;
     /*override*/ int getColWidth(int nCol) const; // positive values are used for fixed widths, while negative ones are for "stretched"
     /*override*/ int getHdrHeight() const;
     /*override*/ Qt::Alignment getAlignment(int nCol) const;
+    /*override*/ void getColor(int nIndex, int nColumn, bool bSubList, QColor& bckgColor, QColor& penColor, double& dGradStart, double& dGradEnd) const;
+    mutable std::vector<const Note*> m_vpAvail, m_vpSel;
+protected:
+    CommonData* m_pCommonData;
 public:
-    NoteListPainter(const std::string& strNothingSel) : ListPainter(strNothingSel) {}
+    NoteListPainterBase(CommonData* pCommonData, const std::string& strNothingSel) : ListPainter(strNothingSel), m_pCommonData(pCommonData) {}
 };
 
 
+
 //=====================================================================================================================
 //=====================================================================================================================
 //=====================================================================================================================
@@ -68,10 +73,9 @@ public:
 
 
 
-class NoteFilterDlgImpl : public QDialog, private Ui::NoteFilterDlg, public NoteListPainter
+class NoteFilterDlgImpl : public QDialog, private Ui::NoteFilterDlg, public NoteListPainterBase
 {
     Q_OBJECT
-    CommonData* m_pCommonData;
 
     void logState(const char* szPlace) const;
 
@@ -80,7 +84,7 @@ class NoteFilterDlgImpl : public QDialog, private Ui::NoteFilterDlg, public Note
 
 public:
     /*$PUBLIC_FUNCTIONS$*/
-    NoteFilterDlgImpl(CommonData* pCommonData, QWidget *pParent = 0);
+    NoteFilterDlgImpl(CommonData* pCommonData, QWidget *pParent);
     ~NoteFilterDlgImpl();
 
 public slots:

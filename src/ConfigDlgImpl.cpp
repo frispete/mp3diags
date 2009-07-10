@@ -25,6 +25,8 @@
 #include  <QTextCodec>
 #include  <QSettings>
 #include  <QFontDialog>
+#include  <QColorDialog>
+#include  <QPainter>
 
 #include  "ConfigDlgImpl.h"
 
@@ -70,7 +72,7 @@ class TransfListPainter : public ListPainter
 {
     /*override*/ int getColCount() const { return 2; }
     /*override*/ std::string getColTitle(int nCol) const { return 0 == nCol ? "Action" : "Description"; }
-    /*override*/ QColor getColor(int /*nIndex*/, int /*nCol*/, QColor origColor) const { return origColor; }
+    /*override*/ void getColor(int /*nIndex*/, int /*nColumn*/, bool /*bSubList*/, QColor& /*bckgColor*/, QColor& /*penColor*/, double& /*dGradStart*/, double& /*dGradEnd*/) const { }
     /*override*/ int getColWidth(int /*nCol*/) const { return -1; } // positive values are used for fixed widths, while negative ones are for "stretched"
     /*override*/ int getHdrHeight() const { return CELL_HEIGHT; }
     /*override*/ Qt::Alignment getAlignment(int /*nCol*/) const { return Qt::AlignTop | Qt::AlignLeft; }
@@ -195,7 +197,7 @@ public:
 ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, QWidget* pParent, bool bFull) :
         QDialog(pParent, getDialogWndFlags()),
         Ui::ConfigDlg(),
-        NoteListPainter("<all notes>"),
+        NoteListPainterBase(pCommonData, "<all notes>"),
         m_transfCfg(transfCfg),
 
         m_pCommonData(pCommonData),
@@ -448,6 +450,30 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
         m_pOthersCaseCbB->setCurrentIndex((int)m_pCommonData->m_eCaseForOthers);
     }
 
+    { // colors
+        m_vpColButtons.push_back(m_pCol0B);
+        m_vpColButtons.push_back(m_pCol1B);
+        m_vpColButtons.push_back(m_pCol2B);
+        m_vpColButtons.push_back(m_pCol3B);
+        m_vpColButtons.push_back(m_pCol4B);
+        m_vpColButtons.push_back(m_pCol5B);
+        m_vpColButtons.push_back(m_pCol6B);
+        m_vpColButtons.push_back(m_pCol7B);
+        m_vpColButtons.push_back(m_pCol8B);
+        m_vpColButtons.push_back(m_pCol9B);
+        m_vpColButtons.push_back(m_pCol10B);
+        m_vpColButtons.push_back(m_pCol11B);
+        m_vpColButtons.push_back(m_pCol12B);
+        m_vpColButtons.push_back(m_pCol13B);
+
+        m_vNoteCategColors = m_pCommonData->m_vNoteCategColors;
+
+        for (int i = 0; i < cSize(m_vpColButtons); ++i)
+        {
+            setBtnColor(i);
+        }
+    }
+
     { // tag editor
         m_pWarnOnNonSeqTracksCkB->setChecked(m_pCommonData->m_bWarnOnNonSeqTracks);
         m_pWarnOnPasteToNonSeqTracksCkB->setChecked(m_pCommonData->m_bWarnPastingToNonSeqTracks);
@@ -480,14 +506,45 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
         m_pAutoSizeIconsCkB->setChecked(m_pCommonData->m_bAutoSizeIcons);
         m_pKeepOneValidImgCkB->setChecked(m_pCommonData->m_bKeepOneValidImg);
 
-        m_generalFont = m_pCommonData->getGeneralFont();
-        m_fixedFont = m_pCommonData->getFixedFont();
+        m_generalFont = m_pCommonData->getNewGeneralFont();
+        m_pDecrLabelFontSB->setValue(m_pCommonData->getLabelFontSizeDecr());
+        m_fixedFont = m_pCommonData->getNewFixedFont();
         setFontLabels();
     }
 
     m_pSrcDirE->setFocus();
 }
 
+
+void ConfigDlgImpl::setBtnColor(int n)
+{
+//    QPalette pal (m_vpColButtons[n]->palette());
+    //QPalette pal (m_pCol0B->palette());
+/*    pal.setBrush(QPalette::Button, m_vNoteCategColors[n]);
+    pal.setBrush(QPalette::Window, m_vNoteCategColors[n]);
+    pal.setBrush(QPalette::Midlight, QColor(255, 0, 0));
+    pal.setBrush(QPalette::Dark, QColor(255, 0, 0));
+    pal.setBrush(QPalette::Mid, QColor(255, 0, 0));
+    pal.setBrush(QPalette::Shadow, QColor(255, 0, 0));*/
+    //m_vpColButtons[n]->setPalette(pal);
+
+    int f (QApplication::style()->pixelMetric(QStyle::PM_DefaultFrameWidth, 0, m_vpColButtons.at(n)) + 2); //ttt2 hard-coded "2"
+    int w (m_vpColButtons[n]->width() - f), h (m_vpColButtons[n]->height() - f);
+    QPixmap pic (w, h);
+    QPainter pntr (&pic);
+    pntr.fillRect(0, 0, w, h, m_vNoteCategColors.at(n));
+
+    m_vpColButtons[n]->setIcon(pic);
+    m_vpColButtons[n]->setIconSize(QSize(w, h));
+}
+
+void ConfigDlgImpl::onButtonClicked(int n)
+{
+    QColor c (QColorDialog::getColor(m_vNoteCategColors.at(n), this));
+    if (!c.isValid()) { return; }
+    m_vNoteCategColors[n] = c;
+    setBtnColor(n);
+}
 
 
 void SessionSettings::saveTransfConfig(const TransfConfig& transfConfig)
@@ -733,9 +790,13 @@ void ConfigDlgImpl::on_m_pOkB_clicked()
             CB_ASSERT (0 != m_pCommonData->m_pCodec);
         }
 
-        {
+        { // case
             m_pCommonData->m_eCaseForArtists = (CommonData::Case)m_pArtistsCaseCbB->currentIndex();
             m_pCommonData->m_eCaseForOthers = (CommonData::Case)m_pOthersCaseCbB->currentIndex();
+        }
+
+        { // colors
+            m_pCommonData->m_vNoteCategColors = m_vNoteCategColors;
         }
 
         { // tag editor
@@ -757,8 +818,7 @@ void ConfigDlgImpl::on_m_pOkB_clicked()
             m_pCommonData->m_bAutoSizeIcons = m_pAutoSizeIconsCkB->isChecked();
             m_pCommonData->m_bKeepOneValidImg = m_pKeepOneValidImgCkB->isChecked();
 
-            m_pCommonData->setGeneralFont(convStr(m_generalFont.family()), m_generalFont.pointSize());
-            m_pCommonData->setFixedFont(convStr(m_fixedFont.family()), m_fixedFont.pointSize());
+            m_pCommonData->setFontInfo(convStr(m_generalFont.family()), m_generalFont.pointSize(), m_pDecrLabelFontSB->value(), convStr(m_fixedFont.family()), m_fixedFont.pointSize());
         }
 
         accept();
@@ -880,6 +940,9 @@ void ConfigDlgImpl::selectDir(QLineEdit* pEdt)
     }
     pEdt->setText(s);
 }
+
+
+
 
 //=====================================================================================================================
 //=====================================================================================================================

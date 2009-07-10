@@ -375,13 +375,24 @@ public:
     const Mp3Handler* getHandler(const std::string& strName) const; // looks in m_vpAllHandlers; returns 0 if there's no such handler
     const std::string& getCrtName() const; // returns the file name of the current handler; returns "" if the list is empty
 
-    void setGeneralFont(const std::string& strName, int nSize);
-    void setFixedFont(const std::string& strName, int nSize);
-    QFont getGeneralFont() const;
-    const QFont& getFixedFont() const { return m_fixedFont; }
+    void setFontInfo(const std::string& strGenName, int nGenSize, int nLabelFontSizeDecr, const std::string& strFixedName, int nFixedSize);
+
+    const QFont& getGeneralFont() const { CB_ASSERT (!m_strGenFontName.empty()); return m_generalFont; }
+    const QFont& getLabelFont() const { CB_ASSERT (!m_strFixedFontName.empty()); return m_labelFont; }
+    const QFont& getFixedFont() const { CB_ASSERT (!m_strGenFontName.empty()); return m_fixedFont; }
+    int getLabelFontSizeDecr() const { return m_nLabelFontSizeDecr; }
+
+    QFont getNewGeneralFont() const;
+    QFont getNewFixedFont() const;
 
     void setCrtAtStartup() { updateWidgets(m_strLoadCrtName); } // to be called from the main thread at startup
 
+    //QString getNoteLabel(int nPosInFlt); // gets the label of a note based on its position in m_uniqueNotes.m_vpFlt
+
+    // color is normally the category color, but for support notes it's a "support" color; if the note isn't found in vpNoteSet, dGradStart and dGradEnd are set to -1, but normally they get a segment obtained by dividing [0, 1] in equal parts;
+    void getNoteColor(const Note& note, const std::vector<const Note*>& vpNoteSet, QColor& color, double& dGradStart, double& dGradEnd) const;
+
+    double getTextShift(int nWidth); // how much the text should be shifted to appear centered; positive for right-shift / negative for left-shift; nWidth doesn't matter except that it's odd or even
 public:
     enum Case { LOWER, UPPER, TITLE, PHRASE };
     Case m_eCaseForArtists;
@@ -421,6 +432,10 @@ public:
     bool m_bLogTransf;
 
     bool m_bSaveDownloadedData;
+
+    enum { COLOR_ALB_NORM, COLOR_ALB_NONID3V2, COLOR_ALB_ASSIGNED, COLOR_FILE_NORM, COLOR_FILE_TAG_MISSING, COLOR_FILE_NA, COLOR_FILE_NO_DATA, COLOR_COL_CNT };
+    std::vector<QColor> m_vTagEdtColors;
+    std::vector<QColor> m_vNoteCategColors;
 
 private:
     std::deque<const Mp3Handler*> m_vpAllHandlers; // owns the pointers; sorted by CmpMp3HandlerPtrByName;
@@ -471,11 +486,14 @@ private:
 
     mutable int m_nSongInCrtAlbum; // something in the "current album" used by the tag editor; might be first, last or in the middle;
 
-    std::string m_strFixedFontName;
-    int m_nFixedFontSize;
     std::string m_strGenFontName;
     int m_nGenFontSize;
+    int m_nLabelFontSizeDecr;
+    std::string m_strFixedFontName;
+    int m_nFixedFontSize;
+    QFont m_generalFont;
     QFont m_fixedFont;
+    QFont m_labelFont;
 
     std::string m_strLoadCrtName; // needed by setCrtAtStartup(), because calling updateWidgets() from a secondary thread has issues; so instead, the name of the current file is saved here for later, to be set from the main thread, through setCrtAtStartup()
 
@@ -495,6 +513,9 @@ private:
     std::deque<std::string> m_vLogs;
 
     std::vector<std::string> m_vstrIncludeDirs, m_vstrExcludeDirs;
+
+    double m_adTextShift [2]; // first is for even widths, second is for odd widths
+    void computeShift(bool bEven);
 
 public slots:
     void onCrtFileChanged();
@@ -540,8 +561,10 @@ QVariant getNumVertHdrSize(int nRowCount, Qt::Orientation eOrientation); // ttt2
 QString getNoteLabel(const Note* pNote);
 
 class QColor;
-const QColor& ERROR_COLOR();
-QColor getNoteColor(const Note& note); // color based on severity
+const QColor& ERROR_PEN_COLOR();
+const QColor& SUPPORT_PEN_COLOR();
+//QColor getNoteColor(const Note& note); // color based on severity
+
 
 
 void defaultResize(QDialog& dlg); // resizes a dialog with inexisting/invalid size settings, so it covers an area slightly smaller than MainWnd; however, if the dialog is alrady bigger than that, it doesn't get shrinked

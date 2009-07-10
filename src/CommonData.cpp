@@ -22,6 +22,7 @@
 
 #include  <cmath>
 #include  <algorithm>
+#include  <sstream>
 
 #include  <QApplication>
 #include  <QToolButton>
@@ -31,6 +32,7 @@
 #include  <QTextCodec>
 #include  <QHeaderView>
 #include  <QMessageBox>
+#include  <QPainter>
 
 #include  "CommonData.h"
 
@@ -204,16 +206,46 @@ void SessionSettings::saveMiscConfigSettings(const CommonData* p)
         m_pSettings->setValue("main/autoSizeIcons", p->m_bAutoSizeIcons);
         m_pSettings->setValue("main/keepOneValidImg", p->m_bKeepOneValidImg);
 
-        QFont genFnt (p->getGeneralFont());
+        QFont genFnt (p->getNewGeneralFont());
         m_pSettings->setValue("main/generalFontName", genFnt.family());
         m_pSettings->setValue("main/generalFontSize", genFnt.pointSize());
-        QFont fixedFnt (p->getFixedFont());
+        m_pSettings->setValue("main/labelFontSizeDecr", p->getLabelFontSizeDecr());
+        QFont fixedFnt (p->getNewFixedFont());
         m_pSettings->setValue("main/fixedFontName", fixedFnt.family());
         m_pSettings->setValue("main/fixedFontSize", fixedFnt.pointSize());
+    }
+
+    { // note categ colors
+        vector<string> v;
+        for (int i = 0; i < Note::CATEG_CNT; ++i)
+        {
+            QColor c (p->m_vNoteCategColors[i]);
+            char a [20];
+            sprintf(a, "%d %d %d", c.red(), c.green(), c.blue());
+            v.push_back(a);
+        }
+        p->m_settings.saveVector("categories/colors", v);
+    }
+
+    { // tag edt colors
+        vector<string> v;
+        for (int i = 0; i < CommonData::COLOR_COL_CNT; ++i)
+        {
+            QColor c (p->m_vTagEdtColors[i]);
+            char a [20];
+            sprintf(a, "%d %d %d", c.red(), c.green(), c.blue());
+            v.push_back(a);
+        }
+        p->m_settings.saveVector("tagEditor/colors", v);
     }
 }
 
 
+static bool isWhite(const QColor& c)
+{
+    //qDebug("%d %d %d", c.red(), c.green(), c.blue());
+    return c.red() >= 254 && c.green() >= 254 && c.blue() >= 254;
+}
 
 void SessionSettings::loadMiscConfigSettings(CommonData* p) const
 {
@@ -269,46 +301,156 @@ void SessionSettings::loadMiscConfigSettings(CommonData* p) const
 
         QFont fnt;
         //qDebug("%d ==========================", fnt.pointSize());
-        QFontInfo inf1 (QFont(m_pSettings->value("main/generalFontName", "SansSerif").toString(), m_pSettings->value("main/generalFontSize", fnt.pointSize()).toInt()));
-        p->setGeneralFont(convStr(inf1.family()), inf1.pointSize()); // ttt2 try and get the system defaults
+        QFontInfo inf1 (QFont(m_pSettings->value("main/generalFontName", "SansSerif").toString(), m_pSettings->value("main/generalFontSize", fnt.pointSize()).toInt())); // ttt2 try and get the system defaults
         QFontInfo inf2 (QFont(m_pSettings->value("main/fixedFontName", "Courier").toString(), m_pSettings->value("main/fixedFontSize", fnt.pointSize()).toInt()));
-        p->setFixedFont(convStr(inf2.family()), inf2.pointSize());
+        p->setFontInfo(convStr(inf1.family()), inf1.pointSize(), m_pSettings->value("main/labelFontSizeDecr", 0).toInt(), convStr(inf2.family()), inf2.pointSize());
+    }
+
+    { // note categ colors
+        //m_settings.saveVector("categories/colors", u);
+        bool bErr;
+        vector<string> v (loadVector("categories/colors", bErr));
+        for (int i = 0; i < Note::CATEG_CNT && i < cSize(v); ++i)
+        {
+            int r (230), g (230), b (230);
+            istringstream in (v[i]);
+            in >> r >> g >> b;
+            p->m_vNoteCategColors.push_back(QColor(r, g, b));
+        }
+
+        //QColor c (QPalette().color(QPalette::Active, QPalette::Window).lighter(113));
+        QColor c (QPalette().color(QPalette::Active, QPalette::Light));
+        if (isWhite(c))
+        {
+            c = QPalette().color(QPalette::Active, QPalette::Window).lighter(110);
+        }
+        if (isWhite(c))
+        {
+            c = QPalette().color(QPalette::Active, QPalette::Window).lighter(103);
+        }
+        if (isWhite(c))
+        {
+            c = QPalette().color(QPalette::Active, QPalette::Window);
+        }
+        if (isWhite(c))
+        {
+            c = QColor(253, 250, 240);
+        }
+
+        for (int i = 0; i < Note::CATEG_CNT; ++i)
+        {
+            //p->m_vNoteCategColors.push_back(QColor(240, 240 + i, 240 - i));
+            p->m_vNoteCategColors.push_back(c);
+        }
+    }
+
+    { // tag edt colors
+        bool bErr;
+        vector<string> v (loadVector("tagEditor/colors", bErr));
+
+        for (int i = 0; i < CommonData::COLOR_COL_CNT && i < cSize(v); ++i)
+        {
+            int r (230), g (230), b (230);
+            istringstream in (v[i]);
+            in >> r >> g >> b;
+            p->m_vTagEdtColors.push_back(QColor(r, g, b));
+        }
+
+        QColor defNormal (QPalette().color(QPalette::Active, QPalette::Base));
+        if (cSize(p->m_vTagEdtColors) <= 0) { p->m_vTagEdtColors.push_back(defNormal); } // COLOR_ALB_NORM
+        if (cSize(p->m_vTagEdtColors) <= 1) { p->m_vTagEdtColors.push_back(QColor(0xffffdd)); } // COLOR_ALB_NONID3V2
+        if (cSize(p->m_vTagEdtColors) <= 2) { p->m_vTagEdtColors.push_back(QColor(0xccccff)); } // COLOR_ALB_ASSIGNED
+        if (cSize(p->m_vTagEdtColors) <= 3) { p->m_vTagEdtColors.push_back(QColor(defNormal)); } // COLOR_FILE_NORM
+        if (cSize(p->m_vTagEdtColors) <= 4) { p->m_vTagEdtColors.push_back(QColor(0xdddddd)); } // COLOR_FILE_TAG_MISSING
+        if (cSize(p->m_vTagEdtColors) <= 5) { p->m_vTagEdtColors.push_back(QColor(0xf0f0ff)); } // COLOR_FILE_NA
+        if (cSize(p->m_vTagEdtColors) <= 6) { p->m_vTagEdtColors.push_back(QColor(0xffffdd)); } // COLOR_FILE_NO_DATA
     }
 }
 
 
 static int MIN_FILE_WIDTH; // minimum width of the "file" field
 
-void CommonData::setGeneralFont(const std::string& strName, int nSize)
+void CommonData::setFontInfo(const std::string& strGenName, int nGenSize, int nLabelFontSizeDecr, const std::string& strFixedName, int nFixedSize)
 {
-    if (nSize < 5 || nSize > 20) { nSize = 9; }
-    if (m_strGenFontName == strName && m_nGenFontSize == nSize) { return; } // nothing changed
+    if (nGenSize < 5 || nGenSize > 20) { nGenSize = 9; }
+    if (nFixedSize < 5 || nFixedSize > 20) { nFixedSize = 9; }
+    if (nLabelFontSizeDecr < 0 || nLabelFontSizeDecr > 5) { nLabelFontSizeDecr = 0; }
+
+    if (m_strGenFontName == strGenName && m_nGenFontSize == nGenSize && m_nLabelFontSizeDecr == nLabelFontSizeDecr && m_strFixedFontName == strFixedName && m_nFixedFontSize == nFixedSize) { return; } // nothing changed
 
     bool bFirstTime (m_strGenFontName.empty());
-    m_strGenFontName = strName;
-    m_nGenFontSize = nSize;
+    m_strGenFontName = strGenName;
+    m_nGenFontSize = nGenSize;
+    m_nLabelFontSizeDecr = nLabelFontSizeDecr;
+    m_strFixedFontName = strFixedName;
+    m_nFixedFontSize = nFixedSize;
+
     if (!bFirstTime)
     {
-        QMessageBox::warning(m_pFilesG, "Info", "The new general font will only be used after the application is restarted."); //ttt1 try to get this work, probably needs to call QHeaderView::resizeSection(), as well as review all setMinimumSectionSize() and setDefaultSectionSize() calls;
+        QMessageBox::warning(m_pFilesG, "Info", "The font changes will only be used after restarting the application."); //ttt1 try to get this work, probably needs to call QHeaderView::resizeSection(), as well as review all setMinimumSectionSize() and setDefaultSectionSize() calls;
         return;
     }
 
-    QFont f;
-    f.setFamily(convStr(strName));
-    f.setPointSize(nSize);
-    QApplication::setFont(f);
+    m_generalFont.setFamily(convStr(strGenName));
+    m_generalFont.setPointSize(nGenSize);
+    QApplication::setFont(m_generalFont);
+
+    m_labelFont = m_generalFont;
+    m_labelFont.setPointSize(nGenSize - nLabelFontSizeDecr);
+
+    m_fixedFont.setFamily(convStr(strFixedName));
+    //m_fixedFont.setFamily("B&H LucidaTypewriter");
+    //m_fixedFont.setFamily("B&H LucidaTypewriter12c");
+    //m_fixedFont.setFixedPitch(true);  // !!! needed to select some fixed font in case there's no "B&H LucidaTypewriter" installed
+    m_fixedFont.setFixedPitch(true);
+    m_fixedFont.setStyleHint(QFont::Courier);
+    //f.setPixelSize(12); //ttt2 hard-coded "12"; //ttt1 some back-up font instead of just letting the system decide
+    m_fixedFont.setPointSize(nFixedSize);
+
 
     CELL_HEIGHT = QApplication::fontMetrics().height() + 3;
+
     //qDebug("wdth %d", QApplication::fontMetrics().width("W"));
     //qDebug("wdth %d", QApplication::fontMetrics().maxWidth()); // too big, probably from non-ASCII-letter chars
-    int n (QApplication::fontMetrics().width("W")); // ttt1 switch to W', M' and m' when needed
+    /*int n (QApplication::fontMetrics().width("W")); // ttt1 switch to W', M' and m' when needed
     n = max(n, QApplication::fontMetrics().width("M"));
     n = max(n, QApplication::fontMetrics().width("m"));
 #ifndef WIN32
     CELL_WIDTH = n + 5;
 #else
     CELL_WIDTH = n + 6; //ttt2 hard-coded "6"; see how to get the correct value
-#endif
+#endif*/
+
+    {
+        QPixmap img (100, 100); //ttt2 revisit the size; might need increase in the future
+        QPainter pntr (&img);
+        QFont f (m_labelFont);
+        f.setWeight(QFont::Bold);
+        pntr.setFont(f);
+        int n (0);
+        for (char c1 = 'a'; c1 <= 'z'; ++c1) //ttt3 ASCII-specific
+        {
+            for (char c2 = 'a'; c2 <= 'z'; ++c2)
+            {
+                if (c1 != 'm' && c1 != 'w' && c2 != 'm' && c2 != 'w')
+                {
+                    QString s;
+                    s += c1;
+                    s += c2;
+                    QRect r (10, 10, 100, 100);
+                    r = pntr.boundingRect(r, Qt::AlignLeft | Qt::AlignTop, s);
+                    //CB_ASSERT (10 == r.x());
+                    n = max(n, r.width());
+                }
+            }
+            //qDebug("%s - %d %d %2d %2d", s.toUtf8().data(), r.x(), r.y(), r.width(), r.height());
+        }
+
+        CELL_WIDTH = n + 4; //ttt2 hard-coded "4"; see how to get the correct value
+    }
+
+    computeShift(true);
+    computeShift(false);
 
     MIN_FILE_WIDTH = QApplication::fontMetrics().width("ABCDEFGHIJKLMNopqrstuvwxyz12345");
 
@@ -319,35 +461,155 @@ void CommonData::setGeneralFont(const std::string& strName, int nSize)
 }
 
 
-void CommonData::setFixedFont(const std::string& strName, int nSize)
-{
-    if (nSize < 5 || nSize > 20) { nSize = 9; }
-    //bool bFirstTime (m_strGenFontName.empty());
-    m_strFixedFontName = strName;
-    m_nFixedFontSize = nSize;
-    //if (!bFirstTime) { return; } // don't return; it won't make any difference;
-
-    QFont f;
-    f.setFamily(convStr(strName));
-    //f.setFamily("B&H LucidaTypewriter");
-    //s_font.setFamily("B&H LucidaTypewriter12c");
-    //s_font.setFixedPitch(true);  // !!! needed to select some fixed font in case there's no "B&H LucidaTypewriter" installed
-    f.setFixedPitch(true);
-    f.setStyleHint(QFont::Courier);
-    //f.setPixelSize(12); //ttt2 hard-coded "12"; //ttt1 some back-up font instead of just letting the system decide
-    f.setPointSize(nSize);
-
-    m_fixedFont = f;
-}
-
-
-QFont CommonData::getGeneralFont() const
+QFont CommonData::getNewGeneralFont() const
 {
     QFont f;
     f.setFamily(convStr(m_strGenFontName));
     f.setPointSize(m_nGenFontSize);
+    QFontInfo info (f);
+    return QFont (info.family(), info.pointSize());
+}
 
-    return f;
+QFont CommonData::getNewFixedFont() const
+{
+    QFont f;
+    f.setFamily(convStr(m_strFixedFontName));
+    f.setPointSize(m_nFixedFontSize);
+    f.setStyleHint(QFont::Courier);
+    f.setFixedPitch(true);
+    QFontInfo info (f);
+    return QFont (info.family(), info.pointSize());
+}
+
+/*
+void CommonData::computeShift(bool bEven)
+{
+    int n (CELL_WIDTH*2 + (bEven ? 0 : 1));
+    long nTotalSum (0), nWeightSum (0);
+
+    QImage img (n, CELL_HEIGHT, QImage::Format_RGB32); // fits both
+    QPainter pntr (&img);
+    pntr.setPen(QColor(255, 255, 255));
+
+    for (char c1 = 'a'; c1 <= 'z'; ++c1) //ttt3 ASCII-specific
+    {
+        for (char c2 = 'a'; c2 <= 'z'; ++c2)
+        {
+            if (c1 != 'm' && c1 != 'w' && c2 != 'm' && c2 != 'w')
+            {
+                QString s;
+                s += c1;
+                s += c2;
+
+                for (int k = 0; k <= 1; ++k)
+                {
+                    QRect r (0, 0, n, CELL_HEIGHT);
+                    pntr.fillRect(r, QColor(0, 0, 0));
+                    pntr.drawText(r, Qt::AlignCenter, s);
+                    for (int i = 0; i < CELL_HEIGHT; ++i)
+                    {
+                        for (int j = 0; j < n; ++j)
+                        {
+                            QColor c (img.pixel(j, i));
+                            int r (c.red()), g (c.green()), b (c.blue());
+                            nTotalSum += j*(r + g + b);
+                            nWeightSum += (r + g + b);
+                        }
+                    }
+                }
+
+            }
+        }
+        //qDebug("%s - %d %d %2d %2d", s.toUtf8().data(), r.x(), r.y(), r.width(), r.height());
+    }
+
+    double dAvg (double(nTotalSum)/nWeightSum);
+    m_adTextShift[bEven ? 0 : 1] = double(n - 1)/2 - dAvg;
+    qDebug ("w=%d, avg %f shift %f", n, dAvg, m_adTextShift[bEven ? 0 : 1]);
+}
+*/
+
+void CommonData::computeShift(bool bEven)
+{
+return;
+    int n ((CELL_WIDTH/2 + 1)*2 + (bEven ? 0 : 1));
+    long nMidDblSum (0), nTotal (0);
+
+    QImage img (n, CELL_HEIGHT, QImage::Format_RGB32); // fits both
+    QPainter pntr (&img);
+    pntr.setPen(QColor(255, 255, 255));
+
+    QFont f (m_labelFont);
+    f.setWeight(QFont::Bold);
+    pntr.setFont(f);
+
+qDebug("-------- n=%d --------", n);
+    for (char c1 = 'a'; c1 <= 'z'; ++c1) //ttt3 ASCII-specific
+    {
+        //for (char c2 = 'a'; c2 <= 'z'; ++c2)
+        for (char c2 = 'a'; c2 <= 'a'; ++c2) //ttt0 'a'
+        {
+            if (c1 != 'm' && c1 != 'w' && c2 != 'm' && c2 != 'w')
+            {
+                QString s;
+                s += c1;
+                s += c2;
+
+                QRect r (0, 0, n, CELL_HEIGHT);
+                pntr.fillRect(r, QColor(0, 0, 0));
+                pntr.drawText(r, Qt::AlignCenter, s);
+                int nFirst (0), nLast (n - 1);
+
+                for (int j = 0; j < n; ++j)
+                {
+                    for (int i = 0; i < CELL_HEIGHT; ++i)
+                    {
+                        QColor c (img.pixel(j, i));
+                        int r (c.red()), g (c.green()), b (c.blue());
+                        if (r + g + b != 0)
+                        {
+                            nFirst = j;
+                            goto e1;
+                        }
+                    }
+                }
+                CB_ASSERT (false);
+e1:
+                for (int j = n - 1; j >= 0; --j)
+                {
+                    for (int i = 0; i < CELL_HEIGHT; ++i)
+                    {
+                        QColor c (img.pixel(j, i));
+                        int r (c.red()), g (c.green()), b (c.blue());
+                        if (r + g + b != 0)
+                        {
+                            nLast = j;
+                            goto e2;
+                        }
+                    }
+                }
+                CB_ASSERT (false);
+e2:
+
+                qDebug("%s frst=%d, last=%d", s.toUtf8().data(), nFirst, nLast);
+                nMidDblSum += nFirst + nLast;
+                ++nTotal;
+            }
+        }
+        //qDebug("%s - %d %d %2d %2d", s.toUtf8().data(), r.x(), r.y(), r.width(), r.height());
+    }
+
+    double dAvg (nMidDblSum/2.0/nTotal);
+    double dTarget ((n - 1.0)/2);
+    m_adTextShift[bEven ? 0 : 1] = dTarget - dAvg;
+    qDebug("w=%d, avg %f shift %f", n, dAvg, m_adTextShift[bEven ? 0 : 1]);
+}
+
+
+// how much the text should be shifted to appear centered; positive for right-shift / negative for left-shift; nWidth doesn't matter except that it's odd or even
+double CommonData::getTextShift(int nWidth)
+{
+    return m_adTextShift[nWidth % 2];
 }
 
 
@@ -396,6 +658,7 @@ CommonData::CommonData(
         m_vvCustomTransf(CUSTOM_TRANSF_CNT),
         //m_bDirty(false),
 
+        m_nLabelFontSizeDecr(0),
         m_eViewMode(ALL),
         m_pNoteFilterB(pNoteFilterB),
         m_pDirFilterB(pDirFilterB),
@@ -1006,6 +1269,12 @@ void CommonData::setDirectories(const std::vector<std::string>& vstrIncludeDirs,
 
 
 
+/*QString CommonData::getNoteLabel(int nPosInFlt) // gets the label of a note based on its position in m_uniqueNotes.m_vpFlt
+{
+    return ::getNoteLabel(m_uniqueNotes.getFltVec()[nPosInFlt]);
+}*/
+
+
 //=====================================================================================================================
 //=====================================================================================================================
 //=====================================================================================================================
@@ -1046,6 +1315,7 @@ QVariant getNumVertHdrSize(int nRowCount, Qt::Orientation eOrientation) // ttt2 
 //=====================================================================================================================
 //=====================================================================================================================
 
+#if 0
 static QString getNoteLabel(int nPos)
 {
     if (-1 == nPos) { return ""; }
@@ -1100,8 +1370,33 @@ static QString getNoteLabel(int nPos)
         return getNoteLabel(n2) + getNoteLabel(n1);*/
     }
 
+    nPos %= 26;
+    {
+        //nPos = 0x03B1 + nPos; //  greek alpha
+        nPos += 'a';
+    }
+    if ('m' == nPos || 'w' == nPos) { nPos = 'i'; }
+
     QChar c (nPos);
     s = c + s;
+    //s += "\n";
+    s = c + s;
+    return s;
+}
+#endif
+
+static QString getNoteLabel(int nCateg, int nPos)
+{
+    if (nCateg < 0 || nCateg >= Note::CUSTOM || nPos < 0 || nPos > 'z' - 'a' - 2) { return ""; }
+    if (nPos >= 'm' - 'a') { ++nPos; }
+    if (nPos >= 'w' - 'a') { ++nPos; }
+    if (nCateg >= 'm' - 'a') { ++nCateg; }
+    if (nCateg >= 'w' - 'a') { ++nCateg; }
+    char cp ('a' + nPos);
+    char cc ('a' + nCateg);
+    QString s;
+    s += cc;
+    s += cp;
     return s;
 }
 
@@ -1112,7 +1407,7 @@ QString getNoteLabel(const Note* pNote)
 if (1 == nPos) return "m";
 if (2 == nPos) return "wwwwww";//*/
     //CB_ASSERT (nPos >= 0);
-    return getNoteLabel(pNote->getLabelIndex());
+    return getNoteLabel(pNote->getCategory(), pNote->getLabelIndex());
 }
 
 #if 0
@@ -1136,30 +1431,61 @@ static TestLabel ppppppppp;
 //=====================================================================================================================
 //=====================================================================================================================
 
-const QColor& ERROR_COLOR()
+const QColor& ERROR_PEN_COLOR()
 {
-    static QColor col (255, 226, 236);
+    static QColor col (112, 48, 0);
     return col;
 }
 
-// color based on severity
-QColor getNoteColor(const Note& note)
+const QColor& SUPPORT_PEN_COLOR()
 {
-    //ttt0 this should determine if it's in an assert, and return white if so, because note is probably invalid (but then other calls for note would cause a crash anyway)
+    static QColor col (24, 64, 190);
+    return col;
+}
 
-    //CB_ASSERT (0 <= eSev && eSev < 4);
-    switch (note.getSeverity())
+
+
+
+//ttt2 inconsistency: note is ref while vpNoteSet has vectors; OTOH comparison is not done by address; perhaps just document this;
+// color is normally the category color, but for support notes it's a "support" color; if the note isn't found in vpNoteSet, dGradStart and dGradEnd are set to -1, but normally they get a segment obtained by dividing [0, 1] in equal parts;
+void CommonData::getNoteColor(const Note& note, const vector<const Note*>& vpNoteSet, QColor& color, double& dGradStart, double& dGradEnd) const
+{
+    dGradStart = -1;
+    dGradEnd = -1;
+
+    if (Note::TRACE == note.getSeverity()) { color = QColor(255, 255, 255); return; } //ttt2 use a system color
+
+    /*if (Note::SUPPORT == note.getSeverity())
     {
-    case Note::ERR: return ERROR_COLOR();
-    //case Note::WARNING: return QColor(255, 255, 146);
-    case Note::WARNING: return QColor(255, 255, 206);
-    case Note::SUPPORT: return QColor(235, 235, 255);
-    case Note::TRACE: return QColor(255, 255, 255); //ttt2 use a system color
+        color = QColor(235, 235, 255);
+    }
+    else*/
+    {
+        color = m_vNoteCategColors[note.getCategory()];
     }
 
-    //return QColor(255, 255, 255);
-    CB_ASSERT (false);
-};
+    vector<const Note*>::const_iterator it (lower_bound(vpNoteSet.begin(), vpNoteSet.end(), &note, CmpNotePtrById()));
+
+    if (vpNoteSet.end() == it)
+    {
+        CB_ASSERT (vpNoteSet.empty());
+        return;
+    }
+
+    int nPos (it - vpNoteSet.begin());
+    int nFirstInGroup (nPos), nLastInGroup (nPos);
+
+    for (; nFirstInGroup > 0 && vpNoteSet[nFirstInGroup - 1]->getCategory() == note.getCategory(); --nFirstInGroup) {}
+    for (; nLastInGroup < cSize(vpNoteSet) - 1 && vpNoteSet[nLastInGroup + 1]->getCategory() == note.getCategory(); ++nLastInGroup) {}
+
+    nLastInGroup -= nFirstInGroup;
+    nPos -= nFirstInGroup;
+    //nFirstInGroup = 0;
+
+    dGradStart = double(nPos)/(nLastInGroup + 1);
+    dGradEnd = double(nPos + 1)/(nLastInGroup + 1);
+}
+
 
 
 
