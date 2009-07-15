@@ -23,7 +23,7 @@
 
 
 #include  <iostream>
-#include  <fstream>
+#include  "fstream_utf8.h"
 #include  <cerrno>
 #include  <algorithm>
 
@@ -226,7 +226,14 @@ void CB_LIB_CALL setFileDate(const string& strFileName, long long nChangeTime)
         throw 1; //ttt1
     }
 #else
-    qqqww
+    _utimbuf t;
+    t.actime = (time_t)nChangeTime;
+    t.modtime = (time_t)nChangeTime;
+    if (0 != _wutime(wstrFromUtf8(strFileName).c_str(), &t))
+    {
+        //throw CannotSetDates(strFileName, getOsError(), LI);
+        throw 1; //ttt1
+    }
 #endif
 }
 
@@ -385,8 +392,8 @@ void CB_LIB_CALL renameFile(const std::string& strOldName, const std::string& st
 // throws WriteError or EndOfFile from Helpers //ttt2 switch to: throws FoundDir, AlreadyExists, NameNotFound, CannotCopyFile, ?IncorrectDirName,
 void CB_LIB_CALL copyFile(const std::string& strSourceName, const std::string& strDestName /*, OverwriteOption eOverwriteOption*/)
 {
-    ifstream in (strSourceName.c_str(), ios::binary);
-    ofstream out (strDestName.c_str(), ios::binary);
+    ifstream_utf8 in (strSourceName.c_str(), ios::binary);
+    ofstream_utf8 out (strDestName.c_str(), ios::binary);
     streampos nSize (getSize(in));
 
     appendFilePart(in, out, 0, nSize);
@@ -404,8 +411,8 @@ void CB_LIB_CALL copyFile2(const std::string& strSourceName, const std::string& 
     CB_CHECK1 (fileExists(strSourceName), NameNotFound());
     createDirForFile(strDestName); //ttt3 undo on error
 
-    ifstream in (strSourceName.c_str(), ios::binary);
-    ofstream out (strDestName.c_str(), ios::binary);
+    ifstream_utf8 in (strSourceName.c_str(), ios::binary);
+    ofstream_utf8 out (strDestName.c_str(), ios::binary);
     streampos nSize (getSize(in));
 
     appendFilePart(in, out, 0, nSize);
@@ -495,13 +502,6 @@ string getExistingDir(const std::string& strName) // if strName exists and is a 
 
 //} //namespace ciobi_utils
 
-/*
-class ifstreamUtf8 : public ifstream
-{
-public:
-
-};
-*/
 
 
 
@@ -514,63 +514,4 @@ public:
 
 
 
-// http://www2.roguewave.com/support/docs/leif/sourcepro/html/stdlibref/basic-ifstream.html
-// STLPort
-// MSVC
-// Dinkumware - not
-
-
-// http://www.aoc.nrao.edu/~tjuerges/ALMA/STL/html/class____gnu__cxx_1_1stdio__filebuf.html
-
-#if 0
-#include <ext/stdio_filebuf.h>
-#include <fstream>
-#include <string>
-#include <cstdio>
-
-#include <fcntl.h> // for open()
-
-#include <iostream>
-
-using namespace std;
-using namespace __gnu_cxx;
-
-struct Utf8Stream
-{
-    istream* p;
-    stdio_filebuf<char>* m_pBbr;
-    Utf8Stream(const string& strName)
-    {
-/*        FILE* f;
-        f = fopen(strName.c_str(), "rb"); // The FILE* will not be automatically closed when the stdio_filebuf is closed/destroyed.
-        if (0 == f) { throw 1; }
-        m_pBbr = new stdio_filebuf<char>(f, ios_base::in | ios_base::binary);*/
-
-        int nFileDescr = open(strName.c_str(), 0); // The file descriptor will be automatically closed when the stdio_filebuf is closed/destroyed.
-        if (-1 == nFileDescr) { throw 1; }
-        m_pBbr = new stdio_filebuf<char>(nFileDescr, ios_base::in | ios_base::binary);
-
-        p = new istream(m_pBbr);
-    }
-
-    operator istream&() { return *p; }
-
-    ~Utf8Stream()
-    {
-        delete p;
-        delete m_pBbr;
-    }
-};
-
-int main()
-{
-    Utf8Stream in ("b.txt");
-
-    int a, b;
-    (*in.p) >> a >> b;
-
-    cout << a << " " << b << endl;
-}
-
-#endif
 
