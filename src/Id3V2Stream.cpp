@@ -235,8 +235,9 @@ void Id3V2Frame::print(ostream& out, bool bFullInfo) const
             break;
         }
 
-        qs.replace('\n', " / ");
-        qs.replace('\r', "");
+        //qs.replace('\n', " / "); qs.replace('\r', "");
+        qs = "\n" + qs + "\n";
+
         out << qs.toUtf8().data();
     }
     else

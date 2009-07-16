@@ -19,7 +19,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-//#include  <QSettings> //ttt0
+//#include  <QSettings> //ttt
 //#include  <iostream>
 
 #include  "fstream_unicode.h"
@@ -117,7 +117,7 @@ int getAcc(std::ios_base::openmode __mode)
     using namespace __gnu_cxx;
 
 
-    static wstring wstrFromUtf8(const string& s) //ttt1 perhaps public; maybe not: since both constructors are available, the user can call without needing any conversion
+    wstring wstrFromUtf8(const string& s)
     {
         vector<wchar_t> w (s.size() + 1);
         MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, &w[0], w.size());
@@ -125,12 +125,6 @@ int getAcc(std::ios_base::openmode __mode)
         return &w[0];
     }
 
-
-    template<>
-    int unicodeOpenHlp(const char* szUtf8Name, std::ios_base::openmode __mode)
-    {
-        return unicodeOpenHlp(wstrFromUtf8(szUtf8Name).c_str());
-    }
 
     template<>
     int unicodeOpenHlp(const wchar_t* wszUtf16Name, std::ios_base::openmode __mode)
@@ -141,6 +135,12 @@ int getAcc(std::ios_base::openmode __mode)
         //int nFd (open(szUtf8Name, nAcc, S_IREAD | S_IWRITE));
         //qDebug("fd %d %s acc=%d", nFd, szUtf8Name, nAcc);
         return nFd;
+    }
+
+    template<>
+    int unicodeOpenHlp(const char* szUtf8Name, std::ios_base::openmode __mode)
+    {
+        return unicodeOpenHlp(wstrFromUtf8(szUtf8Name).c_str(), __mode);
     }
 
 #endif // #ifndef WIN32 / #else
@@ -167,12 +167,5 @@ int unicodeOpenHlp(int fd, std::ios_base::openmode /*__mode*/)
 
 
 
-
-
-void wefwef()
-{
-    ifstream_unicode in1 ("abc");
-    in1.open("abc");
-}
 
 //ttt0 review O_SHORT_LIVED

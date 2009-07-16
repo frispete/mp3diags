@@ -458,9 +458,10 @@ void TagEditorDlgImpl::resizeFile() // resizes the "current file" grid; called b
 }
 
 
-/*override*/ void TagEditorDlgImpl::resizeEvent(QResizeEvent* /*pEvent*/)
+/*override*/ void TagEditorDlgImpl::resizeEvent(QResizeEvent* pEvent)
 {
     resizeTagEditor();
+    QDialog::resizeEvent(pEvent);
 }
 
 

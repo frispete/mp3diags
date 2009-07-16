@@ -753,7 +753,7 @@ QString getSystemInfo() //ttt1 perhaps store this at startup, so fewer things ma
 
 #endif
     s.replace('\n', ' ');
-    s = QString("Version: MP3 Diags %1.\nWord size: %2 bit.\nQt version: %3.\nBoost build version: %4\n").arg(APP_VER).arg(QSysInfo::WordSize).arg(qVersion()).arg(BOOST_LIB_VERSION) + s; //ttt0 see if possible to get actual boost version (if libs are binary compatible)
+    s = QString("Version: MP3 Diags %1.\nWord size: %2 bit.\nQt version: %3.\nBoost version: %4\n").arg(APP_VER).arg(QSysInfo::WordSize).arg(qVersion()).arg(BOOST_LIB_VERSION) + s;
     return s;
 }
 

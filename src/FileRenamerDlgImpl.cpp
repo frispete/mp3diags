@@ -23,6 +23,7 @@
 #include  <QTimer>
 #include  <QPainter>
 #include  <QHeaderView>
+#include  <QSizeGrip>
 
 #include  "FileRenamerDlgImpl.h"
 
@@ -235,6 +236,10 @@ FileRenamerDlgImpl::FileRenamerDlgImpl(QWidget* pParent, CommonData* pCommonData
         if (m_nSaButton >= cSize(m_vstrPatterns) || m_nSaButton <= 0) { m_nSaButton = 0; }
         m_pKeepOriginalCkB->setChecked(bKeepOriginal);
     }
+
+    //setSizeGripEnabled(true);
+    //QSizeGrip* pGrip (this);
+    //pGrip->show();
 
 
     { m_pModifRenameB = new ModifInfoToolButton(m_pRenameB); connect(m_pModifRenameB, SIGNAL(clicked()), this, SLOT(on_m_pRenameB_clicked())); m_pRenameB = m_pModifRenameB; }
@@ -626,9 +631,10 @@ void FileRenamerDlgImpl::resizeUi()
     ColumnResizer rsz (intf, 100, ColumnResizer::FILL, ColumnResizer::CONSISTENT_RESULTS);
 }
 
-/*override*/ void FileRenamerDlgImpl::resizeEvent(QResizeEvent* /*pEvent*/)
+/*override*/ void FileRenamerDlgImpl::resizeEvent(QResizeEvent* pEvent)
 {
     resizeUi();
+    QDialog::resizeEvent(pEvent);
 }
 
 

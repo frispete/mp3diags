@@ -66,7 +66,7 @@ using namespace std;
 using namespace pearl;
 
 
-//ttt0 try to switch from QDialog to QWidget, to see if min/max in gnome show up; or add Qt::Dialog flag
+//ttt2 try to switch from QDialog to QWidget, to see if min/max in gnome show up; or add Qt::Dialog flag (didn't seem to work, though)
 
 MainFormDlgImpl* getGlobalDlg();  //ttt1 remove
 
@@ -664,8 +664,7 @@ MainFormDlgImpl::MainFormDlgImpl(QWidget* pParent, const string& strSession) : Q
 
 /*override*/ void MainFormDlgImpl::keyPressEvent(QKeyEvent* pEvent)
 {
-//qDebug("key prs %d", pEvent->key());
-
+qDebug("key prs %x", pEvent->key());
     m_nLastKey = pEvent->key();
 
     pEvent->ignore();
@@ -966,7 +965,7 @@ void MainFormDlgImpl::onCrtFileChanged()
 
 
 
-/*override*/ void MainFormDlgImpl::resizeEvent(QResizeEvent* /*pEvent*/)
+/*override*/ void MainFormDlgImpl::resizeEvent(QResizeEvent* pEvent)
 {
     if (m_pCommonData->m_bAutoSizeIcons || m_pCommonData->m_nMainWndIconSize < 16)
     {
@@ -982,6 +981,8 @@ void MainFormDlgImpl::onCrtFileChanged()
     m_pUniqueNotesG->resizeRowsToContents();
     m_pNotesG->resizeRowsToContents();
     m_pStreamsG->resizeRowsToContents();
+
+    QDialog::resizeEvent(pEvent);
 }
 
 
@@ -1734,6 +1735,7 @@ public:
 //void MainFormDlgImpl::onStreamsGKeyPressed(int nKey)
 /*override*/ bool MainFormDlgImpl::eventFilter(QObject* pObj, QEvent* pEvent)
 {
+//qDebug("type %d", pEvent->type());
     QKeyEvent* pKeyEvent (dynamic_cast<QKeyEvent*>(pEvent));
     int nKey (0 == pKeyEvent ? 0 : pKeyEvent->key());
     if (m_pStreamsG != pObj || 0 == pKeyEvent || Qt::Key_Delete != nKey || QEvent::ShortcutOverride != pKeyEvent->type()) { return QDialog::eventFilter(pObj, pEvent); }
