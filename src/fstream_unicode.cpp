@@ -153,9 +153,9 @@ int unicodeOpenHlp(char* szUtf8Name, std::ios_base::openmode __mode)
 }
 
 template<>
-int unicodeOpenHlp(wchar_t* wszUtf8Name, std::ios_base::openmode __mode)
+int unicodeOpenHlp(wchar_t* wszUtf16Name, std::ios_base::openmode __mode)
 {
-    return unicodeOpenHlp<const wchar_t*>(wszUtf8Name, __mode);
+    return unicodeOpenHlp<const wchar_t*>(wszUtf16Name, __mode);
 }
 
 
