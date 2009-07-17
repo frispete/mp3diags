@@ -44,7 +44,7 @@
 //ttt0 perhaps add flush()
 
 
-int getAcc(std::ios_base::openmode __mode)
+static int getAcc(std::ios_base::openmode __mode)
 {
     int nAcc;
     if (std::ios_base::in & __mode)
