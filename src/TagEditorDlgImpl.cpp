@@ -383,6 +383,8 @@ TagEditorDlgImpl::TagEditorDlgImpl(QWidget* pParent, CommonData* pCommonData, Tr
     m_pCurrentAlbumG->installEventFilter(this);
     installEventFilter(this);
 
+    { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("F1")); connect(p, SIGNAL(triggered()), this, SLOT(onHelp())); addAction(p); }
+
     QTimer::singleShot(1, this, SLOT(onShow())); // just calls resizeTagEditor(); !!! needed to properly resize the table columns; album and file tables have very small widths until they are actually shown, so calling resizeTagEditor() earlier is pointless; calling update() on various layouts seems pointless as well; (see also DoubleList::resizeEvent() )
 }
 
@@ -590,12 +592,12 @@ void TagEditorDlgImpl::on_m_pEditPatternsB_clicked()
 
     vector<string> u;
     //u.push_back("%a/%b[[ ](%y)]/[[%r]%n][ ][-[ ]]%t");
-    /*u.push_back("%a/%b[[ ](%y)]/[[%r]%n][.][ ][-[ ]]%t"); //ttt1 OS specific
+    /*u.push_back("%a/%b[[ ](%y)]/[[%r]%n][.][ ][-[ ]]%t"); //ttt OS specific
     u.push_back("%b[[ ](%y)]/[[%r]%n][.][ ]%a[ ]-[ ]%t");
     u.push_back("%a - %b/[[%r]%n][.][ ][-[ ]]%t");
     u.push_back("[%n][.][ ][-[ ]]%t");*/
 
-    u.push_back("%a/%b[(%y)]/[[%r]%n][.][ ][-]%t"); //ttt1 OS specific
+    u.push_back("%a/%b[(%y)]/[[%r]%n][.][ ][-]%t");
     u.push_back("%b[(%y)]/[[%r]%n][.]%a-%t");
     u.push_back("%a-%b/[[%r]%n][.][ ][-]%t");
     u.push_back("/%n[.]%a-%t");
@@ -654,7 +656,7 @@ void TagEditorDlgImpl::onAlbumChanged(/*bool bContentOnly*/)
     m_pCurrentAlbumModel->emitLayoutChanged();
 
     const Mp3Handler* p (m_pTagWriter->m_vpMp3HandlerTagData.at(0)->getMp3Handler());
-    m_pCrtDirTagEdtE->setText(convStr(p->getDir()));
+    m_pCrtDirTagEdtE->setText(toNativeSeparators(convStr(p->getDir())));
 }
 
 void TagEditorDlgImpl::on_m_pConfigB_clicked()
@@ -765,7 +767,7 @@ void TagEditorDlgImpl::loadTagWriterInf()
         { // use default (only if the user didn't remove all patterns on purpose)
             //v.push_back(make_pair(string("%a/%b[[ ](%y)]/[[%r]%n][ ][-[ ]]%t"), -1));
 
-            v.push_back(make_pair(string("%a/%b[[ ](%y)]/[[%r]%n][.][ ][-[ ]]%t"), -1)); //ttt1 OS specific
+            v.push_back(make_pair(string("%a/%b[[ ](%y)]/[[%r]%n][.][ ][-[ ]]%t"), -1)); //ttt OS specific
             v.push_back(make_pair(string("%b[[ ](%y)]/[[%r]%n][.][ ]%a[ ]-[ ]%t"), -1));
             v.push_back(make_pair(string("%a - %b/[[%r]%n][.][ ][-[ ]]%t"), -1));
             v.push_back(make_pair(string("[%n][.][ ][-[ ]]%t"), -1));
@@ -1426,6 +1428,13 @@ TagEditorDlgImpl::SaveOpt TagEditorDlgImpl::save(bool bImplicitCall)
 }
 
 
+void TagEditorDlgImpl::onHelp()
+{
+    openHelp("190_tag_editor.html");
+}
+
+
+
 //========================================================================================================================================================
 //========================================================================================================================================================
 //========================================================================================================================================================
@@ -1606,7 +1615,6 @@ Rescanning of saved files might be eliminated if speed is so important, but it s
 A less important performance issue is in ImageInfoPanelWdgImpl::ImageInfoPanelWdgImpl(): assigning of an image to a label takes more than 0.2"
 
 
-ttt0 perhaps "Scan images in the current folder", checked by default
 
 */
 

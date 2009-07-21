@@ -49,6 +49,8 @@ NormalizeDlgImpl::NormalizeDlgImpl(QWidget* pParent, bool bKeepOpen, SessionSett
     int nWidth, nHeight;
     m_settings.loadNormalizeSettings(nWidth, nHeight);
     if (nWidth > 400 && nHeight > 300) { resize(nWidth, nHeight); }
+
+    { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("F1")); connect(p, SIGNAL(triggered()), this, SLOT(onHelp())); addAction(p); }
 }
 
 
@@ -60,8 +62,18 @@ NormalizeDlgImpl::~NormalizeDlgImpl()
 void logTransformation(const string& strLogFile, const char* szActionName, const string& strMp3File);
 
 
-void NormalizeDlgImpl::normalize(const QString& qstrProg, const QStringList& lFiles)
+void NormalizeDlgImpl::normalize(const QString& qstrProg, const QStringList& lFiles1) //ttt0 in Windows MP3Gain doesn't seem to care about Unicode. see if there's a way to fix this;
 {
+    QStringList lFiles;
+#ifndef WIN32
+    lFiles = lFiles1;
+#else
+    for (int i = 0; i < lFiles1.size(); ++i)
+    {
+        lFiles.push_back(toNativeSeparators(lFiles1[i]));
+    }
+#endif
+
     m_pProc = new QProcess(this);
     connect(m_pProc, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onFinished()));
     connect(m_pProc, SIGNAL(readyReadStandardOutput()), this, SLOT(onOutputTxt()));
@@ -111,6 +123,21 @@ void NormalizeDlgImpl::onErrorTxt()
     //addText("####" + m_pProc->readAllStandardError());
     QString s (m_pProc->readAllStandardError().trimmed());
     if (s.isEmpty()) { return; }
+//qDebug("err %s", s.toUtf8().data());
+    //inspect(s.toUtf8().data(), s.size());
+    int n (s.lastIndexOf("\r"));
+    if (n > 0)
+    {
+        s.remove(0, n + 1);
+    }
+
+    n = s.lastIndexOf("\n");
+    if (n > 0)
+    {
+        s.remove(0, n + 1);
+    }
+    //inspect(s.toUtf8().data(), s.size());
+
     m_pDetailE->setText(s);
 }
 
@@ -253,5 +280,10 @@ void NormalizeDlgImpl::on_m_pAbortB_clicked()
 }
 #endif
 
+
+void NormalizeDlgImpl::onHelp()
+{
+    openHelp("230_normalize.html");
+}
 
 

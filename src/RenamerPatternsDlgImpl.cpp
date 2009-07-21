@@ -49,17 +49,17 @@ RenamerPatternsDlgImpl::RenamerPatternsDlgImpl(QWidget* pParent, SessionSettings
             "\n\nTo include the special characters \"%\", \"[\" and \"]\", precede them by a \"%\": \"%%\", \"%[\" and \"%]\"\n\nThe path should be a full path, starting with a "
 
 #ifndef WIN32
-            "\"")
+            "\"") + getPathSep() + "\""
 #else
-            "drive lettered followed by \":")
+            "drive lettered followed by \":\\\"")
 #endif
-            + getPathSep() + "\""
-
             );
 
     int nWidth, nHeight;
     m_settings.loadRenamerPatternsSettings(nWidth, nHeight);
     if (nWidth > 400 && nHeight > 300) { resize(nWidth, nHeight); }
+
+    { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("F1")); connect(p, SIGNAL(triggered()), this, SLOT(onHelp())); addAction(p); }
 }
 
 
@@ -85,9 +85,10 @@ void RenamerPatternsDlgImpl::on_m_pOkB_clicked()
     const char* q (p);
     for (;;)
     {
-        if ('\n' == *p || 0 == *p) // ttt1 see if this works on Windows with mingw
+        if ('\n' == *p || 0 == *p)
         {
             string s1 (q, p - q);
+            s1 = fromNativeSeparators(s1);
             string strErr;
             try
             {
@@ -126,7 +127,7 @@ bool RenamerPatternsDlgImpl::run(vector<string>& v)
     for (int i = 0, n = cSize(v); i < n; ++i)
     {
         if (!s.empty()) { s += "\n"; }
-        s += v[i];
+        s += toNativeSeparators(v[i]);
     }
     m_pTextM->setText(convStr(s));
     if (QDialog::Accepted != exec()) { return false; }
@@ -157,3 +158,10 @@ bool RenamerPatternsDlgImpl::run(vector<string>& v)
 
     return true;
 }
+
+
+void RenamerPatternsDlgImpl::onHelp()
+{
+    openHelp("240_file_renamer.html");
+}
+

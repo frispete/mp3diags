@@ -58,7 +58,7 @@ SessionsModel::SessionsModel(std::vector<std::string>& vstrSessions) : m_vstrSes
 
     // ttt2 perhaps Qt::ToolTipRole
     if (Qt::DisplayRole != nRole) { return QVariant(); }
-    return convStr(m_vstrSessions.at(i));
+    return toNativeSeparators(convStr(m_vstrSessions.at(i)));
 }
 
 
@@ -141,6 +141,8 @@ SessionsDlgImpl::SessionsDlgImpl(QWidget* pParent) : QDialog(pParent, getMainWnd
         st.loadSessionsDlgSize(nWidth, nHeight);
         if (nWidth > 400 && nHeight > 400) { resize(nWidth, nHeight); }
     }
+
+    { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("F1")); connect(p, SIGNAL(triggered()), this, SLOT(onHelp())); addAction(p); }
 
     QTimer::singleShot(1, this, SLOT(onShow()));
 }
@@ -460,5 +462,10 @@ void SessionsDlgImpl::onSessDoubleClicked(const QModelIndex& index)
 {
     selectSession(m_vstrSessions.at(index.row()));
     on_m_pOpenB_clicked();
+}
+
+void SessionsDlgImpl::onHelp()
+{
+    openHelp("310_advanced.html");
 }
 

@@ -144,17 +144,8 @@ One thing that bothers me is a 1-second delay between the time when the frame of
 </div>
 
 <div class="NormalText RegFnt ChpCol1">
-There is a more serious issue on Windows, though: currently only ASCII file names can be used. File names having characters with code 128 or above are simply ignored. I should have a fix for this in the near future, though.
+I tested a previous version of the executable on XP SP1, XP SP2, XP SP3 and some Vista Home. For some reason the SP3 machine was unable to display any text, showing little rectangles instead; however, I suspect that this is related to something wrong with that particular machine, because the other ones ran OK (well, except for the random crash I talked about.) I didn't yet test more recent versions on XP SP3 or on Vista. I did test Windows 7 RC, though, and it looked and ran pretty good.
 </div>
-
-<div class="NormalText RegFnt ChpCol1">
-I tested a previous version of the executable on XP SP1, XP SP2, XP SP3 and some Vista Home. For some reason the SP3 machine was unable to display any text, showing little rectangles instead; however, I suspect that this is related to something wrong with that particular machine, because the other ones ran OK (well, except for the random crash I talked about.) I didn't yet test more recent versions on XP SP3 or on Vista, but hopefully I'll do it soon. I did test Windows 7 RC, though, and it looked and ran pretty good.
-</div>
-
-<div class="NormalText RegFnt ChpCol1">
-Another thing that should be mentioned is that the path separator is the forward slash '/', as on Unix, and not the backslash '\'. This is by design. (Or rather it's the default and I didn't bother to change it, mainly because it's a tedious process, touching many parts of the code, therefore a great opportunity to introduce bugs.)
-</div>
-
 
 
 <div class="NormalText TitleText RegFnt ChpCol2">
