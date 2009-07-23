@@ -2,6 +2,14 @@
 
 #read
 
+function fixVersion
+{
+    cat $1 | sed "s%QQQVERQQQ%$Ver%g" > QQTmpQQ
+    rm $1
+    mv QQTmpQQ $1
+}
+
+
 function initialize
 {
     echo Initializing ...
@@ -18,6 +26,9 @@ function initialize
 
     head -n 1 changelogRpm.txt | grep $Ver > /dev/null
     if [ $? -ne 0 ] ; then echo "invalid version in rpm" ; exit 1 ; fi
+
+    head -n 3 changelog.txt | grep $Ver > /dev/null
+    if [ $? -ne 0 ] ; then echo "invalid version in changelog" ; exit 1 ; fi
 
     mkdir -p package/out/deb
     mkdir -p package/out/rpm
@@ -47,6 +58,7 @@ function createLinuxSrc
     cp -pr desktop $LongDestDir
     cp -pr src $LongDestDir
     cat $LongDestDir/src/src.pro | sed 's%lboost_serialization%lboost_serialization-mt%' > $LongDestDir/src/src.pro1
+    fixVersion $LongDestDir/src/Helpers.cpp
     mv -f $LongDestDir/src/src.pro1 $LongDestDir/src/src.pro
 
     rm -f -r $LongDestDir/src/debug
@@ -134,14 +146,6 @@ function createWindowsSrc
 #}
 
 
-function fixVersion
-{
-    cat $1 | sed "s%QQQVERQQQ%$Ver%g" > QQTmpQQ
-    rm $1
-    mv QQTmpQQ $1
-}
-
-
 function createDoc
 {
     echo Creating non-counted documentation
@@ -196,7 +200,7 @@ function createClicknetDoc
     #rm $LongDestDir/010a_getting_the_program.html
 
     cd package/out
-    tar czf $DestDir.tar.gz $DestDir
+    #tar czf $DestDir.tar.gz $DestDir
     cd ../..
 
     #rm -f -r $LongDestDir
@@ -230,11 +234,23 @@ function createSfDoc
     #rm $LongDestDir/010a_getting_the_program.html
 
     cd package/out
-    tar czf $DestDir.tar.gz $DestDir
+    #tar czf $DestDir.tar.gz $DestDir
     cd ../..
 
     #rm -f -r $LongDestDir
 }
+
+function createPackagerSrc
+{
+    echo Creating Source+Doc bundle
+    cd package/out
+    mkdir MP3Diags-$Ver/doc
+    cp MP3DiagsDoc-$Ver/* MP3Diags-$Ver/doc
+    tar czf MP3Diags_Src+Doc-$Ver.tar.gz MP3Diags-$Ver
+    mv MP3Diags_Src+Doc-$Ver.tar.gz MP3DiagsClicknetDoc-$Ver
+    cd ../..
+}
+
 
 #pwd > /home/ciobi/cpp/Mp3Utils/MP3Diags/d
 
@@ -245,5 +261,6 @@ createWindowsSrc
 createDoc
 createClicknetDoc
 createSfDoc
+createPackagerSrc
 
 #FileName=`find . -maxdepth 1 -mindepth 1 -type d | sed s#./##`

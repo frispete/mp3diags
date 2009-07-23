@@ -867,6 +867,7 @@ vector<QString> getLocalHelpDirs()
         s_v.push_back("/home/ciobi/cpp/Mp3Utils/mp3diags/doc/html/");
         s_v.push_back("/usr/share/mp3diags-doc/html/");
         s_v.push_back("/usr/share/doc/mp3diags/html/");
+        s_v.push_back("/usr/share/doc/mp3diags-QQQVERQQQ/html/");
 #else
         wchar_t wszModule [200];
         int nRes (GetModuleFileName(0, wszModule, 200));
