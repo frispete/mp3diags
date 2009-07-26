@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>972</width>
-    <height>585</height>
+    <width>971</width>
+    <height>593</height>
    </rect>
   </property>
   <property name="minimumSize" >
@@ -2234,6 +2234,60 @@
             <property name="text" >
              <string>Use "fast save" in the tag editor</string>
             </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QWidget" native="1" name="widget_14" >
+            <layout class="QHBoxLayout" >
+             <property name="leftMargin" >
+              <number>0</number>
+             </property>
+             <property name="topMargin" >
+              <number>0</number>
+             </property>
+             <property name="rightMargin" >
+              <number>0</number>
+             </property>
+             <property name="bottomMargin" >
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QLabel" name="label_77" >
+               <property name="text" >
+                <string>Maximum image size, in kB</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="m_pMaxImgSizeSB" >
+               <property name="toolTip" >
+                <string>If an image size is above this value, it will be recompressed before storing it inside MP3 files</string>
+               </property>
+               <property name="minimum" >
+                <number>5</number>
+               </property>
+               <property name="maximum" >
+                <number>1000</number>
+               </property>
+               <property name="value" >
+                <number>100</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer>
+               <property name="orientation" >
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" >
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
