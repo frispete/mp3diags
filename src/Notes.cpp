@@ -92,7 +92,7 @@ static const char* s_szPlaceholderDescr ("<Placeholder for a note that can no lo
 
     // audio
     addNote(&Notes::twoAudio()); // e
-    addNote(&Notes::lowQualAudio()); // w
+    addNote(&Notes::lowQualAudio()); // w //ttt0 Low quality MPEG audio stream (see Configuration>Quality thresholds) 
     addNote(&Notes::noAudio()); // e
     addNote(&Notes::vbrUsedForNonMpg1L3()); // w
     addNote(&Notes::incompleteFrameInAudio()); // e
@@ -197,7 +197,10 @@ static const char* s_szPlaceholderDescr ("<Placeholder for a note that can no lo
     // lyrics
     addNote(&Notes::lyrTooShort()); // e
     addNote(&Notes::twoLyr()); // s
-    addNote(&Notes::lyricsNotSupported()); // s
+    addNote(&Notes::invalidLyr()); // e
+    addNote(&Notes::duplicateFields()); // s
+    addNote(&Notes::imgInLyrics()); // s
+    addNote(&Notes::infInLyrics()); // s
 
     // ape
     addNote(&Notes::apeItemTooShort()); // e
@@ -213,7 +216,7 @@ static const char* s_szPlaceholderDescr ("<Placeholder for a note that can no lo
 
     // misc
     addNote(&Notes::fileWasChanged()); // w
-    addNote(&Notes::noInfoTag()); // w
+    addNote(&Notes::noInfoTag()); // w //ttt0 perhaps change to "No SUPPORTED tag found that is capable of storing song information."
     addNote(&Notes::tooManyTraceNotes()); // w
     addNote(&Notes::tooManyNotes()); // w
     addNote(&Notes::tooManyStreams()); // w
@@ -235,7 +238,7 @@ static const char* s_szPlaceholderDescr ("<Placeholder for a note that can no lo
 }
 
 
-
+//ttt0 warn that file has multiple pictures, so will get deleted
 
 /*static*/ const Note* Notes::getNote(const std::string& strDescr)
 {
@@ -286,7 +289,7 @@ static const char* s_szPlaceholderDescr ("<Placeholder for a note that can no lo
         //v.push_back(zeroInId3V1().getNoteId());
         v.push_back(mixedPaddingInId3V1().getNoteId());
         v.push_back(mixedFieldPaddingInId3V1().getNoteId());
-        v.push_back(lyricsNotSupported().getNoteId());
+        //v.push_back(lyricsNotSupported().getNoteId());
         v.push_back(tooManyTraceNotes().getNoteId());
         v.push_back(tooManyNotes().getNoteId());
     }
