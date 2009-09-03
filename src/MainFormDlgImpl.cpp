@@ -278,7 +278,7 @@ void setupTraceToFile(bool bEnable)
     }
 }
 
-//ttt0 add checkbox to uninst on wnd to remove data and settings; //ttt0 uninst should remove log file as well
+//ttt0 add checkbox to uninst on wnd to remove data and settings; //ttt0 uninst should remove log file as well, including the file created when "debug/log transf" is turned on
 //ttt0 msvc 2008 fails to compile "cout << strRes << endl;" see if printing strings is GCC extension
 //static QString s_strAssertTitle ("Assertion failure");
 //static QString s_strCrashWarnTitle ("Crash detected");
@@ -504,6 +504,8 @@ void MainFormDlgImpl::loadIgnored()
 }
 
 
+static bool s_bToldAboutSupportInCrtRun (false); // to limit to 1 per run the number of times the user is told about support
+
 //=====================================================================================================================
 //=====================================================================================================================
 //=====================================================================================================================
@@ -549,11 +551,19 @@ struct SerLoadThread : public PausableThread
 
     /*override*/ void run()
     {
-        CompleteNotif notif(this);
+        try
+        {
+            CompleteNotif notif(this);
 
-        bool bAborted (!load());
+            bool bAborted (!load());
 
-        notif.setSuccess(!bAborted);
+            notif.setSuccess(!bAborted);
+        }
+        catch (...)
+        {
+            LAST_STEP("SerLoadThread::run()");
+            CB_ASSERT (false);
+        }
     }
 
     bool load()
@@ -574,11 +584,19 @@ struct SerSaveThread : public PausableThread
 
     /*override*/ void run()
     {
-        CompleteNotif notif(this);
+        try
+        {
+            CompleteNotif notif(this);
 
-        bool bAborted (!load());
+            bool bAborted (!load());
 
-        notif.setSuccess(!bAborted);
+            notif.setSuccess(!bAborted);
+        }
+        catch (...)
+        {
+            LAST_STEP("SerSaveThread::run()");
+            CB_ASSERT (false);
+        }
     }
 
     bool load()
@@ -587,6 +605,7 @@ struct SerSaveThread : public PausableThread
         return true;
     }
 };
+
 
 /*
 // a subset of m_vpExisting  gets copied to m_vpDel; so if m_vpExisting is empty, m_vpDel will be empty too;
@@ -681,12 +700,12 @@ MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bUniqueSession) 
             {
                 if (fileExists(s_strTraceFile))
                 {
-                    showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. Information in the files \"<b>" + Qt::escape(toNativeSeparators(convStr(s_strTraceFile))) + "</b>\", \"<b>" + Qt::escape(toNativeSeparators(convStr(s_vstrStepFile[0]))) + "</b>\", and \"<b>" + Qt::escape(toNativeSeparators(convStr(s_vstrStepFile[1]))) + "</b>\" may help identify the cause of the crash, so please make them available to the developer by mailing them to <a href=\"mailto:ciobi@inbox.com?subject=000 MP3 Diags crash/\">ciobi@inbox.com</a>, by reporting an issue to the project's <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">Issue Tracker</a> (<a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>) and attaching the files to the report, or by some other means (like putting them on a web server.)</p><p style=\"margin-bottom:8px; margin-top:1px; \">These are plain text files, which you can review before sending, if you have privacy concerns.</p><p style=\"margin-bottom:8px; margin-top:1px; \">After getting the files, the developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">So please send these files, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)</p>", "Remove these files and continue");
+                    showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. Information in the files \"<b>" + Qt::escape(toNativeSeparators(convStr(s_strTraceFile))) + "</b>\", \"<b>" + Qt::escape(toNativeSeparators(convStr(s_vstrStepFile[0]))) + "</b>\", and \"<b>" + Qt::escape(toNativeSeparators(convStr(s_vstrStepFile[1]))) + "</b>\" may help identify the cause of the crash, so please make them available to the developer by mailing them to <a href=\"mailto:ciobi@inbox.com?subject=000 MP3 Diags crash/\">ciobi@inbox.com</a>, by reporting an issue to the project's Issue Tracker at <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a> and attaching the files to the report, or by some other means (like putting them on a web server.)</p><p style=\"margin-bottom:8px; margin-top:1px; \">These are plain text files, which you can review before sending, if you have privacy concerns.</p><p style=\"margin-bottom:8px; margin-top:1px; \">After getting the files, the developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">So please send these files, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)</p>", "Remove these files and continue");
                     //ttt0 perhaps loop until the file is deleted
                 }
                 else
                 {
-                    showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. There was supposed to be some information about what led to the crash in the file \"<b>" + Qt::escape(toNativeSeparators(convStr(s_strTraceFile))) + "</b>\", but that file cannot be found. Please report this issue to the project's <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">Issue Tracker</a> (<a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>)</p><p style=\"margin-bottom:8px; margin-top:1px; \">The developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">Make sure to include the data below, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)</p>", "OK");
+                    showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. There was supposed to be some information about what led to the crash in the file \"<b>" + Qt::escape(toNativeSeparators(convStr(s_strTraceFile))) + "</b>\", but that file cannot be found. Please report this issue to the project's Issue Tracker at <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a></p><p style=\"margin-bottom:8px; margin-top:1px; \">The developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">Make sure to include the data below, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)</p>", "OK");
                 }
             }
 
@@ -1377,17 +1396,25 @@ struct Mp3ProcThread : public PausableThread
 
     /*override*/ void run()
     {
-        CompleteNotif notif(this);
-
-        bool bAborted (!scan());
-
-        if (!bAborted)
+        try
         {
-            sort(m_vpKeep.begin(), m_vpKeep.end(), CmpMp3HandlerPtrByName());
-            set_difference(m_vpExisting.begin(), m_vpExisting.end(), m_vpKeep.begin(), m_vpKeep.end(), back_inserter(m_vpDel), CmpMp3HandlerPtrByName());
-        }
+            CompleteNotif notif(this);
 
-        notif.setSuccess(!bAborted);
+            bool bAborted (!scan());
+
+            if (!bAborted)
+            {
+                sort(m_vpKeep.begin(), m_vpKeep.end(), CmpMp3HandlerPtrByName());
+                set_difference(m_vpExisting.begin(), m_vpExisting.end(), m_vpKeep.begin(), m_vpKeep.end(), back_inserter(m_vpDel), CmpMp3HandlerPtrByName());
+            }
+
+            notif.setSuccess(!bAborted);
+        }
+        catch (...)
+        {
+            LAST_STEP("Mp3ProcThread::run()");
+            CB_ASSERT (false);
+        }
     }
 
     bool scan();
@@ -1437,7 +1464,7 @@ bool Mp3ProcThread::scan()
 
 } // namespace
 
-
+//ttt0 perhaps: Too many notes that you don't care about are cluttering your screen? You can hide such notes, so you don't see them again. To do this, open the configuration dialog and go to the "Ignored notes" tab. See more details at ...
 
 //ttt2 album detection: folder / tags /both
 
@@ -1461,6 +1488,27 @@ void MainFormDlgImpl::scan(FileEnumerator& fileEnum, bool bForce, deque<const Mp
         m_nScanWidth = dlg.width();
         vpAdd = p->m_vpAdd;
         vpDel = p->m_vpDel;
+    }
+
+    if (!m_pCommonData->m_bToldAboutSupport && !s_bToldAboutSupportInCrtRun)
+    {
+        const vector<const Note*>& v (m_pCommonData->getUniqueNotes().getFltVec());
+        vector<const Note*>::const_iterator it (lower_bound(v.begin(), v.end(), &Notes::unsupportedFound(), CmpNotePtrById()));
+        if (v.end() != it && &Notes::unsupportedFound() == *it)
+        {
+            s_bToldAboutSupportInCrtRun = true;
+
+            HtmlMsg::msg(this, &m_pCommonData->m_bToldAboutSupport, HtmlMsg::DONT_SHOW_SYS_INFO, HtmlMsg::NOT_CRITICAL, HtmlMsg::DONT_STAY_ON_TOP, "Info", "<p style=\"margin-bottom:1px; margin-top:12px; \">Your files are not fully supported by the current version of MP3 Diags. The main reason for this is that the developer is aware of some MP3 features but doesn't have actual MP3 files to implement support for those features and test the code.</p>"
+
+            "<p style=\"margin-bottom:1px; margin-top:12px; \">You can help improve MP3 Diags by making files with unsupported notes available to the developer. The preferred way to do this is to report an issue on the project's Issue Tracker at <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>, after checking if others made similar files available. To actually send the files, you can mail them to <a href=\"mailto:ciobi@inbox.com?subject=000 MP3 Diags support note/\">ciobi@inbox.com</a> or put them on a web server. It would be a good idea to make sure that you have the latest version of MP3 Diags.</p>"
+
+            "<p style=\"margin-bottom:1px; margin-top:12px; \">You can identify unsupported notes by the blue color that is used for their labels.</p>", 750, 300, "OK");
+
+            if (m_pCommonData->m_bToldAboutSupport)
+            {
+                m_settings.saveMiscConfigSettings(m_pCommonData);
+            }
+        }
     }
 
     m_pCommonData->mergeHandlerChanges(vpAdd, vpDel, nKeepWhenUpdate);
@@ -1973,7 +2021,7 @@ void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, bool bAl
         }
     }
 
-    qstrConf += "\n\nActions to be taken:";
+    qstrConf += "\n\nActions to be taken:"; //ttt0 don't show if defaults are used
     {
         const char* aOrig[] = { "don't change", "erase", "move", "move", "rename", "move if destination doesn't exist" };
         if (!vpTransf.empty())
@@ -2091,7 +2139,12 @@ void MainFormDlgImpl::on_m_pTagEdtB_clicked()
     TagEditorDlgImpl dlg (this, m_pCommonData, m_transfConfig, bDataSaved);
 
     //if (QDialog::Accepted == dlg.exec())
+    bool bToldAboutPatterns (m_pCommonData->m_bToldAboutPatterns);
     string strCrt (dlg.run());
+    if (!bToldAboutPatterns && m_pCommonData->m_bToldAboutPatterns)
+    {
+        m_settings.saveMiscConfigSettings(m_pCommonData);
+    }
 
     updateUi(strCrt); // needed because the tag editor might have called the config and changed things; it would be nicer to send a signal when config changes, but IIRC in Qt 4.3.1 resizing things in a dialog that opened another one doesn't work very well; (see also TagEditorDlgImpl::on_m_pQueryDiscogsB_clicked())
 

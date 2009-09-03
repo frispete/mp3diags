@@ -318,6 +318,7 @@ Note::Note(const Note& note, std::streampos pos, const std::string& strDetail /*
         m_pos(pos),
         m_strDetail(strDetail)
 {
+    //char a [30]; sprintf(a, "1 Note::Note() %p", this); TRACER(a);
 }
 
 Note::Note(SharedData& sharedData, std::streampos pos, const std::string& strDetail /*= ""*/) :
@@ -325,17 +326,25 @@ Note::Note(SharedData& sharedData, std::streampos pos, const std::string& strDet
         m_pos(pos),
         m_strDetail(strDetail)
 {
+    //char a [30]; sprintf(a, "2 Note::Note() %p", this); TRACER(a);
 }
 
 Note::Note(SharedData& sharedData) :
         m_pSharedData(&sharedData),
         m_pos(-1)
 {
+    //char a [30]; sprintf(a, "3 Note::Note() %p", this); TRACER(a);
+}
+
+Note::Note()
+{
+    //char a [30]; sprintf(a, "4 Note::Note() %p", this); TRACER(a);
 }
 
 Note::~Note()
 {
     //qDebug("destroyed note at %p", this);
+    //char a [30]; sprintf(a, "Note::~Note() %p", this); TRACER(a);
 }
 
 //ttt1 maybe get rid of some/most ser-specific contructors, revert const changes, and call real constructors from the parent (adding serialization as member functions required switching from references to pointers and from const to non-const data members)

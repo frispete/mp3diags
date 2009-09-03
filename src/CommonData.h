@@ -448,6 +448,8 @@ public:
 
     bool m_bWarnedAboutSel;
     bool m_bWarnedAboutBackup;
+    bool m_bToldAboutPatterns; // see also s_bToldAboutPatternsInCrtRun
+    bool m_bToldAboutSupport; // see also s_bToldAboutSupportInCrtRun
 
     bool isTraceToFileEnabled() const { return m_bTraceToFile; }
     void setTraceToFile(bool bTraceToFile); // also removes the file

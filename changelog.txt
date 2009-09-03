@@ -2,6 +2,8 @@
 - (probably) fixed an assert (not sure because couldn't reproduce it)
 - no longer rescan the files if exiting tag editor without changes
 - tracks without a track number are put at the end in the tag editor
+- let the user know about reporting support notes and about patterns
+- better detection of exceptions in threads
 
 ---------------------------------------------------------------------------
 

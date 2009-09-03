@@ -236,11 +236,12 @@ protected slots:
     void onAlbSelChanged();
     void onAlbCrtChanged();
     void onFileSelSectionMoved(int nLogicalIndex, int nOldVisualIndex, int nNewVisualIndex);
-    void onShow() { resizeTagEditor(); }
+    void onShow() { resizeTagEditor(); onShowPatternNote(); }
 
     void onAlbumChanged(/*bool bContentOnly*/); // the param was meant to determine if the selection should be kept (bContentOnly is true) or cleared (false); no longer needed, because the clearing the selection is done separately; //ttt1 perhaps put back, after restructuring the tag editor signals
     void onFileChanged();
     void onImagesChanged(); // adds new ImageInfoPanelWdgImpl instances, connects assign button and calls resizeTagEditor()
+    void onShowPatternNote();
 
     void onHelp();
 };

@@ -267,7 +267,6 @@ ThreadLocalDlgList& getThreadLocalDlgList()
 
 
 /*static*/ void HtmlMsg::msg(QWidget* pParent, bool* pbGotTheMessage, bool bShowSysinfo, bool bCritical, bool bStayOnTop, const QString& qstrTitle, const QString& qstrMessage, int nWidth, int nHeight, const QString& qstrButton1)
-//static void showErrorDlg2(QWidget* pParent, const QString& qstrTitle, const QString& qstrText, const QString& qstrCloseBtn) //ttt0 unify code with the one above
 {
     QDialog dlg (pParent, Qt::Dialog | getNoResizeWndFlags() | (bStayOnTop ? Qt::WindowStaysOnTopHint : Qt::WindowFlags(0)));
 
@@ -309,7 +308,7 @@ ThreadLocalDlgList& getThreadLocalDlgList()
     pLayout->addLayout(&btnLayout);
 
     dlg.resize(nWidth, nHeight);
-
+//ttt0 grip
     dlg.exec();
 
     if (0 != pbGotTheMessage)

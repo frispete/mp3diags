@@ -77,6 +77,8 @@ Section "Main Application" !Required ;No components page, name is not important
 
   File boost.txt
   File boost_serialization-mgw34-mt-1_39.dll
+  File changelog.txt
+  File gplv2.txt
   File gplv3.txt
   File lgpl-2.1.txt
   File lgplv3.txt
@@ -127,6 +129,8 @@ Section "un.Uninstall"
 
   Delete $INSTDIR\boost.txt
   Delete $INSTDIR\boost_serialization-mgw34-mt-1_39.dll
+  Delete $INSTDIR\changelog.txt
+  Delete $INSTDIR\gplv2.txt
   Delete $INSTDIR\gplv3.txt
   Delete $INSTDIR\lgpl-2.1.txt
   Delete $INSTDIR\lgplv3.txt

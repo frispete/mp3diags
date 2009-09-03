@@ -38,6 +38,7 @@
 #include  "Id3V240Stream.h"
 #include  "Mp3Manip.h"
 #include  "CommonData.h"
+#include  "MpegStream.h"
 
 ////#include  <iostream> //ttt remove
 
@@ -813,7 +814,8 @@ namespace
         }
     };
 }
-//ttt0 note on albums with no track number that they can use patterns
+
+
 
 void TagWriter::sortSongs() // sorts by track number; shows a warning if issues are detected (should be exactly one track number, from 1 to the track count)
 {
@@ -875,6 +877,8 @@ const Mp3HandlerTagData* TagWriter::getCrtMp3HandlerTagData() const
     return m_vpMp3HandlerTagData[m_nCurrentFile];
 }
 
+bool s_bToldAboutPatternsInCrtRun (false); // to limit to 1 per run the number of times the user is told about support
+
 
 //void TagWriter::reloadAll(string strCrt, ReloadOption eReloadOption/*, bool bKeepUnassgnImg*/)
 void TagWriter::reloadAll(string strCrt, bool bClearData, bool bClearAssgn)
@@ -925,11 +929,14 @@ void TagWriter::reloadAll(string strCrt, bool bClearData, bool bClearAssgn)
     CB_ASSERT (v.empty() || cSize(v) == cSize(vpHndl));
 
     int n (cSize(vpHndl));
+    bool bFullReaderNotFound (false); // ID3V1 is not full, while the others are
 
     for (int i = 0; i < n; ++i)
     {
         const Mp3Handler* p (vpHndl[i]);
         std::map<std::string, int> m;
+
+        bool bTrackHasFullReader (false);
 
         const vector<DataStream*>& vStreams (p->getStreams());
         for (int i = 0, n = cSize(vStreams); i < n; ++i)
@@ -939,6 +946,8 @@ void TagWriter::reloadAll(string strCrt, bool bClearData, bool bClearAssgn)
             {
                 sReaders.insert(make_pair(string(pRd->getName()), m[pRd->getName()]));
                 ++m[pRd->getName()];// = m[pRd->getName()] + 1;
+
+                if (pRd->getName() != Id3V1Stream::getClassDisplayName()) { bTrackHasFullReader = true; }
 
                 mReaderCount[pRd->getName()] = max(mReaderCount[pRd->getName()], m[pRd->getName()]);
 
@@ -955,6 +964,8 @@ void TagWriter::reloadAll(string strCrt, bool bClearData, bool bClearAssgn)
                 }
             }
         }
+
+        if (!bTrackHasFullReader) { bFullReaderNotFound = true; }
     }
 
     for (int i = 0, n = cSize(m_vpTrackTextParsers); i < n; ++i)
@@ -1012,6 +1023,31 @@ void TagWriter::reloadAll(string strCrt, bool bClearData, bool bClearAssgn)
             }
         }
     }
+
+
+    m_bShouldShowPatternsNote = false;
+    if (!m_pCommonData->m_bToldAboutPatterns && !s_bToldAboutPatternsInCrtRun)
+    {
+        bool bIncompleteInfo (false); // turns true if a track is found that has empty artist, track number, or title; or if it only has ID3V1
+
+        if (!bFullReaderNotFound)
+        {
+            for (int i = 0; i < n; ++i)
+            {
+                if (m_vpMp3HandlerTagData[i]->getData(TagReader::TRACK_NUMBER).empty() || m_vpMp3HandlerTagData[i]->getData(TagReader::TITLE).empty() || m_vpMp3HandlerTagData[i]->getData(TagReader::ALBUM).empty() || m_vpMp3HandlerTagData[i]->getData(TagReader::ARTIST).empty())
+                {
+                    bIncompleteInfo = true;
+                    break;
+                }
+            }
+        }
+
+        if (bIncompleteInfo || bFullReaderNotFound)
+        {
+            m_bShouldShowPatternsNote = true;
+        }
+    }
+
 
     if (v.empty())
     {

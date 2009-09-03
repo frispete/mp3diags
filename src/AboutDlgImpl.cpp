@@ -181,6 +181,5 @@ Perhaps use default .ini in Documents on Linux and ... on Wnd (perhaps Qt has so
 //ttt0 notif about new version
 
 
-//ttt0 backport jaunty: https://bugs.launchpad.net/jaunty-backports/+bug/423560
+// backport jaunty 9.04 : https://bugs.launchpad.net/jaunty-backports/+bug/423560
 
-//ttt0 try to catch exceptions in each thread

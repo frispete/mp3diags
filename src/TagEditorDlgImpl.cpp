@@ -984,6 +984,8 @@ void TagEditorDlgImpl::on_m_pNextB_clicked()
         m_pTagWriter->clearShowedNonSeqWarn();
         m_pTagWriter->reloadAll("", TagWriter::CLEAR_DATA, TagWriter::CLEAR_ASSGN);
         clearSelection(); // actually here it selects the first cell
+
+        QTimer::singleShot(1, this, SLOT(onShowPatternNote()));
     }
 }
 
@@ -1002,6 +1004,8 @@ void TagEditorDlgImpl::on_m_pPrevB_clicked()
         m_pTagWriter->clearShowedNonSeqWarn();
         m_pTagWriter->reloadAll("", TagWriter::CLEAR_DATA, TagWriter::CLEAR_ASSGN);
         clearSelection(); // actually here it selects the first cell
+
+        QTimer::singleShot(1, this, SLOT(onShowPatternNote()));
     }
 }
 
@@ -1533,6 +1537,22 @@ void TagEditorDlgImpl::onHelp()
 {
     openHelp("190_tag_editor.html");
 }
+
+
+extern bool s_bToldAboutPatternsInCrtRun;
+
+void TagEditorDlgImpl::onShowPatternNote()
+{
+    if (m_pTagWriter->shouldShowPatternsNote())
+    {
+        s_bToldAboutPatternsInCrtRun = true;
+
+        HtmlMsg::msg(this, &m_pCommonData->m_bToldAboutPatterns, HtmlMsg::DONT_SHOW_SYS_INFO, HtmlMsg::NOT_CRITICAL, HtmlMsg::DONT_STAY_ON_TOP, "Info", "<p style=\"margin-bottom:1px; margin-top:12px; \">Some fields are missing or may be incomplete. While this is usually solved by downloading correct information, there are a cases when this approach doesn't work, like custom compilations, rare albums, or missing tracks.</p>"
+
+        "<p style=\"margin-bottom:1px; margin-top:12px; \">If your current folder fits one of these cases or you simply have consistently named files that you would prefer to use as a source of track info, you may want to take a look at the tag editor's patterns, at <a href=\"http://mp3diags.sourceforge.net/220_tag_editor_patterns.html\">http://mp3diags.sourceforge.net/220_tag_editor_patterns.html</a>.</p>", 550, 300, "OK");
+    }
+}
+
 
 
 

@@ -220,6 +220,8 @@ void SessionSettings::saveMiscConfigSettings(const CommonData* p)
 
         m_pSettings->setValue("main/warnedAboutSel", p->m_bWarnedAboutSel);
         m_pSettings->setValue("main/warnedAboutBackup", p->m_bWarnedAboutBackup);
+        m_pSettings->setValue("tagEditor/toldAboutPatterns", p->m_bToldAboutPatterns);
+        m_pSettings->setValue("main/toldAboutSupport", p->m_bToldAboutSupport);
     }
 
     { // note categ colors
@@ -318,6 +320,8 @@ void SessionSettings::loadMiscConfigSettings(CommonData* p) const
 
         p->m_bWarnedAboutSel = m_pSettings->value("main/warnedAboutSel", false).toBool();
         p->m_bWarnedAboutBackup = m_pSettings->value("main/warnedAboutBackup", false).toBool();
+        p->m_bToldAboutPatterns = m_pSettings->value("tagEditor/toldAboutPatterns", false).toBool();
+        p->m_bToldAboutSupport = m_pSettings->value("main/toldAboutSupport", false).toBool();
     }
 
     { // note categ colors
@@ -1379,6 +1383,7 @@ const QColor& SUPPORT_PEN_COLOR()
 // color is normally the category color, but for support notes it's a "support" color; if the note isn't found in vpNoteSet, dGradStart and dGradEnd are set to -1, but normally they get a segment obtained by dividing [0, 1] in equal parts;
 void CommonData::getNoteColor(const Note& note, const vector<const Note*>& vpNoteSet, QColor& color, double& dGradStart, double& dGradEnd) const
 {
+    LAST_STEP("CommonData::getNoteColor()");
     dGradStart = -1;
     dGradEnd = -1;
 

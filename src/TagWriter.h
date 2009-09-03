@@ -325,6 +325,7 @@ class TagWriter : public QObject
     std::set<int> m_snUnassignedImages;
 
     const bool& m_bIsFastSaving;
+    bool m_bShouldShowPatternsNote;
 
     int m_nFileToErase;
 
@@ -395,6 +396,8 @@ public:
     void eraseFields(const std::vector<std::pair<int, int> >& vFields);
 
     bool isFastSaving() const { return m_bIsFastSaving; }
+
+    bool shouldShowPatternsNote() const { return m_bShouldShowPatternsNote; }
 
     enum ConsiderAssigned { CONSIDER_UNASSIGNED, CONSIDER_ASSIGNED };
     int addImage(const ImageInfo& img, bool bConsiderAssigned); // returns the index of the image; if it already exists it's not added again; if it's invalid returns -1 // "unassigned" images cause warnings when going to another album
