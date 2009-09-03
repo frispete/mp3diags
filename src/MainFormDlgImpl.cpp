@@ -185,67 +185,6 @@ void traceLastStep(const string& s, int nLevelChange)
     ofstream_utf8 out (s_vstrStepFile[s_nStepFile].c_str(), ios_base::app);
     out << a << s1 << endl;
 #else
-    /*FILE* f (fopen(s_vstrStepFile[s_nStepFile].c_str(), "a+"));
-    fwrite(a, strlen(a), 1, f);
-    fwrite(s.c_str(), s.size(), 1, f);
-    fwrite("\n", 1, 1, f);
-    fclose(f);*/
-
-/*
-    //HANDLE h (CreateFileA(toNativeSeparators(s_vstrStepFile[s_nStepFile]).c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, 0, OPEN_ALWAYS,
-    HANDLE h (CreateFileA(s_vstrStepFile[s_nStepFile].c_str(), GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, 0, OPEN_ALWAYS,
-    //HANDLE h (CreateFileA("C:\\Mp3DiagsWindows\\debug\\aaa.txt", GENERIC_WRITE, FILE_SHARE_WRITE, 0, OPEN_ALWAYS,
-    //HANDLE h (CreateFileA("C:\\Mp3DiagsWindows\\debug\\aaa.txt", GENERIC_WRITE, 0, 0, OPEN_ALWAYS,
-                          FILE_ATTRIBUTE_TEMPORARY,
-                          //FILE_ATTRIBUTE_NORMAL,
-                          0));
-    if (INVALID_HANDLE_VALUE == h)
-    {
-        displayOsErrorIfExists();
-    }
-
-    SetFilePointer(h, 0, 0, FILE_END);
-    DWORD dwWrt;
-    WriteFile(h, a, strlen(a), &dwWrt, 0);
-    WriteFile(h, s.c_str(), s.size(), &dwWrt, 0);
-    WriteFile(h, "\n", 1, &dwWrt, 0);
-    //const char* qq ("abcdefg");
-    //QMessageBox::critical(0, "abc", "before wrt");
-    //WriteFile(h, qq, 4, 0, 0);
-    //QMessageBox::critical(0, "123", "after wrt");
-    CloseHandle(h);
-*/
-
-/*
-    s_nCrtStepSize += s.size() + 1;
-    if (s_nCrtStepSize > 5000000)
-    {
-        s_nCrtStepSize = 0;
-        s_nStepFile = 1 - s_nStepFile;
-        try
-        {
-            deleteFile(s_vstrStepFile[s_nStepFile]);
-        }
-        catch (...)
-        { //ttt0
-        }
-        //ofstream_utf8 out (s_vstrStepFile[s_nStepFile].c_str(), ios_base::app);
-        //out << "page " << s_nPage++ << endl;
-    }
-*/
-
-    //HANDLE h (CreateFileA("C:\\Mp3DiagsWindows\\debug\\aaa.txt", GENERIC_WRITE, FILE_SHARE_WRITE, 0, OPEN_ALWAYS,
-    //HANDLE h (CreateFileA("C:\\Mp3DiagsWindows\\debug\\aaa.txt", GENERIC_WRITE, 0, 0, OPEN_ALWAYS,
-    /*static HANDLE h (CreateFileA(s_vstrStepFile[s_nStepFile].c_str(),
-                                 GENERIC_WRITE,
-                                 FILE_SHARE_WRITE | FILE_SHARE_READ,
-                                 0,
-                                 //OPEN_ALWAYS,
-                                 CREATE_ALWAYS,
-                                 FILE_ATTRIBUTE_TEMPORARY,
-                                 //FILE_ATTRIBUTE_NORMAL,
-                                 0));*/
-
     DWORD dwWrt;
     WriteFile(s_hStepFile, a, strlen(a), &dwWrt, 0);
     WriteFile(s_hStepFile, s1.c_str(), s1.size(), &dwWrt, 0);
@@ -367,84 +306,16 @@ static bool s_bMainAssertOut;
 }*/
 
 
-
-
-static void showErrorDlg1(QWidget* pParent)
+static void showAssertMsg(QWidget* pParent)
 {
-    //QMessageBox dlg (QMessageBox::Critical, s_strAssertTitle, s_strErrorMsg, QMessageBox::Close, 0, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint); // ttt1 this might fail / crash, as it may be called from a secondary thread
-
-//getDialogWndFlags
-    QDialog dlg (pParent, Qt::Dialog | getNoResizeWndFlags() | Qt::WindowStaysOnTopHint); // Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint |
-    //QDialog dlg (pParent, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
-
-    dlg.setWindowTitle("Assertion failure");
-    dlg.setWindowIcon(QIcon(":/images/logo.svg"));
-    QVBoxLayout* pLayout (new QVBoxLayout(&dlg));
-    //delete dlg.layout();
-    //dlg.setLayout(pLayout);
-    /*QLabel* pTitle (new QLabel(&dlg));
-    pTitle->setText(s_strAssertTitle);
-    pLayout->addWidget(pTitle);*/
-
-    QTextBrowser* pContent (new QTextBrowser(&dlg));
-
-    //QString qstrVer (getSystemInfo());
-
-
-    pContent->setOpenExternalLinks(true);
-    //QString s ("<p/>Please notify <a href=\"mailto:ciobi@inbox.com?subject=000 MP3 Diags assertion failure&body=" + replaceDblQuotes(Qt::escape(s_strErrorMsg + " " + qstrVer)) + "\">ciobi@inbox.com</a> about this. (If your email client is properly configured, it's enough to click on the account name and then send.) <p/>Alternatively, you can report the bug at the <a href=\"http://sourceforge.net/forum/forum.php?forum_id=947207\">MP3 Diags Help Forum</a> (<a href=\"http://sourceforge.net/forum/forum.php?forum_id=947207\">http://sourceforge.net/forum/forum.php?forum_id=947207</a>)");
-
-    /*QString s ("<p/>Please report this issue on the <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">MP3 Diags Issue Tracker</a> (<a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>). Make sure to include the data below, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)<p/><p/><hr/><p/>");*/
-
-//qDebug("%s", s.toUtf8().data());
-    pContent->setHtml(Qt::escape(s_qstrErrorMsg) /*+ s + Qt::escape(s_qstrErrorMsg)*/ + "<p style=\"margin-bottom:1px; margin-top:12px; \">Please restart the application for instructions about how to report this issue</p>");
-    pLayout->addWidget(pContent);
-
-    QHBoxLayout btnLayout;
-    btnLayout.addStretch(0);
-    QPushButton* pBtn (new QPushButton("Exit", &dlg));
-    btnLayout.addWidget(pBtn);
-    QObject::connect(pBtn, SIGNAL(clicked()), &dlg, SLOT(accept()));
-
-    pLayout->addLayout(&btnLayout);
-
-    dlg.resize(750, 300);
-
-    dlg.exec();
+    HtmlMsg::msg(pParent, 0, HtmlMsg::SHOW_SYS_INFO, HtmlMsg::NOT_CRITICAL, HtmlMsg::DONT_STAY_ON_TOP, "Assertion failure", Qt::escape(s_qstrErrorMsg) + "<p style=\"margin-bottom:1px; margin-top:12px; \">Please restart the application for instructions about how to report this issue</p>", 750, 300, "Exit");
 }
 
 
-static void showErrorDlg2(QWidget* pParent, const QString& qstrTitle, const QString& qstrText, const QString& qstrCloseBtn) //ttt0 unify code with the one above
+void MainFormDlgImpl::showRestartAfterCrashMsg(const QString& qstrText, const QString& qstrCloseBtn)
 {
-    QDialog dlg (pParent, Qt::Dialog | getNoResizeWndFlags() | Qt::WindowStaysOnTopHint); // Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint |
-
-    dlg.setWindowTitle(qstrTitle);
-    dlg.setWindowIcon(QIcon(":/images/logo.svg"));
-    QVBoxLayout* pLayout (new QVBoxLayout(&dlg));
-
-    QTextBrowser* pContent (new QTextBrowser(&dlg));
-
-    QString qstrVer (getSystemInfo());
-
-
-    pContent->setOpenExternalLinks(true);
-
-    pContent->setHtml(qstrText + "<hr/><p style=\"margin-bottom:1px; margin-top:8px; \">" + qstrVer + "</p>"); //ttt0 perhaps use CSS
-    pLayout->addWidget(pContent);
-
-    QHBoxLayout btnLayout;
-    btnLayout.addStretch(0);
-    QPushButton* pBtn (new QPushButton(qstrCloseBtn, &dlg));
-    btnLayout.addWidget(pBtn);
-    QObject::connect(pBtn, SIGNAL(clicked()), &dlg, SLOT(accept()));
-
-    pLayout->addLayout(&btnLayout);
-
-    dlg.resize(750, 300);
-
-    dlg.exec();
+    HtmlMsg::msg(this, 0, HtmlMsg::SHOW_SYS_INFO, HtmlMsg::NOT_CRITICAL, HtmlMsg::DONT_STAY_ON_TOP, "Restarting after crash", qstrText, 750, 450, qstrCloseBtn);
 }
-
 
 
 void logAssert(const char* szFile, int nLine, const char* szCond)
@@ -484,7 +355,7 @@ void logAssert(const char* szFile, int nLine, const char* szCond)
         /*QMessageBox dlg (QMessageBox::Critical, s_strAssertTitle, s_strErrorMsg, QMessageBox::Close, 0, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint); // ttt1 this might fail / crash, as it may be called from a secondary thread
 
         dlg.exec();*/
-        showErrorDlg1(0);
+        showAssertMsg(0);
     }
 }
 
@@ -500,7 +371,7 @@ void MainFormDlgImpl::onShowAssert()
     /*QMessageBox dlg (QMessageBox::Critical, s_strAssertTitle, s_strErrorMsg, QMessageBox::Close, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
 
     dlg.exec();*/
-    showErrorDlg1(this);
+    showAssertMsg(this);
 
     s_bMainAssertOut = true;
 }
@@ -524,59 +395,17 @@ void defaultResize(QDialog& dlg)
 //=====================================================================================================================
 
 
-// shows a dialog with a message and a checkbox; returns true if the user checked the box)
-bool MainFormDlgImpl::notif(const char* szTitle, const char* szMessage, bool bCritical)
-{
-    QDialog dlg (this, Qt::Dialog | getNoResizeWndFlags()); // Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint |  | Qt::WindowStaysOnTopHint
 
-    dlg.setWindowTitle(szTitle);
-    QVBoxLayout* pLayout (new QVBoxLayout(&dlg));
-
-    QTextBrowser* pContent (new QTextBrowser(&dlg));
-
-    pContent->setOpenExternalLinks(true);
-
-    pContent->setHtml(szMessage);
-
-    if (bCritical)
-    {
-        QPalette pal (pContent->palette());
-        pal.setColor(QPalette::Base, QColor(192, 0, 0));
-        pal.setColor(QPalette::Text, QColor(255, 255, 0));
-        pContent->setPalette(pal);
-
-        QFont fnt (pContent->font());
-        fnt.setBold(true);
-        pContent->setFont(fnt);
-    }
-
-    pLayout->addWidget(pContent);
-
-    QHBoxLayout btnLayout;
-    QCheckBox* pCheck (new QCheckBox("I got the message; don't show this again", &dlg));
-    btnLayout.addWidget(pCheck);
-
-    btnLayout.addStretch(0);
-    QPushButton* pBtn (new QPushButton("O&K", &dlg));
-    btnLayout.addWidget(pBtn);
-    QObject::connect(pBtn, SIGNAL(clicked()), &dlg, SLOT(accept()));
-
-    pLayout->addLayout(&btnLayout);
-
-    dlg.resize(550, 300);
-
-    dlg.exec();
-
-    return pCheck->isChecked();
-}
 
 
 void MainFormDlgImpl::showBackupWarn()
 {
     if (m_pCommonData->m_bWarnedAboutBackup) { return; }
-    if (!notif("Warning", "Although MP3 Diags is very stable on the developer's computer, who hasn't experienced a crash in a long time and never needed to restore MP3 files from a backup, the program is currently in beta, meaning that it hasn't been thoroughly tested and there are open issues that may lead to data loss. Therefore, it is highly advisable to back up your files first.", true)) { return; }
 
-    m_pCommonData->m_bWarnedAboutBackup = true;
+    HtmlMsg::msg(this, &m_pCommonData->m_bWarnedAboutBackup, HtmlMsg::DONT_SHOW_SYS_INFO, HtmlMsg::CRITICAL, HtmlMsg::CRITICAL, "Warning", "<p>Although MP3 Diags is very stable on the developer's computer, who hasn't experienced a crash in a long time and never needed to restore MP3 files from a backup, the program is currently in beta, meaning that it hasn't been thoroughly tested and there are open issues that may lead to data loss.</p><p>Therefore, it is highly advisable to back up your files first.</p>", 520, 300, "O&K");
+
+    if (!m_pCommonData->m_bWarnedAboutBackup) { return; }
+
     m_settings.saveMiscConfigSettings(m_pCommonData);
 }
 
@@ -584,9 +413,11 @@ void MainFormDlgImpl::showBackupWarn()
 void MainFormDlgImpl::showSelWarn()
 {
     if (m_pCommonData->m_bWarnedAboutSel) { return; }
-    if (!notif("Note", "If you just left-click, all the visible files get processed. However, it is possible to process only the selected files. To do that, either keep SHIFT pressed down while clicking or use the right button, as described at <a href=\"http://mp3diags.sourceforge.net/140_main_window_tools.html\">http://mp3diags.sourceforge.net/140_main_window_tools.html</a>", false)) { return; }
 
-    m_pCommonData->m_bWarnedAboutSel = true;
+    HtmlMsg::msg(this, &m_pCommonData->m_bWarnedAboutSel, HtmlMsg::DONT_SHOW_SYS_INFO, HtmlMsg::NOT_CRITICAL, HtmlMsg::CRITICAL, "Note", "If you just left-click, all the visible files get processed. However, it is possible to process only the selected files. To do that, either keep SHIFT pressed down while clicking or use the right button, as described at <a href=\"http://mp3diags.sourceforge.net/140_main_window_tools.html\">http://mp3diags.sourceforge.net/140_main_window_tools.html</a>", 520, 300, "O&K");
+
+    if (!m_pCommonData->m_bWarnedAboutSel) { return; }
+
     m_settings.saveMiscConfigSettings(m_pCommonData);
 }
 
@@ -850,19 +681,19 @@ MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bUniqueSession) 
             {
                 if (fileExists(s_strTraceFile))
                 {
-                    showErrorDlg2(this, "Restarting after crash", "<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. Information in the files \"" + Qt::escape(toNativeSeparators(convStr(s_strTraceFile))) + "\", \"" + Qt::escape(toNativeSeparators(convStr(s_vstrStepFile[0]))) + "\", and \"" + Qt::escape(toNativeSeparators(convStr(s_vstrStepFile[1]))) + "\" may help identify the cause of the crash, so please make them available to the developer by mailing them to <a href=\"mailto:ciobi@inbox.com?subject=000 MP3 Diags crash/\">ciobi@inbox.com</a>, by reporting an issue to the project's <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">Issue Tracker</a> (<a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>) and attaching the files to the report, or by some other means (like putting them on a web server.)</p><p style=\"margin-bottom:8px; margin-top:1px; \">These are plain text files, which you can review before sending, if you have privacy concerns.</p><p style=\"margin-bottom:8px; margin-top:1px; \">After getting the files, the developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">So please send these files, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)</p>", "Remove these files and continue");
+                    showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. Information in the files \"<b>" + Qt::escape(toNativeSeparators(convStr(s_strTraceFile))) + "</b>\", \"<b>" + Qt::escape(toNativeSeparators(convStr(s_vstrStepFile[0]))) + "</b>\", and \"<b>" + Qt::escape(toNativeSeparators(convStr(s_vstrStepFile[1]))) + "</b>\" may help identify the cause of the crash, so please make them available to the developer by mailing them to <a href=\"mailto:ciobi@inbox.com?subject=000 MP3 Diags crash/\">ciobi@inbox.com</a>, by reporting an issue to the project's <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">Issue Tracker</a> (<a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>) and attaching the files to the report, or by some other means (like putting them on a web server.)</p><p style=\"margin-bottom:8px; margin-top:1px; \">These are plain text files, which you can review before sending, if you have privacy concerns.</p><p style=\"margin-bottom:8px; margin-top:1px; \">After getting the files, the developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">So please send these files, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)</p>", "Remove these files and continue");
                     //ttt0 perhaps loop until the file is deleted
                 }
                 else
                 {
-                    showErrorDlg2(this, "Restarting after crash", "<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. There was supposed to be some information about what led to the crash in the file \"" + Qt::escape(toNativeSeparators(convStr(s_strTraceFile))) + "\", but that file cannot be found. Please report this issue to the project's <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">Issue Tracker</a> (<a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>)</p><p style=\"margin-bottom:8px; margin-top:1px; \">The developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">Make sure to include the data below, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)</p>", "OK");
+                    showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. There was supposed to be some information about what led to the crash in the file \"<b>" + Qt::escape(toNativeSeparators(convStr(s_strTraceFile))) + "</b>\", but that file cannot be found. Please report this issue to the project's <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">Issue Tracker</a> (<a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>)</p><p style=\"margin-bottom:8px; margin-top:1px; \">The developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">Make sure to include the data below, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)</p>", "OK");
                 }
             }
 
 
             if (!m_pCommonData->isTraceToFileEnabled())
             {
-                QMessageBox::critical(this, "Restarting after crash", "MP3 Diags is restarting after a crash. To help determine the reason for the crash, the \"Trace actions to file\" option has been activated. This logs to a file what the program is doing, which might make it slightly slower.\n\nIt is recommended to not process more than several thousand MP3 files while this option is turned on. You can turn it off manually, in the configuration dialog, in the \"Others\" tab, but keeping it turned on may provide very useful feedback to the developer, should the program crash again. With this feedback, future versions of MP3 Diags will get closer to being bug free.");
+                showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. To help determine the reason for the crash, the \"Trace actions to file\" option has been activated. This logs to a file what the program is doing, which might make it slightly slower.</p><p style=\"margin-bottom:8px; margin-top:1px; \">It is recommended to not process more than several thousand MP3 files while this option is turned on. You can turn it off manually, in the configuration dialog, in the \"Others\" tab, but keeping it turned on may provide very useful feedback to the developer, should the program crash again. With this feedback, future versions of MP3 Diags will get closer to being bug free.</p>", "OK");
 
                 m_pCommonData->setTraceToFile(true);
                 m_settings.saveMiscConfigSettings(m_pCommonData);
@@ -1499,7 +1330,7 @@ void MainFormDlgImpl::onCrtFileChanged()
 #else
     if (2 == qs.size() && ':' == qs[1])
     {
-        qs += "\\"; //ttt0 test
+        qs += "\\";
     }
 #endif
     m_pCrtDirE->setText(qs);
@@ -2256,7 +2087,8 @@ void MainFormDlgImpl::on_m_pTagEdtB_clicked()
 
     m_pCommonData->setSongInCrtAlbum();
 
-    TagEditorDlgImpl dlg (this, m_pCommonData, m_transfConfig);
+    bool bDataSaved (false);
+    TagEditorDlgImpl dlg (this, m_pCommonData, m_transfConfig, bDataSaved);
 
     //if (QDialog::Accepted == dlg.exec())
     string strCrt (dlg.run());
@@ -2265,7 +2097,7 @@ void MainFormDlgImpl::on_m_pTagEdtB_clicked()
 
     if (m_pCommonData->useFastSave())
     {
-        fullReload(DONT_FORCE);
+        if (bDataSaved) { fullReload(DONT_FORCE); }
     }
     else
     {

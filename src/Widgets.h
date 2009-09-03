@@ -75,6 +75,16 @@ public:
 int showMessage(QWidget* pParent, QMessageBox::Icon icon, int nDefault, int nEscape, const QString& qstrTitle, const QString& qstrMessage, const QString& qstrButton1, const QString& qstrButton2 = "", const QString& qstrButton3 = "", const QString& qstrButton4 = "");
 
 
+struct HtmlMsg
+{
+    static void msg(QWidget* pParent, /*int nDefault, int nEscape,*/ bool* pbGotTheMessage, bool bShowSysinfo, bool bCritical, bool bStayOnTop, const QString& qstrTitle, const QString& qstrMessage, int nWidth, int nHeight, const QString& qstrButton1/*, const QString& qstrButton2 = "", const QString& qstrButton3 = "", const QString& qstrButton4 = ""*/);
+    enum { DONT_STAY_ON_TOP, STAY_ON_TOP };
+    enum { DONT_SHOW_SYS_INFO, SHOW_SYS_INFO };
+    enum { NOT_CRITICAL, CRITICAL };
+};
+
+
+
 // switches the cursor to hourglass on the constructor and back to normal on the destructor
 struct CursorOverrider
 {

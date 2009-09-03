@@ -792,11 +792,12 @@ namespace
 {
     struct SortByTrack
     {
+        enum { NO_TRACK = 999999 };
         static int getTrack(const string& s) // returns -1 if it can't identify a track number
         {
             const char* p (s.c_str()); // requiring all chars to be digits isn't OK, because "5/12" should be handled as "5"
             for (; ' ' == *p; ++p) {}
-            if (0 == *p || !isdigit(*p)) { return -1; }
+            if (0 == *p || !isdigit(*p)) { return NO_TRACK; }
             return atoi(p);
         }
 
@@ -815,7 +816,7 @@ namespace
 //ttt0 note on albums with no track number that they can use patterns
 
 void TagWriter::sortSongs() // sorts by track number; shows a warning if issues are detected (should be exactly one track number, from 1 to the track count)
-{ //ttt0 put last tracks with no track number
+{
     stable_sort(m_vpMp3HandlerTagData.begin(), m_vpMp3HandlerTagData.end(), SortByTrack());
     int n (cSize(m_vpMp3HandlerTagData));
     vector<pair<int, int> > v (n);

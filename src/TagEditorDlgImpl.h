@@ -188,9 +188,11 @@ class TagEditorDlgImpl : public QDialog, private Ui::TagEditorDlg
 
     bool m_bIsFastSaving;
     bool m_bIsSaving;
+    bool m_bIsNavigating;
+    bool& m_bDataSaved;
 
 public:
-    TagEditorDlgImpl(QWidget* pParent, CommonData* pCommonData, TransfConfig& transfConfig); // transfConfig is needed both to be able to instantiate the config dialog and for saving ID3V2
+    TagEditorDlgImpl(QWidget* pParent, CommonData* pCommonData, TransfConfig& transfConfig, bool& bDataSaved); // transfConfig is needed both to be able to instantiate the config dialog and for saving ID3V2
     ~TagEditorDlgImpl();
     /*$PUBLIC_FUNCTIONS$*/
 
@@ -204,6 +206,7 @@ public:
     void updateAssigned(); // updates the state of "assigned" fields and the assign button
 
     bool isSaving() const { return m_bIsSaving; }
+    bool isNavigating() const { return m_bIsNavigating; }
 
 public slots:
     /*$PUBLIC_SLOTS$*/

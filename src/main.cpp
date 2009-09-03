@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
 
     bool bOpenSelDlg (strStartSession.empty() || !bOpenLast);
 
-    //try
+    try
     {
         for (;;)
         {
@@ -262,13 +262,13 @@ int main(int argc, char *argv[])
             if (MainFormDlgImpl::OPEN_SESS_DLG != mainDlg.run()) { return 0; }
         }
     }
-    /*catch (...) // ttt1 see if this can be handled; it seems that nothing can be done if an exception leaves a slot / event handler, but maybe there are ways around
+    catch (...) // ttt1 for now it doesn't catch many exceptions; it seems that nothing can be done if an exception leaves a slot / event handler, but maybe there are ways around
     {
-        //QMessageBox dlg (QMessageBox::Critical, "Error", "Caught generic exception. Exiting ...", QMessageBox::Close, 0, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        QMessageBox dlg (QMessageBox::Critical, "Error", "Caught generic exception. Exiting ...", QMessageBox::Close, 0, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
 
-        //dlg.exec();
-        //qDebug("out - err");
-    }*/
+        dlg.exec();
+        qDebug("out - err");
+    }
 
     /*mainDlg.show();
     return app.exec();*/

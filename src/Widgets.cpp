@@ -1,3 +1,5 @@
+
+
 /***************************************************************************
  *   MP3 Diags - diagnosis, repairs and tag editing for MP3 files          *
  *                                                                         *
@@ -26,6 +28,8 @@
 #include  <QBoxLayout>
 #include  <QPushButton>
 #include  <QApplication>
+#include  <QTextBrowser>
+#include  <QCheckBox>
 
 #include  "Widgets.h"
 
@@ -260,4 +264,64 @@ ThreadLocalDlgList& getThreadLocalDlgList()
 }
 
 #endif
+
+
+/*static*/ void HtmlMsg::msg(QWidget* pParent, bool* pbGotTheMessage, bool bShowSysinfo, bool bCritical, bool bStayOnTop, const QString& qstrTitle, const QString& qstrMessage, int nWidth, int nHeight, const QString& qstrButton1)
+//static void showErrorDlg2(QWidget* pParent, const QString& qstrTitle, const QString& qstrText, const QString& qstrCloseBtn) //ttt0 unify code with the one above
+{
+    QDialog dlg (pParent, Qt::Dialog | getNoResizeWndFlags() | (bStayOnTop ? Qt::WindowStaysOnTopHint : Qt::WindowFlags(0)));
+
+    dlg.setWindowTitle(qstrTitle);
+    dlg.setWindowIcon(QIcon(":/images/logo.svg"));
+    QVBoxLayout* pLayout (new QVBoxLayout(&dlg));
+
+    QTextBrowser* pContent (new QTextBrowser(&dlg));
+
+    if (bCritical)
+    {
+        QPalette pal (pContent->palette());
+        pal.setColor(QPalette::Base, QColor(192, 0, 0));
+        pal.setColor(QPalette::Text, QColor(255, 255, 0));
+        pContent->setPalette(pal);
+
+        QFont fnt (pContent->font());
+        fnt.setBold(true);
+        pContent->setFont(fnt);
+    }
+
+    pContent->setOpenExternalLinks(true);
+    pContent->setHtml(qstrMessage + (bShowSysinfo ? "<hr/><p style=\"margin-bottom:1px; margin-top:8px; \">" + getSystemInfo() + "</p>" : "")); //ttt0 perhaps use CSS
+    pLayout->addWidget(pContent);
+
+    QHBoxLayout btnLayout;
+    QCheckBox* pCheck (0);
+    if (0 != pbGotTheMessage)
+    {
+        pCheck = new QCheckBox("I got the message; don't show this again", &dlg);
+        btnLayout.addWidget(pCheck);
+    }
+
+    btnLayout.addStretch(0);
+    QPushButton* pBtn (new QPushButton(qstrButton1, &dlg));
+    btnLayout.addWidget(pBtn);
+    QObject::connect(pBtn, SIGNAL(clicked()), &dlg, SLOT(accept()));
+
+    pLayout->addLayout(&btnLayout);
+
+    dlg.resize(nWidth, nHeight);
+
+    dlg.exec();
+
+    if (0 != pbGotTheMessage)
+    {
+        *pbGotTheMessage = pCheck->isChecked();
+    }
+}
+
+
+
+
+
+
+
 

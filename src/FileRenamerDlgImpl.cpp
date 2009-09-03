@@ -834,7 +834,7 @@ private:
 #ifndef WIN32
             string::size_type n (s.find_first_of("/\"\\*?<>|")); //ttt2 even in Unix, it might be a good idea to not allow ":" as well in some cases, depending on the file system
 #else
-            string::size_type n (s.find_first_of("/\"\\*?<>|:"));
+            string::size_type n (s.find_first_of("/\"\\*?<>|:")); //ttt0 configurable invalid and replacement; for replacement have yellow background, to be able to tell if there's a space or not; or have something like a progres bar below; or have each letter in its own rectangle; or at least use strikeout; use fixed font;
 #endif
             if (string::npos == n) { return s; }
             s[n] = '_';

@@ -166,7 +166,8 @@ private:
 
     void showBackupWarn();
     void showSelWarn();
-    bool notif(const char* szTitle, const char* szMessage, bool bCritical);
+    void showRestartAfterCrashMsg(const QString& qstrText, const QString& qstrCloseBtn);
+
 signals:
     void tagEditorClosed();
 };
