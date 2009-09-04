@@ -4,6 +4,10 @@
 - tracks without a track number are put at the end in the tag editor
 - let the user know about reporting support notes and about patterns
 - better detection of exceptions in threads
+- replace non-alphanumeric chars with spaces in web queries (issue 2)
+- text inside square, curly, and angle brackets removed from web queries
+- default "actions to be taken" no longer shown when applying transforms
+- better sorting in the tag editor for albums with unusual track numbers
 
 ---------------------------------------------------------------------------
 

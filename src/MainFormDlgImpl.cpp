@@ -414,7 +414,7 @@ void MainFormDlgImpl::showSelWarn()
 {
     if (m_pCommonData->m_bWarnedAboutSel) { return; }
 
-    HtmlMsg::msg(this, &m_pCommonData->m_bWarnedAboutSel, HtmlMsg::DONT_SHOW_SYS_INFO, HtmlMsg::NOT_CRITICAL, HtmlMsg::CRITICAL, "Note", "If you just left-click, all the visible files get processed. However, it is possible to process only the selected files. To do that, either keep SHIFT pressed down while clicking or use the right button, as described at <a href=\"http://mp3diags.sourceforge.net/140_main_window_tools.html\">http://mp3diags.sourceforge.net/140_main_window_tools.html</a>", 520, 300, "O&K");
+    HtmlMsg::msg(this, &m_pCommonData->m_bWarnedAboutSel, HtmlMsg::DONT_SHOW_SYS_INFO, HtmlMsg::NOT_CRITICAL, HtmlMsg::CRITICAL, "Note", "If you simply left-click, all the visible files get processed. However, it is possible to process only the selected files. To do that, either keep SHIFT pressed down while clicking or use the right button, as described at <a href=\"http://mp3diags.sourceforge.net/140_main_window_tools.html\">http://mp3diags.sourceforge.net/140_main_window_tools.html</a>", 520, 300, "O&K");
 
     if (!m_pCommonData->m_bWarnedAboutSel) { return; }
 
@@ -2021,16 +2021,18 @@ void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, bool bAl
         }
     }
 
-    qstrConf += "\n\nActions to be taken:"; //ttt0 don't show if defaults are used
     {
         const char* aOrig[] = { "don't change", "erase", "move", "move", "rename", "move if destination doesn't exist" };
-        if (!vpTransf.empty())
+        if (m_transfConfig.m_optionsWrp.m_opt.m_nProcOrigChange != 1 || m_transfConfig.m_optionsWrp.m_opt.m_nUnprocOrigChange != 0)
         {
-            qstrConf += "\n- original file that has been transformed: ";
-            qstrConf += aOrig[m_transfConfig.m_optionsWrp.m_opt.m_nProcOrigChange];
-        }
+            qstrConf += "\n\nActions to be taken:";
 
-        {
+            if (!vpTransf.empty())
+            {
+                qstrConf += "\n- original file that has been transformed: ";
+                qstrConf += aOrig[m_transfConfig.m_optionsWrp.m_opt.m_nProcOrigChange];
+            }
+
             qstrConf += "\n- original file that has not been transformed: ";
             qstrConf += aOrig[m_transfConfig.m_optionsWrp.m_opt.m_nUnprocOrigChange];
         }

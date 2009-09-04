@@ -25,7 +25,6 @@
 #include  <QTimer>
 #include  <QPainter>
 #include  <QHeaderView>
-#include  <QSizeGrip>
 
 #include  "FileRenamerDlgImpl.h"
 

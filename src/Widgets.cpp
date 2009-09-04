@@ -268,7 +268,8 @@ ThreadLocalDlgList& getThreadLocalDlgList()
 
 /*static*/ void HtmlMsg::msg(QWidget* pParent, bool* pbGotTheMessage, bool bShowSysinfo, bool bCritical, bool bStayOnTop, const QString& qstrTitle, const QString& qstrMessage, int nWidth, int nHeight, const QString& qstrButton1)
 {
-    QDialog dlg (pParent, Qt::Dialog | getNoResizeWndFlags() | (bStayOnTop ? Qt::WindowStaysOnTopHint : Qt::WindowFlags(0)));
+    //QDialog dlg (pParent, Qt::Dialog | getNoResizeWndFlags() | (bStayOnTop ? Qt::WindowStaysOnTopHint : Qt::WindowFlags(0)));
+    QDialog dlg (pParent, getDialogWndFlags() | (bStayOnTop ? Qt::WindowStaysOnTopHint : Qt::WindowFlags(0)));
 
     dlg.setWindowTitle(qstrTitle);
     dlg.setWindowIcon(QIcon(":/images/logo.svg"));
@@ -308,7 +309,8 @@ ThreadLocalDlgList& getThreadLocalDlgList()
     pLayout->addLayout(&btnLayout);
 
     dlg.resize(nWidth, nHeight);
-//ttt0 grip
+    dlg.setSizeGripEnabled(true);
+
     dlg.exec();
 
     if (0 != pbGotTheMessage)

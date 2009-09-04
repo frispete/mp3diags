@@ -794,12 +794,19 @@ namespace
     struct SortByTrack
     {
         enum { NO_TRACK = 999999 };
-        static int getTrack(const string& s) // returns -1 if it can't identify a track number
+        static double getTrack(const string& s) // returns -1 if it can't identify a track number
         {
             const char* p (s.c_str()); // requiring all chars to be digits isn't OK, because "5/12" should be handled as "5"
             for (; ' ' == *p; ++p) {}
             if (0 == *p || !isdigit(*p)) { return NO_TRACK; }
-            return atoi(p);
+            char* pLast;
+            double d (int(strtol(p, &pLast, 10)));
+            for (; 0 != *pLast && !isdigit(*pLast); ++pLast) {}
+            if (0 != *pLast)
+            {
+                d += atoi(pLast)/100000.0; // this sort of takes care of tracks in the format <total>/<track>
+            }
+            return d;
         }
 
         bool operator()(const Mp3HandlerTagData* p1, const Mp3HandlerTagData* p2) const
@@ -807,9 +814,9 @@ namespace
             // !!! this defines a "strict partial order" (irreflexive and transitive) iff the codes for digits are grouped together (as is the case with ASCII)
             const string& s1 (p1->getData(TagReader::TRACK_NUMBER));
             const string& s2 (p2->getData(TagReader::TRACK_NUMBER));
-            int n1 (getTrack(s1));
-            int n2 (getTrack(s2));
-            if (n1 >= 0 && n2 >= 0) { return n1 < n2; }
+            double d1 (getTrack(s1));
+            double d2 (getTrack(s2));
+            if (d1 < NO_TRACK && d2 < NO_TRACK) { return d1 < d2; }
             return s1 < s2;
         }
     };
@@ -837,7 +844,7 @@ void TagWriter::sortSongs() // sorts by track number; shows a warning if issues 
     m_bNonStandardTrackNo = false;
     for (int i = 0; i < n; ++i)
     {
-        if (SortByTrack::getTrack(m_vpMp3HandlerTagData[i]->getData(TagReader::TRACK_NUMBER)) != i + 1)
+        if (int(SortByTrack::getTrack(m_vpMp3HandlerTagData[i]->getData(TagReader::TRACK_NUMBER))) != i + 1)
         {
             m_bNonStandardTrackNo = true;
             if (m_pCommonData->m_bWarnOnNonSeqTracks && !m_bShowedNonSeqWarn)
