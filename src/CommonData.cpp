@@ -222,6 +222,13 @@ void SessionSettings::saveMiscConfigSettings(const CommonData* p)
         m_pSettings->setValue("main/warnedAboutBackup", p->m_bWarnedAboutBackup);
         m_pSettings->setValue("tagEditor/toldAboutPatterns", p->m_bToldAboutPatterns);
         m_pSettings->setValue("main/toldAboutSupport", p->m_bToldAboutSupport);
+
+        m_pSettings->setValue("fileRenamer/invalidChars", convStr(p->m_strRenamerInvalidChars));
+        m_pSettings->setValue("fileRenamer/replacementForInvalid", convStr(p->m_strRenamerReplacementString));
+
+        m_pSettings->setValue("main/checkForNewVersions", convStr(p->m_strCheckForNewVersions));
+        m_pSettings->setValue("main/timeLastNewVerCheck", p->m_timeLastNewVerCheck);
+        m_pSettings->setValue("main/dontTellAboutVer", convStr(p->m_strDontTellAboutVer));
     }
 
     { // note categ colors
@@ -322,6 +329,23 @@ void SessionSettings::loadMiscConfigSettings(CommonData* p) const
         p->m_bWarnedAboutBackup = m_pSettings->value("main/warnedAboutBackup", false).toBool();
         p->m_bToldAboutPatterns = m_pSettings->value("tagEditor/toldAboutPatterns", false).toBool();
         p->m_bToldAboutSupport = m_pSettings->value("main/toldAboutSupport", false).toBool();
+
+#ifndef WIN32
+        const char* DEFAULT_INVALID ("/\"\\*?<>|"); //ttt2 even in Unix, it might be a good idea to not allow ":" as well in some cases, depending on the file system
+#else
+        const char* DEFAULT_INVALID ("/\"\\*?<>|:"); //ttt2 perhaps have yellow background instead of underline, to be able to tell if there's a space or not; or have something like a progres bar below; or have each letter in its own rectangle;
+#endif
+        p->m_strRenamerInvalidChars = convStr(m_pSettings->value("fileRenamer/invalidChars", DEFAULT_INVALID).toString());
+        p->m_strRenamerReplacementString = convStr(m_pSettings->value("fileRenamer/replacementForInvalid", "_").toString());
+
+        p->m_strCheckForNewVersions = convStr(m_pSettings->value("main/checkForNewVersions", "").toString());
+        p->m_timeLastNewVerCheck = m_pSettings->value("main/timeLastNewVerCheck").toDateTime();
+        if (p->m_timeLastNewVerCheck.isNull())
+        {
+            QDateTime t1 (QDateTime::currentDateTime());
+            p->m_timeLastNewVerCheck = t1.addYears(-1);
+        }
+        p->m_strDontTellAboutVer = convStr(m_pSettings->value("main/dontTellAboutVer", "").toString());
     }
 
     { // note categ colors

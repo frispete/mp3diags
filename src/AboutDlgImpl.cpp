@@ -157,7 +157,7 @@ dpkg-genchanges: warning: the current version (0.99.01.009) is smaller than the 
 //ttt2 perhaps "Scan images in the current folder", checked by default
 //ttt2 perhaps something to remove image files after assigning them, or at least show them in a different color; it was suggested to add a "-" button to remove images, below the "v" for "assigning them", but not sure it's such great idea; perhaps some option to delete local images that were assigned (but perhaps the unassigned CD scan should go as well); // perhaps "-" works, though; should be enabled/visible only for local files
 
-//ttt0 see about C malloc failure
+
 //ttt1 handle Lyrics tag, display, transform, download ...
 
 //ttt0 doc: visible transf hdr can be dragged
@@ -167,18 +167,9 @@ dpkg-genchanges: warning: the current version (0.99.01.009) is smaller than the 
 
 //ttt0 doc: look at other bug reports, see possible workarounds
 
+//ttt1 some standard means to log only uncaught exceptions
 
-/* ttt0
-I have tested if on 8.10 Server edition and it seems to be working ... well at least until the startup screen.
 
-I am unable to find any information for setting up the .ini file and i was wondering if you could help me out with that or  point me to where in the manual you have that ( if not you could add )
-
----------
-Perhaps use default .ini in Documents on Linux and ... on Wnd (perhaps Qt has something)
-
-*/
-
-//ttt0 notif about new version
 
 
 // backport jaunty 9.04 : https://bugs.launchpad.net/jaunty-backports/+bug/423560

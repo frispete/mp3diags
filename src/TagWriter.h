@@ -412,6 +412,7 @@ private slots:
     void onAssignImage(int);
     void onEraseFile(int);
     void onEraseFileDelayed();
+    void onDelayedTrackSeqWarn();
 
 signals:
     void albumChanged(/*bool bContentOnly*/); // the selection may be kept iff bContentOnly is true

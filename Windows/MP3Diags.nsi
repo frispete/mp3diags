@@ -1,15 +1,21 @@
-; based on several NSIS examples, including http://nsis.sourceforge.net/Run_an_application_shortcut_after_an_install 
+; Based on several NSIS examples, including http://nsis.sourceforge.net/Run_an_application_shortcut_after_an_install
 !include "MUI2.nsh"
 
+; Some defines
+!define PRODUCT_NAME "MP3 Diags"
+!define PRODUCT_DIR "MP3Diags"
+!define PRODUCT_UNINSTALL "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_DIR}"
 
 ; The name of the installer
-Name "MP3 Diags"
+Name "${PRODUCT_NAME}"
 
 ; The file to write
 OutFile "MP3DiagsSetup.exe"
 
 ; The default installation directory
-InstallDir $PROGRAMFILES\MP3Diags
+InstallDir "$PROGRAMFILES\${PRODUCT_DIR}"
+;InstallDirRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\MP3Diags" "UninstallString"
+InstallDirRegKey HKLM "${PRODUCT_UNINSTALL}" "UninstallString"
 
 ; Request application privileges for Windows Vista
 RequestExecutionLevel admin
@@ -36,20 +42,20 @@ SetCompressor /SOLID lzma
   !insertmacro MUI_PAGE_LICENSE "gplv2.txt"
 ;  !insertmacro MUI_PAGE_COMPONENTS
   !insertmacro MUI_PAGE_DIRECTORY
-  
+
   ;Start Menu Folder Page Configuration
-;  !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU" 
-;  !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\Modern UI Test" 
+;  !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU"
+;  !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\Modern UI Test"
 ;  !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
-  
+
   !insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
-  
+
   !insertmacro MUI_PAGE_INSTFILES
 
     !define MUI_FINISHPAGE_NOAUTOCLOSE
     !define MUI_FINISHPAGE_RUN
     !define MUI_FINISHPAGE_RUN_CHECKED
-    !define MUI_FINISHPAGE_RUN_TEXT "Run MP3 Diags"
+    !define MUI_FINISHPAGE_RUN_TEXT "Run ${PRODUCT_NAME}"
     !define MUI_FINISHPAGE_RUN_FUNCTION "LaunchLink"
   !insertmacro MUI_PAGE_FINISH
 
@@ -102,21 +108,18 @@ Section "Main Application" !Required ;No components page, name is not important
 
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\MP3 Diags.lnk" "$INSTDIR\Mp3DiagsWindows.exe" \
-	  "" "$INSTDIR\favicon.ico" 0 SW_SHOWNORMAL
+      "" "$INSTDIR\favicon.ico" 0 SW_SHOWNORMAL
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
   !insertmacro MUI_STARTMENU_WRITE_END
 
 
   ; Tell the compiler to write an uninstaller and to look for a "Uninstall" section
   WriteUninstaller $INSTDIR\Uninstall.exe
-  
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\MP3Diags" \
-                 "DisplayName" "MP3 Diags"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\MP3Diags" \
-                 "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
-  ;WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\MP3Diags" \
-  ;               "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
-  
+
+  WriteRegStr HKLM "${PRODUCT_UNINSTALL}" "DisplayName" "${PRODUCT_NAME}"
+  WriteRegStr HKLM "${PRODUCT_UNINSTALL}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+  ;WriteRegStr HKLM "${PRODUCT_UNINSTALL}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
+
 SectionEnd ; end the section
 
 
@@ -157,9 +160,9 @@ Section "un.Uninstall"
   Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
   RMDir "$SMPROGRAMS\$StartMenuFolder"
 
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\MP3Diags"
+  DeleteRegKey HKLM "${PRODUCT_UNINSTALL}"
 
-SectionEnd 
+SectionEnd
 
 Function LaunchLink
 ;  ExecShell "" "$SMPROGRAMS\$StartMenuFolder\MP3 Diags.lnk"

@@ -816,7 +816,8 @@ namespace
             const string& s2 (p2->getData(TagReader::TRACK_NUMBER));
             double d1 (getTrack(s1));
             double d2 (getTrack(s2));
-            if (d1 < NO_TRACK && d2 < NO_TRACK) { return d1 < d2; }
+            //if (d1 < NO_TRACK && d2 < NO_TRACK) { return d1 < d2; }
+            if (d1 != d2) { return d1 < d2; }
             return s1 < s2;
         }
     };
@@ -849,10 +850,8 @@ void TagWriter::sortSongs() // sorts by track number; shows a warning if issues 
             m_bNonStandardTrackNo = true;
             if (m_pCommonData->m_bWarnOnNonSeqTracks && !m_bShowedNonSeqWarn)
             {
-                CursorOverrider crs (Qt::ArrowCursor);
-                QMessageBox::warning(m_pParentWnd, "Warning", "Track numbers are supposed to be consecutive numbers from 1 to the total number of tracks. This is not the case with the current album, which may lead to incorrect assignments when pasting information.");
                 m_bShowedNonSeqWarn = true;
-                //ttt1 when this is shown, the number of lines in the album grid is for the old album, but the text is from the new one
+                QTimer::singleShot(1, this, SLOT(onDelayedTrackSeqWarn()));
             }
             break;
         }
@@ -860,7 +859,11 @@ void TagWriter::sortSongs() // sorts by track number; shows a warning if issues 
 
 }
 
-
+void TagWriter::onDelayedTrackSeqWarn()
+{
+    //CursorOverrider crs (Qt::ArrowCursor);
+    QMessageBox::warning(m_pParentWnd, "Warning", "Track numbers are supposed to be consecutive numbers from 1 to the total number of tracks. This is not the case with the current album, which may lead to incorrect assignments when pasting information.");
+}
 
 
 // returns 0 if there's no current handler

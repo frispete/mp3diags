@@ -238,7 +238,7 @@ static const char* s_szPlaceholderDescr ("<Placeholder for a note that can no lo
 }
 
 
-//ttt0 warn that file has multiple pictures, so will get deleted
+//ttt1 perhaps warn that file has multiple pictures, so will get deleted; probably like unsupportedFound; anyway after deciding on some standard way to tell the user about features and limitations; a class is probably a better answer than the current approach of "told/warned/..." settings scattered over the config file; should not show the messages too soon one after another, should get rid of all the static variables, ...
 
 /*static*/ const Note* Notes::getNote(const std::string& strDescr)
 {
@@ -247,7 +247,7 @@ static const char* s_szPlaceholderDescr ("<Placeholder for a note that can no lo
     Note::SharedData d (strDescr.c_str()); // !!! sev doesn't matter
     Note n (d);
     NoteSet::iterator it;
-    it= (s_spAllNotes.find(&n));
+    it = (s_spAllNotes.find(&n));
     if (s_spAllNotes.end() == it)
     {
         if (strDescr == s_szPlaceholderDescr)
