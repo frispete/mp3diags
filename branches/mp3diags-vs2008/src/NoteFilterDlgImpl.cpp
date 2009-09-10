@@ -71,10 +71,10 @@ NoteFilterDlgImpl::NoteFilterDlgImpl(CommonData* pCommonData, QWidget* pParent /
 
     for (int i = 0, n = cSize(pCommonData->m_filter.getNotes()); i < n; ++i)
     {
-        int pos (pCommonData->getUniqueNotes().getPos(pCommonData->m_filter.getNotes()[i]));
-        if (pos >= 0)
+        int k (pCommonData->getUniqueNotes().getPos(pCommonData->m_filter.getNotes()[i]));
+        if (k >= 0)
         {
-            m_vOrigSel.push_back(pos);
+            m_vOrigSel.push_back(k);
         }
     }
 
