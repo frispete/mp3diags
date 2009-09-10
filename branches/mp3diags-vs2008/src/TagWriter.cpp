@@ -1071,7 +1071,7 @@ void TagWriter::reloadAll(string strCrt, bool bClearData, bool bClearAssgn)
     { // add images from crt dir
         if (n > 0)
         { // scan crt dir for images //ttt2 this needs rewrite if an album means something else than a directory
-            CursorOverrider crs ();
+            CursorOverrider crs;
             string strDir (vpHndl[0]->getDir());
             FileSearcher fs (strDir);
 
