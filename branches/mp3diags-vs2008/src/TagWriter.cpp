@@ -1388,7 +1388,7 @@ void TagWriter::onEraseFileDelayed()
     if (inf.m_sstrFiles.size() > 1)
     {
         s = "these files?";
-        for (set<string>::iterator it = inf.m_sstrFiles.begin(); it != inf.m_sstrFiles.end(); ++it)
+        for (set<string>::const_iterator it = inf.m_sstrFiles.begin(); it != inf.m_sstrFiles.end(); ++it)
         {
             s += "\n" + convStr(toNativeSeparators(*it));
         }
@@ -1413,7 +1413,7 @@ void TagWriter::onEraseFileDelayed()
         if (bAssigned) { return; }
     }
 
-    for (set<string>::iterator it = inf.m_sstrFiles.begin(); it != inf.m_sstrFiles.end(); ++it)
+    for (set<string>::const_iterator it = inf.m_sstrFiles.begin(); it != inf.m_sstrFiles.end(); ++it)
     {
         if (!QFile(convStr(*it)).remove())
         {

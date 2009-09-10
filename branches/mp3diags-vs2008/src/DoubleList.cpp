@@ -557,7 +557,7 @@ void DoubleList::add(const std::set<int>& sSelPos) // adds elements from the spe
     switch (m_eSelectionMode)
     {
     case SINGLE_UNSORTABLE:
-        for (set<int>::reverse_iterator it = sSelPos.rbegin(), end = sSelPos.rend(); it != end; ++it) // the last must be processed first, so removal of elements doesn't change the row number for the remaining ones
+        for (set<int>::const_reverse_iterator it = sSelPos.rbegin(), end = sSelPos.rend(); it != end; ++it) // the last must be processed first, so removal of elements doesn't change the row number for the remaining ones
         {
             int nRow (*it);
             int nIndex (m_listPainter.m_vAvailable[nRow]);
@@ -568,13 +568,13 @@ void DoubleList::add(const std::set<int>& sSelPos) // adds elements from the spe
         break;
 
     case SINGLE_SORTABLE:
-        for (set<int>::iterator it = sSelPos.begin(), end = sSelPos.end(); it != end; ++it)
+        for (set<int>::const_iterator it = sSelPos.begin(), end = sSelPos.end(); it != end; ++it)
         {
             int nRow (*it);
             int nIndex (m_listPainter.m_vAvailable[nRow]);
             m_listPainter.m_vSel.push_back(nIndex);
         }
-        for (set<int>::reverse_iterator it = sSelPos.rbegin(), end = sSelPos.rend(); it != end; ++it)
+        for (set<int>::const_reverse_iterator it = sSelPos.rbegin(), end = sSelPos.rend(); it != end; ++it)
         {
             int nRow (*it);
             m_listPainter.m_vAvailable.erase(m_listPainter.m_vAvailable.begin() + nRow);
@@ -582,7 +582,7 @@ void DoubleList::add(const std::set<int>& sSelPos) // adds elements from the spe
         break;
 
     case MULTIPLE:
-        for (set<int>::iterator it = sSelPos.begin(), end = sSelPos.end(); it != end; ++it)
+        for (set<int>::const_iterator it = sSelPos.begin(), end = sSelPos.end(); it != end; ++it)
         {
             int nRow (*it);
             //int nIndex (m_listPainter.m_vAvailable[nRow]);
@@ -622,7 +622,7 @@ void DoubleList::on_m_pDeleteB_clicked()
 
 void DoubleList::remove(const std::set<int>& sSelPos) // removes elements from the specified indexes
 {
-    for (set<int>::reverse_iterator it = sSelPos.rbegin(), end = sSelPos.rend(); it != end; ++it)
+    for (set<int>::const_reverse_iterator it = sSelPos.rbegin(), end = sSelPos.rend(); it != end; ++it)
     {
         int nRow (*it);
         int nIndex (m_listPainter.m_vSel[nRow]);
