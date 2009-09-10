@@ -561,8 +561,8 @@ void DoubleList::add(const std::set<int>& sSelPos) // adds elements from the spe
         {
             int nRow (*it);
             int nIndex (m_listPainter.m_vAvailable[nRow]);
-            vector<int>::iterator lp (lower_bound(m_listPainter.m_vSel.begin(), m_listPainter.m_vSel.end(), nIndex));
-            m_listPainter.m_vSel.insert(lp, nIndex);
+            vector<int>::iterator it1 (lower_bound(m_listPainter.m_vSel.begin(), m_listPainter.m_vSel.end(), nIndex));
+            m_listPainter.m_vSel.insert(it1, nIndex);
             m_listPainter.m_vAvailable.erase(m_listPainter.m_vAvailable.begin() + nRow);
         }
         break;
@@ -628,8 +628,8 @@ void DoubleList::remove(const std::set<int>& sSelPos) // removes elements from t
         int nIndex (m_listPainter.m_vSel[nRow]);
         if (MULTIPLE != m_eSelectionMode)
         {
-            vector<int>::iterator lp (lower_bound(m_listPainter.m_vAvailable.begin(), m_listPainter.m_vAvailable.end(), nIndex));
-            m_listPainter.m_vAvailable.insert(lp, nIndex);
+            vector<int>::iterator it1 (lower_bound(m_listPainter.m_vAvailable.begin(), m_listPainter.m_vAvailable.end(), nIndex));
+            m_listPainter.m_vAvailable.insert(it1, nIndex);
         }
         m_listPainter.m_vSel.erase(m_listPainter.m_vSel.begin() + nRow);
     }
