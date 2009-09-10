@@ -469,8 +469,8 @@ void Id3V230StreamWriter::addTextFrame(const std::string& strName, const std::st
         int nOrder (0);
 #endif
 
-        vcData[2 - nOrder] = 0xff;
-        vcData[1 + nOrder] = 0xfe;
+        vcData[2 - nOrder] = char(0xff);
+        vcData[1 + nOrder] = char(0xfe);
 
         const char* pcUtf16 (reinterpret_cast<const char*>(pUtf16));
         copy(pcUtf16, pcUtf16 + nSize - 3, &vcData[0] + 3);
