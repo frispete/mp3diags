@@ -379,7 +379,7 @@ Id3V230StreamWriter::Id3V230StreamWriter(bool bKeepOneValidImg, bool bFastSave, 
                 }
                 else
                 {
-                    if ((0 == pPic && q->m_eApicStatus > Id3V2Frame::ERROR) ||
+                    if ((0 == pPic && q->m_eApicStatus > Id3V2Frame::ERR) ||
                         (0 != pPic && pPic->m_eApicStatus < q->m_eApicStatus))
                     {
                         pPic = q;
