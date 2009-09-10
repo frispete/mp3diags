@@ -24,6 +24,7 @@
 #define TagEditorDlgImplH
 
 #include  <set>
+#include  <vector>
 
 #include  <QDialog>
 #include  <QItemDelegate>

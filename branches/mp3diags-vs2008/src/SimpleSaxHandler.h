@@ -23,6 +23,8 @@
 #ifndef SimpleSaxHandlerH
 #define SimpleSaxHandlerH
 
+#include  <list>
+
 #include  <QXmlDefaultHandler>
 
 template<class T>

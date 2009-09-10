@@ -23,6 +23,8 @@
 #include  <QCloseEvent>
 #include  <QLocale>
 
+#include  <time.h>
+
 #include  "ThreadRunnerDlgImpl.h"
 
 #include  "Helpers.h"

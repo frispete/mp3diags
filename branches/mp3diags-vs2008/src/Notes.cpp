@@ -21,6 +21,7 @@
 
 
 #include  <sstream>
+#include  <vector>
 #include  <algorithm>
 
 #include  "Notes.h"
