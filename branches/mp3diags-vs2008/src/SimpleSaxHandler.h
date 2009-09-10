@@ -37,7 +37,7 @@ struct SimpleSaxHandler : public QXmlDefaultHandler
     class Node
     {
         NoDefaults k;
-        friend class SimpleSaxHandler<T>;
+        friend struct SimpleSaxHandler<T>;
         int m_nLevel;
 
         Node(const std::string& strName) : k(0), m_nLevel(0), m_pParent(0), m_strName(strName), onStart(0), onEnd(0), onChar(0)

@@ -145,7 +145,7 @@ private slots:
 
 } // namespace TagEditor
 
-class AssgnBtnWrp;
+struct AssgnBtnWrp;
 
 class TagEditorDlgImpl : public QDialog, private Ui::TagEditorDlg
 {
