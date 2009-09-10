@@ -40,8 +40,8 @@ add_executable(${name} ${sources} ${sources_h} ${sources_moc} ${sources_uic} ${s
 target_link_libraries(${name} ${QT_LIBRARIES} ${Boost_LIBRARIES})
 
 if(WIN32)
-    # We want to use the Unicode Windows API and dynamically link against Boost.
-    add_definitions(-D_UNICODE -DUNICODE -DBOOST_ALL_DYN_LINK)
+    # We want to use the Unicode Windows API, dynamically link against Boost and suppress deprecation / security warnings.
+    add_definitions(-D_UNICODE -DUNICODE -DBOOST_ALL_DYN_LINK -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 
     # Do not treat wchar_t as a built-in type (for compatibility with Qt).
     set_target_properties(${name} PROPERTIES COMPILE_FLAGS "/Zc:wchar_t-") 
