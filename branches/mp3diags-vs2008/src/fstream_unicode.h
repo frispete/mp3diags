@@ -575,7 +575,7 @@ typedef basic_ofstream_unicode<char> ofstream_unicode;
 typedef basic_fstream_unicode<char> fstream_unicode;
 
 
-#elif _MSC_VER >= 1400
+#elif defined(_MSC_VER) && _MSC_VER>=1400
 
 // As of Visual Studio 2005 (aka version 8.0), the supplied STL has extensions
 // that accept filenames of type wchar_t.
