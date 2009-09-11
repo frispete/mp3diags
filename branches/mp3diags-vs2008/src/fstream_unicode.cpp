@@ -97,6 +97,7 @@ static int getAcc(std::ios_base::openmode __mode)
 
 #ifndef WIN32
 
+    template<>
     int unicodeOpenHlp(const char* szUtf8Name, std::ios_base::openmode __mode)
     {
         int nAcc (getAcc(__mode));
@@ -106,6 +107,7 @@ static int getAcc(std::ios_base::openmode __mode)
     }
 
 #if 0
+    template<>
     int unicodeOpenHlp(const wchar_t* /*wszUtf16Name*/, std::ios_base::openmode /*__mode*/)
     {
         throw 1; //ttt2 add if needed
@@ -122,6 +124,13 @@ static int getAcc(std::ios_base::openmode __mode)
 
     using namespace std;
 
+#ifdef __GNUC__
+    using namespace __gnu_cxx;
+#else
+    // Add a dummy primary template to specialize, so this code compiles with VS2008.
+    template<class T>
+    int unicodeOpenHlp(T handle, std::ios_base::openmode __mode) {}
+#endif
 
     wstring wstrFromUtf8(const string& s)
     {
@@ -132,6 +141,7 @@ static int getAcc(std::ios_base::openmode __mode)
     }
 
 
+    template<>
     int unicodeOpenHlp(const wchar_t* wszUtf16Name, std::ios_base::openmode __mode)
     {
         int nAcc (getAcc(__mode));
@@ -142,6 +152,7 @@ static int getAcc(std::ios_base::openmode __mode)
         return nFd;
     }
 
+    template<>
     int unicodeOpenHlp(const char* szUtf8Name, std::ios_base::openmode __mode)
     {
         return unicodeOpenHlp(wstrFromUtf8(szUtf8Name).c_str(), __mode);
@@ -150,9 +161,10 @@ static int getAcc(std::ios_base::openmode __mode)
 #endif // #ifndef WIN32 / #else
 
 
+template<>
 int unicodeOpenHlp(char* szUtf8Name, std::ios_base::openmode __mode)
 {
-    return unicodeOpenHlp(const_cast<char const*>(szUtf8Name), __mode);
+    return unicodeOpenHlp<const char*>(szUtf8Name, __mode);
 }
 
 
@@ -160,14 +172,16 @@ int unicodeOpenHlp(char* szUtf8Name, std::ios_base::openmode __mode)
 
 #else
 
+template<>
 int unicodeOpenHlp(wchar_t* wszUtf16Name, std::ios_base::openmode __mode)
 {
-    return unicodeOpenHlp(const_cast<wchar_t const*>(wszUtf16Name), __mode);
+    return unicodeOpenHlp<const wchar_t*>(wszUtf16Name, __mode);
 }
 
 #endif
 
 
+template<>
 int unicodeOpenHlp(int fd, std::ios_base::openmode /*__mode*/)
 {
     return fd;
