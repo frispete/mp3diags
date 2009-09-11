@@ -22,9 +22,7 @@
 
 #include  <memory>
 
-#ifdef QT_NO_COMPRESS
-    #include  <zlib.h>
-#endif
+#include  <zlib.h>
 
 #ifndef WIN32
     #include  <sys/time.h>
@@ -560,9 +558,7 @@ void AlbumInfoDownloaderDlgImpl::onRequestFinished(int /*nId*/, bool bError)
     }
 
     if (0x1f == (unsigned char)b[0] && 0x8b == (unsigned char)b[1])
-    {
-#ifdef QT_NO_COMPRESS
-        // gzip
+    { // gzip
         z_stream strm;
         strm.zalloc = Z_NULL;
         strm.zfree  = Z_NULL;
@@ -605,7 +601,6 @@ void AlbumInfoDownloaderDlgImpl::onRequestFinished(int /*nId*/, bool bError)
 
     e2:
         inflateEnd(&strm);
-#endif
     }
     else
     { // it's not gzip, so perhaps it is ASCII; //ttt2 check that it's ASCII
