@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="keywords" content="MP3, diags, diagnosis, tag editor, tagger, normalizer" />
+<meta name="description" content="End-user documentation for MP3 Diags, an MP3 analysis tool that also includes correction and tag editing functionality" />
+<title>MP3 Diags - Tag editor</title>
+<link rel="stylesheet" type="text/css" media="screen" href="style.css" />
+<!--[if lte IE 6]>  <link rel="stylesheet" type="text/css" href="style_ie6.css" />  <![endif]-->
+<!--[if IE 7]>  <link rel="stylesheet" type="text/css" href="style_ie7.css" />  <![endif]-->
+</head>
+
+<link rel="icon" href="favicon.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
+
+<body>
+
+<!-- add_this_conf -->
+
+<div class="HeaderTableText RegFnt ChpCol1">
+<table width="100%" class="HeaderTable">
+    <tr>
+        <td border="0" class="HeaderText">
+            <span class="HeaderPadLeft">
+                <a href="index.html" class="RightMargin"><img src="logo.png" border="0" alt="MP3 Diags" align="middle" /></a>
+                <!-- add_this_link -->
+            </span>
+        </td>
+
+        <!-- sf_hosting -->
+    </tr>
+</table>
+</div>
+
+
+<!-- ========================================================================================================== -->
+<!-- ========================================================================================================== -->
+<!-- ========================================================================================================== -->
+<!-- ========================================================================================================== -->
+
+
+
+
+<div class="NavPadTable RegFnt ChpCol2">
+<div style="width:100%">
+<table border="0" cellpadding="0" cellspacing="0" width="100%" class="NavTable">
+    <tr>
+        <td width="30%" align="left"> <a href="180_folder_filter.html"><img src="arrow_left_small.png" class="ImgNoBorder NavPadLeft" align="absmiddle" /></a> <a href="180_folder_filter.html"> Folder filter </a> </td>
+        <td width="40%" align="center" valign="middle" class="NavBarText"> <a href="030_users_guide.html">User's guide</a> - Tag editor </td>
+        <td width="30%" align="right"> <a href="200_discogs_query.html"> Querying Discogs or MusicBrainz</a> <a href="200_discogs_query.html"> <img src="arrow_right_small.png" class="ImgNoBorder NavPadRight" align="absmiddle" /> </a> </td>
+    </tr>
+</table>
+</div>
+</div>
+
+
+<div class="Screenshot RegFnt ChpCol1">
+<img src="190_tag_editor.png" />
+</div>
+
+
+<div class="FreeNormalText RegFnt ChpCol2">
+The main purpose of the tag editor is to get track information (artist, title, album, cover art, track number, release date, genre, rating, and composer) from various sources and write everything to an ID3V2.3.0 tag. (Note that although multiple images can be stored in ID3V2, for front cover, back cover and some other things, MP3 Diags only allows you to set the "front cover".)
+</div>
+
+<div class="NormalText RegFnt ChpCol2">
+While there are many other tag editors, the one included in MP3 Diags has one advantage in being aware of what other parts of the program are doing. Other advantages over some other tag editors:
+<ul class="ListLev1">
+    <li> besides retrieving album information from the Internet, it can also use a file's name, or text pasted from the clipboard </li>
+    <li> it can add cover art from the Internet, from the clipboard, or from local files </li>
+    <li> it can handle multiple instances of the same tags (e.g. two ID3V2.4.0 tags, each of them storing some information that the other doesn't have)</li>
+</ul>
+
+</div>
+
+<div class="FreeNormalText RegFnt ChpCol1">
+To some the idea of tagging MP3 files might sound rather obsolete. The reason for this is that many players create a database with your MP3s and add all sorts of information there. That's nice if you only use one player and that player doesn't have the habit of crashing, destroying the database in the process. Many features of MP3 Diags are designed for a different approach, which is that all the information that can be stored inside MP3 files should be stored there, so we shouldn't care about moving to a different player (this includes a different device) and having to recreate the database. First you make sure the MP3 files are OK, then you can play them in Winamp, Amarok, VLC or whatever you prefer, as well as on your iPod.
+</div>
+
+
+<div class="SubChapterText RegFnt ChpCol2">
+What's on the screen
+</div>
+
+
+<div class="NormalText RegFnt ChpCol2">
+Most of the space is taken up by two tables, one above the other. The one above contains the current album. The values in the cells get written to ID3V2.3.0 tags if the information is saved (which can be done explicitly, with the save button, or automatically, is so <a href="300_config_others.html">configured</a>.
+</div>
+
+<div class="NormalText RegFnt ChpCol2">
+The table below contains the current song. The 10 lines correspond to the 10 fields that the tag editor supports. The columns contain track information as retrieved from various sources:
+<ul class="ListLev1">
+    <li> Existing ID3, Lyrics, or Ape tags </li>
+    <li> Information downloaded from the Internet (from Discogs or from MusicBrainz) </li>
+    <li> Information pasted from the clipboard </li>
+    <li> Information extracted from the file name </li>
+</ul>
+(The last two need <a href="220_tag_editor_patterns.html">patterns</a> to be defined.)
+</div>
+
+<div class="NormalText RegFnt ChpCol2">
+While some sources may not apply to all the files (e.g. one file might have two ID3V2 tags while another has none), for a given album we take the union of all the sources that apply to that album and display them all, regardless of a file having a particular source or not. It's just that if a source doesn't apply to a file, all the fields in that sorce will be empty (and there's a special background color to identify such sources.)
+</div>
+
+<div class="SubChapterText RegFnt ChpCol1">
+How the tag editor works
+</div>
+
+<div class="NormalText RegFnt ChpCol1">
+To determine what gets displayed in the "current album" table (and what ultimately gets written to disk), this algorithm is applied for each file:
+<ol class="ListNum1">
+    <li> If a field is marked as "assigned", its value is whatever it was the last time it was set manually and caused the field to become "assigned" </li>
+    <li> Otherwise, for each field: the list with sources is examined from left to right and the first non-null value that is found will also be the value to be displayed in the corresponding cell in "current album" </li>
+</ol>
+
+A field in the "current album" is marked as assigned in either of these cases:
+<ol class="ListNum1">
+    <li> the user presses F2 in a cell and changes the value of a field manually </li>
+    <li> the user clicks on the "Toggle assigned" button, with the sole purpose of fixing the value of a field (or perhaps more fields, because multiple fields can be selected before toggling the state) </li>
+    <li> the user <a href="210_tag_editor_assign_image.html">assigns an image</a> to the files in the album </li>
+</ol>
+
+</div>
+
+<div class="FreeNormalText RegFnt ChpCol2">
+These may sound more complicated than they actually are. In many cases all you'll need to do is drag the column headers of the "current file" table to the left or to the right, download an image from the Internet, assign it, and then save.
+</div>
+
+
+<div class="SubChapterText RegFnt ChpCol1">
+"Various artists" albums
+</div>
+
+<div class="NormalText RegFnt ChpCol1">
+By default the "single artist" / "various artists" status of an album is ignored, except that there is a button that is disabled but has a picture that changes according to the detected status of the current album (a single difference between the artist fields of two songs is enough to make an album be considered "various artists".) The reason for this is that there is no standard way to deal with "various artists" albums. Various players use various things.
+</div>
+
+<div class="NormalText RegFnt ChpCol1">
+The default behaviour can be changed, though, in the <a href="300_config_others.html">configuration dialog</a>, where it is possible to tell MP3 Diags to handle "various artists" data in ways compatible with specific players. Currently only Windows Media Player and iTunes are supported, but some other players are probably compatible with these as well. The "various artists" data is displayed in a column called "VA" in the "current album" table and in the row also called "VA" in the "current file" table (the latter is for informative purposes only, so you see what's in your file; it's not used to decide if an album is "various artists" or not.) After enabling "various artists" for at least one player,  corresponding information is shown in the "current album" table: if an album is "various artists", there's an "i" in the "VA" column if the iTunes support is enabled, and an "w" if WMP is enabled. After saving, WMP / iTunes should recognize "various artists" albums as such. Note, though, that I don't use either of these, so I didn't test if everything works as expected.
+</div>
+
+<div class="NormalText RegFnt ChpCol1">
+If you don't agree with how the automatic detection works, you can use the "various artists" button to toggle the status.
+</div>
+
+
+
+<div class="SubChapterText RegFnt ChpCol2">
+Performance note
+</div>
+
+<div class="NormalText RegFnt ChpCol2">
+In order to avoid bad things happening to your files if the program / computer crashes while changing an MP3 file, the default behavior is to write all changes to a temporary file and do a rename at the end. However, doing so might make MP3 Diags rather sluggish when saving. In the <a href="300_config_others.html">configuration dialog</a> there's an option called "Use fast save in the tag editor". This makes the writing be done in place, which greatly speeds up the save, at the slight risk of damage occuring to the ID3V2 tag (the audio data should escape unharmed even in case of a crash.) If you want to use it, it would be a good idea to run the transformation called "Reserve space in ID3V2 for fast tag editing" before going to the tag editor, othewise the first save will still be slow and you'll only see performance improvements on subsequent saves. Reserving space takes time, but it's unattended time and you can let the program do its thing in the background while you do something else in the meantime, knowing that saving will be fast after it's done.
+</div>
+
+<div class="NormalText RegFnt ChpCol2">
+Some more unattended time is needed when closing the tag editor. The "fast-saved" files have to be rescanned for their notes to be correct.
+</div>
+
+<div class="NormalText RegFnt ChpCol2">
+After making sure that you no longer need to use the tag editor for some albums, it would be a good idea to run the "Remove extra space from ID3V2" transformation, especially if you put the files on a mobile device.
+</div>
+
+
+<div class="NavPadTable RegFnt ChpCol1">
+<div style="width:100%">
+<table border="0" cellpadding="0" cellspacing="0" width="100%" class="NavTable">
+    <tr>
+        <td width="30%" align="left"> <a href="180_folder_filter.html"><img src="arrow_left_small.png" class="ImgNoBorder NavPadLeft" align="absmiddle" /></a> <a href="180_folder_filter.html"> Folder filter </a> </td>
+        <td width="40%" align="center" valign="middle" class="NavBarText"> <a href="030_users_guide.html">User's guide</a> - Tag editor </td>
+        <td width="30%" align="right"> <a href="200_discogs_query.html"> Querying Discogs or MusicBrainz</a> <a href="200_discogs_query.html"> <img src="arrow_right_small.png" class="ImgNoBorder NavPadRight" align="absmiddle" /> </a> </td>
+    </tr>
+</table>
+</div>
+</div>
+
+
+
+<!--QQQStatCounterQQQ-->
+
+</body>
+
+</html>
+
