@@ -38,7 +38,7 @@ class SessionSettings
 {
     QSettings* m_pSettings;
 public:
-    SessionSettings(const std::string& strIniFile);
+    SessionSettings(const std::string& strSessFile);
     ~SessionSettings();
 
     void saveTransfConfig(const TransfConfig& transfConfig);
@@ -120,8 +120,8 @@ public:
     GlobalSettings();
     ~GlobalSettings();
 
-    void saveSessions(const std::vector<std::string>& vstrSess, const std::string& strLastSess, bool bOpenLast);
-    void loadSessions(std::vector<std::string>& vstrSess, std::string& strLastSess, bool& bOpenLast) const;
+    void saveSessions(const std::vector<std::string>& vstrSess, const std::string& strLastSess, bool bOpenLast, const std::string& strTempSessTempl, const std::string& strDirSessTempl);
+    void loadSessions(std::vector<std::string>& vstrSess, std::string& strLastSess, bool& bOpenLast, std::string& strTempSessTempl, std::string& strDirSessTempl) const;
 
     void saveSessionsDlgSize(int nWidth, int nHeight);
     void loadSessionsDlgSize(int& nWidth, int& nHeight) const;

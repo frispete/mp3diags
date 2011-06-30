@@ -767,12 +767,12 @@ void listKnownFormats()
 
 
 
-MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bUniqueSession) : QDialog(0, getMainWndFlags()), m_settings(strSession), m_nLastKey(0)/*, m_settings("Ciobi", "Mp3Diags_v01")*/ /*, m_nPrevTabIndex(-1), m_bTagEdtWasEntered(false)*/, m_pCommonData(0), m_strSession(strSession), m_bShowMaximized(false), m_nScanWidth(0), m_pQHttp(0), m_nGlobalX(0), m_nGlobalY(0)
+MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bDefaultForVisibleSessBtn) : QDialog(0, getMainWndFlags()), m_settings(strSession), m_nLastKey(0)/*, m_settings("Ciobi", "Mp3Diags_v01")*/ /*, m_nPrevTabIndex(-1), m_bTagEdtWasEntered(false)*/, m_pCommonData(0), m_strSession(strSession), m_bShowMaximized(false), m_nScanWidth(0), m_pQHttp(0), m_nGlobalX(0), m_nGlobalY(0)
 {
 //int x (2); CB_ASSERT(x > 4);
 //CB_ASSERT("345" == "ab");
 //CB_ASSERT(false);
-    s_fileTracer.setName(strSession.substr(0, m_strSession.size() - 4)); // also disables both flags
+    s_fileTracer.setName(SessionEditorDlgImpl::getBaseName(strSession)); // also disables both flags
 
     s_pGlobalDlg = 0;
     setupUi(this);
@@ -788,7 +788,7 @@ MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bUniqueSession) 
         m_pFilesG->installEventFilter(this);
     }
 
-    m_pCommonData = new CommonData(m_settings, m_pFilesG, m_pNotesG, m_pStreamsG, m_pUniqueNotesG, /*m_pCurrentFileG, m_pCurrentAlbumG,*/ /*m_pLogG,*/ /*m_pAssignedB,*/ m_pNoteFilterB, m_pDirFilterB, m_pModeAllB, m_pModeAlbumB, m_pModeSongB, bUniqueSession);
+    m_pCommonData = new CommonData(m_settings, m_pFilesG, m_pNotesG, m_pStreamsG, m_pUniqueNotesG, /*m_pCurrentFileG, m_pCurrentAlbumG,*/ /*m_pLogG,*/ /*m_pAssignedB,*/ m_pNoteFilterB, m_pDirFilterB, m_pModeAllB, m_pModeAlbumB, m_pModeSongB, bDefaultForVisibleSessBtn);
 
     m_settings.loadMiscConfigSettings(m_pCommonData);
 
@@ -2584,7 +2584,7 @@ void MainFormDlgImpl::on_m_pSessionsB_clicked()
 
 
 
-//ttt1 different for unstable
+
 void MainFormDlgImpl::checkForNewVersion() // returns immediately; when the request completes it will send a signal
 {
     const int MIN_INTERVAL_BETWEEN_CHECKS (24); // hours
@@ -3213,7 +3213,7 @@ Development machine:
 //ttt2 fix on right-click for notes table
 
 
-//ttt1 Settings/Configuration name: different tooltip and dlg name
+
 
 //ttt2 perhaps "open file manager" on right-click (QDesktopServices::openUrl seems to do it)
 
