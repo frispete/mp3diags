@@ -22,3 +22,7 @@
 
 const char* APP_VER ("- custom build");
 const char* APP_BRANCH ("/unstable");
+const char* APP_NAME ("MP3 Diags Unstable");
+
+const char* SETTINGS_APP_NAME ("Mp3Diags-unstable");
+const char* ORGANIZATION ("Ciobi");
