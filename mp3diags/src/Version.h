@@ -21,4 +21,7 @@
 
 extern const char* APP_VER;
 extern const char* APP_BRANCH;
+extern const char* APP_NAME;
 
+extern const char* SETTINGS_APP_NAME;
+extern const char* ORGANIZATION;
