@@ -19,9 +19,28 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-extern const char* APP_VER;
-extern const char* APP_BRANCH;
-extern const char* APP_NAME;
+namespace Version {
 
-extern const char* SETTINGS_APP_NAME;
-extern const char* ORGANIZATION;
+const char* getAppVer();
+
+const char* getSimpleAppVer();
+
+// used, e.g. for location at SourceForge
+const char* getWebBranch();
+
+// to be shown to the user in various forms (app title, About box, shell integration, ...)
+const char* getAppName();
+
+// icon name, needed for shell integration in Linux
+const char* getIconName();
+
+// used for location of the documentation
+const char* getHelpPackageName();
+
+// for the global settings
+const char* getSettingsAppName();
+
+// for config only
+const char* getOrganization();
+
+}

@@ -43,6 +43,7 @@
 #include  <QFileInfo>
 #include  <QDir>
 #include  <QSettings>
+#include  <QProcess>
 
 #include  "Helpers.h"
 #include  "Widgets.h"
@@ -51,6 +52,7 @@
 
 
 using namespace std;
+using namespace Version;
 
 
 void assertBreakpoint()
@@ -694,21 +696,29 @@ vector<QString> convStr(const vector<string>& v)
 
 namespace {
 
-struct Gnome3Detector {
-    Gnome3Detector();
-    bool m_bIsGnome3;
+struct DesktopDetector {
+    enum Desktop { Unknown, Gnome2 = 1, Gnome3 = 2, Kde3 = 4, Kde4 = 8, Gnome = Gnome2 | Gnome3, Kde = Kde3 | Kde4};
+    DesktopDetector();
+    Desktop m_eDesktop;
+    bool onDesktop(Desktop desktop) const
+    {
+        return (desktop & m_eDesktop) != 0;
+    }
 };
 
 
-#ifndef WIN32
+#if defined(__linux__)
 
-//look for gnome-settings-daemon or gnome-settings-daemon-3.0 to determine if running in Gnome (3) and if so add close button
-//or run lsof and get the list
+// look for gnome-settings-daemon or gnome-settings-daemon-3.0 to determine if running in Gnome (3) and if so add close button
+// or run lsof and get the list
 
-Gnome3Detector::Gnome3Detector() : m_bIsGnome3(false)
+DesktopDetector::DesktopDetector() : m_eDesktop(Unknown)
 {
     FileSearcher fs ("/proc");
     string strBfr;
+
+    bool bIsKde (false);
+    bool bIsKde4 (false);
 
     while (fs)
     {
@@ -718,41 +728,108 @@ Gnome3Detector::Gnome3Detector() : m_bIsGnome3(false)
 
             if (isdigit(strCmdLineName[6]))
             {
+
+#if 0
+                char szBfr[5000] = "mP3DiAgS";
+                szBfr[0] = 0;
+
+                int k (readlink((strCmdLineName + "/exe").c_str(), szBfr, sizeof(szBfr)));
+                if (k >= 0)
+                {
+                    szBfr[k] = 0;
+                }
+                cout << strCmdLineName << "          ";
+                szBfr[5000 - 1] = 0;
+                //if (0 != szBfr[0])
+                    cout << szBfr << "        |";
+                    //cout << szBfr << endl;//*/
+
+
                 strCmdLineName += "/cmdline";
                 //cout << strCmdLineName << endl;
                 ifstream in (strCmdLineName.c_str());
                 if (in)
                 {
                     getline(in, strBfr);
-                    //cout << "**" << strBfr.c_str() << "**" << endl;
-                    if (string::npos != strBfr.find("gnome-settings-daemon-3.0"))
-                    //if (string::npos != strBfr.find("kdeinit"))
+                    //if (!strBfr.empty()) { cout << "<<<   " << strBfr.c_str() << "   >>>" << endl; }
+                    //if (!strBfr.empty()) { cout << strBfr.c_str() << endl; }
+                    cout << "          " << strBfr.c_str();
+                    if (string::npos != strBfr.find("gnome-settings-daemon"))
                     {
-                        m_bIsGnome3 = true;
+                        m_eDesktop = string::npos != strBfr.find("gnome-settings-daemon-3.") ? Gnome3 : Gnome2;
                         break;
                     }
-                }
+                }//*/
+                cout << endl;
+
+#endif
+                char szBfr[5000] = "mP3DiAgS";
+                szBfr[0] = 0;
+
+
+                strCmdLineName += "/cmdline";
+                //cout << strCmdLineName << endl;
+                ifstream in (strCmdLineName.c_str());
+                if (in)
+                {
+                    getline(in, strBfr);
+                    //if (!strBfr.empty()) { cout << "<<<   " << strBfr.c_str() << "   >>>" << endl; }
+                    //if (!strBfr.empty()) { cout << strBfr.c_str() << endl; }
+                    //cout << strBfr.c_str() << endl;
+                    if (string::npos != strBfr.find("gnome-settings-daemon"))
+                    {
+                        m_eDesktop = string::npos != strBfr.find("gnome-settings-daemon-3.") ? Gnome3 : Gnome2;
+                        break;
+                    }
+
+                    if (string::npos != strBfr.find("kdeinit"))
+                    {
+                        bIsKde = true;
+                    }
+
+                    if (string::npos != strBfr.find("kde4/libexec"))
+                    {
+                        bIsKde4 = true;
+                    }
+                }//*/
+
             }
         }
+        //if (string::npos != strBfr.find("kdeinit"))
 
         fs.findNext();
     }
 
+    if (m_eDesktop == Unknown)
+    {
+        if (bIsKde4)
+        {
+            m_eDesktop = Kde4;
+        }
+        else if (bIsKde)
+        {
+            m_eDesktop = Kde3;
+        }
+    }
+
+    //cout << "desktop: " << m_eDesktop << endl;
 }
 
 #else
 
-Gnome3Detector::Gnome3Detector() : m_bIsGnome3(false) {}
+DesktopDetector::DesktopDetector() : m_eDesktop(Unknown) {}
 
 #endif
 
+const DesktopDetector& getDesktopDetector()
+{
+    static DesktopDetector desktopDetector;
+    return desktopDetector;
 }
 
-bool isRunningOnGnome3()
-{
-    static Gnome3Detector gd;
-    return gd.m_bIsGnome3;
-}
+
+} // namespace
+
 
 
 /*
@@ -770,9 +847,15 @@ Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint - nothing
 Ideally a modal dialog should minimize its parent. If that's not possible, it shouldn't be minimizable.
 */
 
+//ttt0 look at Qt::CustomizeWindowHint
 #ifndef WIN32
-    Qt::WindowFlags getMainWndFlags() { return Qt::WindowTitleHint; } // !!! these are incorrect, but seem the best option; the values used for Windows are supposed to be OK; they work as expected with KDE but not with Gnome (asking for maximize button not only fails to sho it, but causes the "Close" button to disappear as well); Since in KDE min/max buttons are shown when needed anyway, it's sort of OK // ttt2 see if there is workaround/fix
+    //Qt::WindowFlags getMainWndFlags() { return isRunningOnGnome() ? Qt::Window : Qt::WindowTitleHint; } // !!! these are incorrect, but seem the best option; the values used for Windows are supposed to be OK; they work as expected with KDE but not with Gnome (asking for maximize button not only fails to show it, but causes the "Close" button to disappear as well); Since in KDE min/max buttons are shown when needed anyway, it's sort of OK // ttt2 see if there is workaround/fix
+    Qt::WindowFlags getMainWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Kde) ? Qt::WindowTitleHint : Qt::Window; }
+#if QT_VERSION >= 0x040500
+    Qt::WindowFlags getDialogWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Kde) ? Qt::WindowTitleHint | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint : Qt::WindowTitleHint; }
+#else
     Qt::WindowFlags getDialogWndFlags() { return Qt::WindowTitleHint; }
+#endif
     Qt::WindowFlags getNoResizeWndFlags() { return Qt::WindowTitleHint; }
 #else
     Qt::WindowFlags getMainWndFlags() { return Qt::WindowTitleHint | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint; } // minimize, maximize, no "what's this"
@@ -892,7 +975,7 @@ QString getSystemInfo() //ttt2 perhaps store this at startup, so fewer things ma
 
 #endif
     s.replace('\n', ' ');
-    s = QString("Version: %1 %2.\nWord size: %3 bit.\nQt version: %4.\nBoost version: %5\n").arg(APP_NAME).arg(APP_VER).arg(QSysInfo::WordSize).arg(qVersion()).arg(BOOST_LIB_VERSION) + s;
+    s = QString("Version: %1 %2.\nWord size: %3 bit.\nQt version: %4.\nBoost version: %5\n").arg(getAppName()).arg(getAppVer()).arg(QSysInfo::WordSize).arg(qVersion()).arg(BOOST_LIB_VERSION) + s;
     return s;
 }
 
@@ -997,9 +1080,9 @@ vector<QString> getLocalHelpDirs()
     {
 #ifndef WIN32
         //s_v.push_back("/home/ciobi/cpp/Mp3Utils/mp3diags/trunk/mp3diags/doc/html/");
-        s_v.push_back("/usr/share/mp3diags-doc/html/");
-        s_v.push_back("/usr/share/doc/mp3diags/html/");
-        s_v.push_back("/usr/share/doc/mp3diags-QQQVERQQQ/html/");
+        s_v.push_back(QString("/usr/share/") + getHelpPackageName() + "-doc/html/"); //ttt0 lower/uppercase variations
+        s_v.push_back(QString("/usr/share/doc/") + getHelpPackageName() + "/html/");
+        s_v.push_back(QString("/usr/share/doc/") + getHelpPackageName() + "-QQQVERQQQ/html/");
 #else
         wchar_t wszModule [200];
         int nRes (GetModuleFileName(0, wszModule, 200));
@@ -1035,7 +1118,7 @@ void openHelp(const string& strFileName)
     QString qs (strDir);
     if (qs.isEmpty())
     {
-        qs = "http://mp3diags.sourceforge.net" + QString(APP_BRANCH) + "/";
+        qs = "http://mp3diags.sourceforge.net" + QString(getWebBranch()) + "/";
     }
     else
     {
@@ -1109,49 +1192,195 @@ QString getTempDir()
 //=============================================================================================
 
 
-#ifndef WIN32
-//ttt1 implement
+#if defined(__linux__)
+
+namespace {
+
+//const char* DSK_FOLDER ("~/.local/share/applications/");
+const string& getDesktopIntegrationDir()
+{
+    static string s_s;
+    if (s_s.empty())
+    {
+        s_s = convStr(QDir::homePath() + "/.local/share/applications");
+        try
+        {
+            createDir(s_s);
+        }
+        catch (...)
+        { // nothing; this will cause shell integration to be disabled
+            cerr << "failed to create dir " << s_s << endl;
+        }
+        s_s += "/";
+    }
+    return s_s;
+}
+
+const char* DSK_EXT (".desktop");
+
+class ShellIntegrator
+{
+    string m_strFileName;
+    string m_strAppName;
+    string m_strArg;
+    bool m_bRebuildAssoc;
+
+public:
+    ShellIntegrator(const string& strFileNameBase, const string& strSessType, const string& strArg, bool bRebuildAssoc) : m_strFileName(getDesktopIntegrationDir() + strFileNameBase + DSK_EXT), m_strAppName(getAppName() + (" - " + strSessType)), m_strArg(strArg), m_bRebuildAssoc(bRebuildAssoc) {}
+
+    enum { DONT_REBUILD_ASSOC = 0, REBUILD_ASSOC = 1 };
+
+    bool isEnabled()
+    {
+        return fileExists(m_strFileName);
+    }
+
+    void enable(bool b)
+    {
+        if (!(b ^ isEnabled())) { return; }
+
+        if (b)
+        {
+            char szBfr [5000] = "mP3DiAgS";
+            szBfr[0] = 0;
+            int k (readlink("/proc/self/exe", szBfr, sizeof(szBfr)));
+            if (k >= 0)
+            {
+                szBfr[k] = 0;
+            }
+            szBfr[5000 - 1] = 0;
+
+            ofstream_utf8 out (m_strFileName.c_str());
+            if (!out)
+            {
+                qDebug("couldn't open file %s", m_strFileName.c_str());
+            }
+
+            out << "[Desktop Entry]" << endl;
+            out << "Comment=" << m_strAppName << endl;
+            out << "Encoding=UTF-8" << endl;
+            out << "Exec=\"" << szBfr << "\" " << m_strArg << " %f" << endl;
+            out << "GenericName=" << m_strAppName << endl;
+            out << "Icon=" << getIconName() << endl;
+            out << "Name=" << m_strAppName << endl;
+            out << "Path=" << endl;
+            out << "StartupNotify=false" << endl;
+            out << "Terminal=0" << endl;
+            out << "TerminalOptions=" << endl;
+            out << "Type=Application" << endl;
+            out << "X-KDE-SubstituteUID=false" << endl;
+            out << "X-KDE-Username=" << endl;
+            out << "MimeType=inode/directory" << endl;
+            out << "NoDisplay=true" << endl;
+
+            out.close();
+
+            static bool s_bErrorReported (false);
+            bool bError (false);
+
+            if (m_bRebuildAssoc && getDesktopDetector().onDesktop(DesktopDetector::Kde))
+            {
+                TRACER1A("ShellIntegrator::enable()", 1);
+                QProcess kbuildsycoca4;
+                kbuildsycoca4.start("kbuildsycoca4");
+                TRACER1A("ShellIntegrator::enable()", 2);
+
+                if (!kbuildsycoca4.waitForStarted()) //ttt1 switch to non-blocking calls if these don't work well enough
+                {
+                    TRACER1A("ShellIntegrator::enable()", 3);
+                    bError = true;
+                }
+                else
+                {
+                    TRACER1A("ShellIntegrator::enable()", 4);
+                    kbuildsycoca4.closeWriteChannel();
+                    TRACER1A("ShellIntegrator::enable()", 5);
+                    if (!kbuildsycoca4.waitForFinished())
+                    {
+                        TRACER1A("ShellIntegrator::enable()", 6);
+                        bError = true;
+                    }
+                }
+                TRACER1A("ShellIntegrator::enable()", 7);
+
+                if (bError && !s_bErrorReported)
+                {
+                    s_bErrorReported = true;
+                    HtmlMsg::msg(0, 0, 0, 0, HtmlMsg::CRITICAL, "Error setting up shell integration", "It appears that setting up shell integration didn't complete successfully. You might have to configure it manually.<p>"
+                                 "This message will not be shown again until the program is restarted, even if more errors occur."
+                                 , 400, 300, "O&K");
+                }
+            }
+        }
+        else
+        {
+            try
+            {
+                deleteFile(m_strFileName);
+            }
+            catch (...)
+            { //ttt2 do something
+            }
+        }
+    }
+};
+
+ShellIntegrator g_tempShellIntegrator ("mp3DiagsTempSess", "temporary folder", "-t", ShellIntegrator::REBUILD_ASSOC);
+ShellIntegrator g_hiddenShellIntegrator ("mp3DiagsHiddenSess", "hidden folder", "-f", ShellIntegrator::REBUILD_ASSOC);
+ShellIntegrator g_visibleShellIntegrator ("mp3DiagsVisibleSess", "visible folder", "-v", ShellIntegrator::REBUILD_ASSOC);
+
+ShellIntegrator g_testShellIntegrator ("mp3DiagsTestSess_000", "test", "", ShellIntegrator::DONT_REBUILD_ASSOC);
+
+} // namespace
+
 
 /*static*/ bool ShellIntegration::isShellIntegrationEditable()
 {
-    return false;
+    g_testShellIntegrator.enable(true);
+    bool b (g_testShellIntegrator.isEnabled());
+    g_testShellIntegrator.enable(false);
+    return b;
 }
 
 
 /*static*/ string ShellIntegration::getShellIntegrationError()
 {
-    return "Platform not supported";
+    return "";
 }
 
 
-/*static*/ void ShellIntegration::enableTempSession(bool)
+/*static*/ void ShellIntegration::enableTempSession(bool b)
 {
+    g_tempShellIntegrator.enable(b);
 }
 
 /*static*/ bool ShellIntegration::isTempSessionEnabled()
 {
-    return false;
+    return g_tempShellIntegrator.isEnabled();
 }
 
-/*static*/ void ShellIntegration::enableVisibleSession(bool)
+/*static*/ void ShellIntegration::enableVisibleSession(bool b)
 {
+    g_visibleShellIntegrator.enable(b);
 }
 
 /*static*/ bool ShellIntegration::isVisibleSessionEnabled()
 {
-    return false;
+    return g_visibleShellIntegrator.isEnabled();
 }
 
-/*static*/ void ShellIntegration::enableHiddenSession(bool)
+/*static*/ void ShellIntegration::enableHiddenSession(bool b)
 {
+    g_hiddenShellIntegrator.enable(b);
 }
 
 /*static*/ bool ShellIntegration::isHiddenSessionEnabled()
 {
-    return false;
+    return g_hiddenShellIntegrator.isEnabled();
 }
 
-#else
+
+#elif defined (WIN32)
 
 namespace {
 
@@ -1242,7 +1471,7 @@ bool deleteKey(const char* szPath, const char* szSubkey)
 
 //--------------------------------------------------------------
 
-
+//ttt1 use something like ShellIntegrator in the Linux code
 
 /*static*/ bool ShellIntegration::isShellIntegrationEditable()
 {
@@ -1328,6 +1557,47 @@ bool deleteKey(const char* szPath, const char* szSubkey)
     return doesKeyExist("Directory\\shell\\mp3diags_hidden_dir");
 }
 
+#else
+
+/*static*/ bool ShellIntegration::isShellIntegrationEditable()
+{
+    return false;
+}
+
+
+/*static*/ string ShellIntegration::getShellIntegrationError()
+{
+    return "Platform not supported";
+}
+
+
+/*static*/ void ShellIntegration::enableTempSession(bool)
+{
+}
+
+/*static*/ bool ShellIntegration::isTempSessionEnabled()
+{
+    return false;
+}
+
+/*static*/ void ShellIntegration::enableVisibleSession(bool)
+{
+}
+
+/*static*/ bool ShellIntegration::isVisibleSessionEnabled()
+{
+    return false;
+}
+
+/*static*/ void ShellIntegration::enableHiddenSession(bool)
+{
+}
+
+/*static*/ bool ShellIntegration::isHiddenSessionEnabled()
+{
+    return false;
+}
+
 #endif
 
 
@@ -1365,4 +1635,12 @@ LastStepTracer::~LastStepTracer()
 
 
 //ttt2 F1 help was very slow on XP once, not sure why; later it was OK
+
+
+
+
+
+//ttt1 maybe switch to new spec, lower-case for exe name, package, and icons
+
+
 
