@@ -32,6 +32,7 @@
 #ifndef WIN32
     #include  <QDir>
     #include  <sys/utsname.h>
+    #include  <unistd.h>
 #else
     #include  <windows.h>
     #include  <psapi.h>
@@ -637,6 +638,7 @@ streampos getSize(istream& in)
 
 void writeZeros(ostream& out, int nCnt)
 {
+    CB_ASSERT (nCnt >= 0);
     char c (0);
     for (int i = 0; i < nCnt; ++i) //ttt2 perhaps make this faster
     {
@@ -697,9 +699,10 @@ vector<QString> convStr(const vector<string>& v)
 namespace {
 
 struct DesktopDetector {
-    enum Desktop { Unknown, Gnome2 = 1, Gnome3 = 2, Kde3 = 4, Kde4 = 8, Gnome = Gnome2 | Gnome3, Kde = Kde3 | Kde4};
+    enum Desktop { Unknown, Gnome2 = 1, Gnome3 = 2, Kde3 = 4, Kde4 = 8, Gnome = Gnome2 | Gnome3, Kde = Kde3 | Kde4 };
     DesktopDetector();
     Desktop m_eDesktop;
+    const char* m_szDesktop;
     bool onDesktop(Desktop desktop) const
     {
         return (desktop & m_eDesktop) != 0;
@@ -812,6 +815,14 @@ DesktopDetector::DesktopDetector() : m_eDesktop(Unknown)
         }
     }
 
+    switch (m_eDesktop)
+    {
+    case Gnome2: m_szDesktop = "Gnome 2"; break;
+    case Gnome3: m_szDesktop = "Gnome 3"; break;
+    case Kde3: m_szDesktop = "KDE 3"; break;
+    case Kde4: m_szDesktop = "KDE 4"; break;
+    default: m_szDesktop = "Unknown";
+    }
     //cout << "desktop: " << m_eDesktop << endl;
 }
 
@@ -852,9 +863,9 @@ Ideally a modal dialog should minimize its parent. If that's not possible, it sh
     //Qt::WindowFlags getMainWndFlags() { return isRunningOnGnome() ? Qt::Window : Qt::WindowTitleHint; } // !!! these are incorrect, but seem the best option; the values used for Windows are supposed to be OK; they work as expected with KDE but not with Gnome (asking for maximize button not only fails to show it, but causes the "Close" button to disappear as well); Since in KDE min/max buttons are shown when needed anyway, it's sort of OK // ttt2 see if there is workaround/fix
     Qt::WindowFlags getMainWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Kde) ? Qt::WindowTitleHint : Qt::Window; }
 #if QT_VERSION >= 0x040500
-    Qt::WindowFlags getDialogWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Kde) ? Qt::WindowTitleHint | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint : Qt::WindowTitleHint; }
+    Qt::WindowFlags getDialogWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Kde) ? Qt::WindowTitleHint | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint : (dd.onDesktop(DesktopDetector::Gnome3) ? Qt::Window : Qt::WindowTitleHint); }
 #else
-    Qt::WindowFlags getDialogWndFlags() { return Qt::WindowTitleHint; }
+    Qt::WindowFlags getDialogWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Gnome3) ? Qt::Window : Qt::WindowTitleHint; } // ttt0 perhaps better to make sure all dialogs have their ok/cancel buttons, so there's no need for a dedicated close button and let the app look more "native"
 #endif
     Qt::WindowFlags getNoResizeWndFlags() { return Qt::WindowTitleHint; }
 #else
@@ -900,6 +911,7 @@ static void removeStr(string& main, const string& sub)
 QString getSystemInfo() //ttt2 perhaps store this at startup, so fewer things may go wrong fhen the assertion handler needs it
 {
     QString s ("OS: ");
+    QString qstrDesktop;
 
 #ifndef WIN32
     QDir dir ("/etc");
@@ -963,6 +975,8 @@ QString getSystemInfo() //ttt2 perhaps store this at startup, so fewer things ma
     }
 //ttt2 search /proc for kwin, metacity, ...
 
+    const DesktopDetector& dd = getDesktopDetector();
+    qstrDesktop = "Desktop: " + QString(dd.m_szDesktop) + "\n";
 
 #else
     //qstrVer += QString(" Windows version ID: %1").arg(QSysInfo::WinVersion);
@@ -975,7 +989,7 @@ QString getSystemInfo() //ttt2 perhaps store this at startup, so fewer things ma
 
 #endif
     s.replace('\n', ' ');
-    s = QString("Version: %1 %2.\nWord size: %3 bit.\nQt version: %4.\nBoost version: %5\n").arg(getAppName()).arg(getAppVer()).arg(QSysInfo::WordSize).arg(qVersion()).arg(BOOST_LIB_VERSION) + s;
+    s = QString("Version: %1 %2\nWord size: %3 bit\nQt version: %4\nBoost version: %5\n").arg(getAppName()).arg(getAppVer()).arg(QSysInfo::WordSize).arg(qVersion()).arg(BOOST_LIB_VERSION) + qstrDesktop + s;
     return s;
 }
 
@@ -1225,6 +1239,22 @@ class ShellIntegrator
     string m_strArg;
     bool m_bRebuildAssoc;
 
+    static string escape(const string& s)
+    {
+        string s1;
+        static string s_strReserved (" '\\><~|&;$*?#()`"); // see http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
+        for (int i = 0; i < cSize(s); ++i)
+        {
+            char c (s[i]);
+            if (s_strReserved.find(c) != string::npos)
+            {
+                s1 += '\\';
+            }
+            s1 += c;
+        }
+        return s1;
+    }
+
 public:
     ShellIntegrator(const string& strFileNameBase, const string& strSessType, const string& strArg, bool bRebuildAssoc) : m_strFileName(getDesktopIntegrationDir() + strFileNameBase + DSK_EXT), m_strAppName(getAppName() + (" - " + strSessType)), m_strArg(strArg), m_bRebuildAssoc(bRebuildAssoc) {}
 
@@ -1259,7 +1289,7 @@ public:
             out << "[Desktop Entry]" << endl;
             out << "Comment=" << m_strAppName << endl;
             out << "Encoding=UTF-8" << endl;
-            out << "Exec=\"" << szBfr << "\" " << m_strArg << " %f" << endl;
+            out << "Exec=" << escape(szBfr) << " " << m_strArg << " %f" << endl;
             out << "GenericName=" << m_strAppName << endl;
             out << "Icon=" << getIconName() << endl;
             out << "Name=" << m_strAppName << endl;
