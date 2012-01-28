@@ -20,7 +20,7 @@ SOURCES +=  \
  MpegStream.cpp \
  MultiLineTvDelegate.cpp \
  MusicBrainzDownloader.cpp \
- NormalizeDlgImpl.cpp \
+ ExternalToolDlgImpl.cpp \
  NoteFilterDlgImpl.cpp \
  Notes.cpp \
  NotesModel.cpp \
@@ -102,7 +102,7 @@ MpegFrame.h \
 MpegStream.h \
 MultiLineTvDelegate.h \
 MusicBrainzDownloader.h \
-NormalizeDlgImpl.h \
+ExternalToolDlgImpl.h \
 NoteFilterDlgImpl.h \
 Notes.h \
 NotesModel.h \
@@ -139,7 +139,7 @@ DoubleListWdg.ui \
 FileRenamer.ui \
 ImageInfoPanel.ui \
 MainForm.ui \
-Normalize.ui \
+ExternalTool.ui \
 NoteFilter.ui \
 Palette.ui \
 Patterns.ui \
