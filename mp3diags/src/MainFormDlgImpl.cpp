@@ -41,6 +41,8 @@
 #include  <QHttp>
 #include  <QHttpRequestHeader>
 #include  <QHttpResponseHeader>
+#include  <QDesktopServices>
+#include  <QProcess>
 
 #ifndef WIN32
     //#include <sys/utsname.h>
@@ -65,7 +67,7 @@
 #include  "AboutDlgImpl.h"
 #include  "Widgets.h"
 #include  "DataStream.h"
-#include  "NormalizeDlgImpl.h"
+#include  "ExternalToolDlgImpl.h"
 #include  "DebugDlgImpl.h"
 #include  "TagEditorDlgImpl.h"
 #include  "Mp3TransformThread.h"
@@ -1027,6 +1029,10 @@ MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bDefaultForVisib
     }
 
     {
+        loadExternalTools();
+    }
+
+    {
         initializeUi();
     }
 
@@ -1544,7 +1550,7 @@ struct Mp3ProcThread : public PausableThread
         catch (...)
         {
             LAST_STEP("Mp3ProcThread::run()");
-            CB_ASSERT (false);
+            CB_ASSERT (false); //ttt0 triggered according to https://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=50 and https://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=54
         }
     }
 
@@ -1829,7 +1835,7 @@ void MainFormDlgImpl::saveVisibleTransf()
 void MainFormDlgImpl::loadVisibleTransf()
 {
     bool bErr;
-    vector<string> vstrNames (m_settings.loadVector("visibleTransf", bErr));
+    vector<string> vstrNames (m_settings.loadVector("visibleTransf", bErr)); //ttt2 check bErr
     vector<int> v;
     const vector<Transformation*>& u (m_pCommonData->getAllTransf());
     int m (cSize(u));
@@ -1854,6 +1860,41 @@ void MainFormDlgImpl::loadVisibleTransf()
 
     m_pCommonData->setVisibleTransf(v);
 }
+
+
+
+void MainFormDlgImpl::saveExternalTools()
+{
+    vector<string> vstrExternalTools;
+    for (int i = 0, n = cSize(m_pCommonData->m_vExternalToolInfos); i < n; ++i)
+    {
+        vstrExternalTools.push_back(m_pCommonData->m_vExternalToolInfos[i].asString());
+    }
+    m_settings.saveVector("externalTools", vstrExternalTools);
+}
+
+
+void MainFormDlgImpl::loadExternalTools()
+{
+    bool bErr;
+    vector<string> vstrExternalTools (m_settings.loadVector("externalTools", bErr)); //ttt2 check bErr
+    m_pCommonData->m_vExternalToolInfos.clear();
+    for (int i = 0, n = cSize(vstrExternalTools); i < n; ++i)
+    {
+        try
+        {
+            m_pCommonData->m_vExternalToolInfos.push_back(ExternalToolInfo(vstrExternalTools[i]));
+        }
+        catch (const ExternalToolInfo::InvalidExternalToolInfo&)
+        {
+            QMessageBox::warning(this, "Error setting up external tools", "Unable to parse \"" + convStr(vstrExternalTools[i]) + "\". The program will proceed, but you should review the external tools list.");
+        }
+    }
+}
+
+
+
+
 
 
 //ttt2 keyboard shortcuts: next, prev, ... ;
@@ -1902,7 +1943,7 @@ void MainFormDlgImpl::on_m_pTransformB_clicked() //ttt2 an alternative is to use
 
 void MainFormDlgImpl::onMenuHovered(QAction* pAction)
 {
-    QToolTip::showText(QCursor::pos(), "");
+    //QToolTip::showText(QCursor::pos(), ""); // this was needed initially but at some time tooltips on menus stopped working (e.g. in 11.4) and commenting this out fixed the problem
     QToolTip::showText(QCursor::pos(), pAction->toolTip());
     // see http://www.mail-archive.com/pyqt@riverbankcomputing.com/msg17214.html and http://www.mail-archive.com/pyqt@riverbankcomputing.com/msg17245.html ; apparently there's some inconsistency in when the menus are shown
 }
@@ -1990,8 +2031,8 @@ void MainFormDlgImpl::on_m_pNormalizeB_clicked()
         }
     }
 
-    NormalizeDlgImpl dlg (this, m_pCommonData->m_bKeepNormWndOpen, m_settings, m_pCommonData);
-    dlg.normalize(convStr(m_pCommonData->m_strNormalizeCmd), l);
+    ExternalToolDlgImpl dlg (this, m_pCommonData->m_bKeepNormWndOpen, m_settings, m_pCommonData, "Normalize", "230_normalize.html");
+    dlg.run(convStr(m_pCommonData->m_strNormalizeCmd), l);
 
     reload(bSel, FORCE);
 }
@@ -2365,9 +2406,8 @@ void MainFormDlgImpl::updateUi(const string& strCrt) // strCrt may be empty
         setTransfTooltips();
     }
 
-    {
-        saveVisibleTransf();
-    }
+    saveVisibleTransf();
+    saveExternalTools();
 
     if (m_pCommonData->m_bShowExport || m_pCommonData->m_bShowSessions)
     {
@@ -2493,6 +2533,28 @@ public:
         transform(v, CURRENT);
         return true;
     }
+    else if (m_pFilesG == pObj && 0 != pKeyEvent && Qt::Key_Delete == nKey && QEvent::ShortcutOverride == pKeyEvent->type())
+    {
+        const deque<const Mp3Handler*>& vpSelHandlers (m_pCommonData->getSelHandlers());
+        if (askConfirm(vpSelHandlers, "Delete"))
+        {
+            for (int i = 0; i < cSize(vpSelHandlers); ++i)
+            {
+                try
+                {
+                    deleteFile(vpSelHandlers[i]->getName());
+                }
+                catch (const CannotDeleteFile&)
+                {
+                    QMessageBox::critical(this, "Error", convStr("Cannot delete file " + vpSelHandlers[i]->getName()));
+                    break;
+                }
+            }
+            reload(IGNORE_SEL, DONT_FORCE);
+        }
+
+        return true;
+    }
     else if (pObj == m_pFilesG)
     {
         //qDebug("type %d", pEvent->type());
@@ -2501,7 +2563,7 @@ public:
         {
             m_nGlobalX = pCtx->globalX();
             m_nGlobalY = pCtx->globalY();
-            QTimer::singleShot(1, this, SLOT(onFixCurrentNote()));
+            QTimer::singleShot(1, this, SLOT(onMainGridRightClick()));
         }
     }
     return QDialog::eventFilter(pObj, pEvent);
@@ -2999,14 +3061,31 @@ e1:;
 int getHeaderDrawOffset();
 
 
-void MainFormDlgImpl::onFixCurrentNote()
+void MainFormDlgImpl::onMainGridRightClick()
+{
+    QPoint coords (m_pFilesG->mapFromGlobal(QPoint(m_nGlobalX, m_nGlobalY)));
+    int nCol (m_pFilesG->columnAt(coords.x() - m_pFilesG->verticalHeader()->width()));
+    if (nCol >= 1)
+    {
+        fixCurrentNote(coords);
+        return;
+    } // header or file name
+
+    if (0 == nCol && coords.y() >= m_pFilesG->horizontalHeader()->height())
+    {
+        showExternalTools();
+    }
+}
+
+void MainFormDlgImpl::fixCurrentNote(const QPoint& coords)
 {
 LAST_STEP("MainFormDlgImpl::onFixCurrentNote()");
-    QPoint coords (m_pFilesG->mapFromGlobal(QPoint(m_nGlobalX, m_nGlobalY)));
+    //QPoint coords (m_pFilesG->mapFromGlobal(QPoint(m_nGlobalX, m_nGlobalY)));
     //int nHorHdrHght ();
     //if (coords.x() < nVertHdrWdth) { return; }
     int nCol (m_pFilesG->columnAt(coords.x() - m_pFilesG->verticalHeader()->width()));
-    if (nCol < 1) { return; } // header or file name
+    //if (nCol < 1) { return; } // header or file name
+    CB_ASSERT(nCol >= 1);
 
     if (coords.y() < m_pFilesG->horizontalHeader()->height())
     {
@@ -3102,6 +3181,145 @@ void MainFormDlgImpl::showFixes(vector<Transformation*>& vpTransf, Subset eSubse
     }
 }
 
+
+void MainFormDlgImpl::showExternalTools()
+{
+    ModifInfoMenu menu;
+    vector<QAction*> vpAct;
+
+    QAction* pAct (new QAction("Open containing folder ...", &menu));
+    menu.addAction(pAct);
+    vpAct.push_back(pAct);
+
+    if (!m_pCommonData->m_vExternalToolInfos.empty())
+    {
+        menu.addSeparator();
+    }
+    for (int i = 0; i < cSize(m_pCommonData->m_vExternalToolInfos); ++i)
+    {
+        QAction* pAct (new QAction(convStr(m_pCommonData->m_vExternalToolInfos[i].m_strName), &menu));
+        menu.addAction(pAct);
+        vpAct.push_back(pAct);
+    }
+
+    QAction* p (menu.exec(QPoint(m_nGlobalX, m_nGlobalY + 10)));
+    if (0 != p)
+    {
+        int nIndex (std::find(vpAct.begin(), vpAct.end(), p) - vpAct.begin());
+        //qDebug("pressed %d", nIndex);
+        if (0 == nIndex)
+        {
+            CB_ASSERT (0 != m_pCommonData->getCrtMp3Handler());
+            QString qstrDir (convStr(m_pCommonData->getCrtMp3Handler()->getDir()));
+#if defined(WIN32) || defined(__OS2__)
+            //qstrDir = QDir::toNativeSeparators(qstrDir);
+            QDesktopServices::openUrl(QUrl("file:///" + qstrDir, QUrl::TolerantMode));
+#else
+            QDesktopServices::openUrl(QUrl("file://" + qstrDir, QUrl::TolerantMode));
+#endif
+        }
+        else
+        { // ttt1 copied from void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, Subset eSubset)
+            const ExternalToolInfo& info (m_pCommonData->m_vExternalToolInfos[nIndex - 1]);
+            Subset eSubset (0 != (Qt::ControlModifier & menu.getModifiers()) ? ALL : SELECTED); //ttt0 it's confusing that the external tools apply to selected files by default (you have to press CTRL to get all) while transformations apply to all files by default (you have to right-click to process selected ones; OTOH it seems to make sense that the default for transforms to be all the files while the default for external tools to be a single file
+            //deque<const Mp3Handler*> vpCrt;
+            const deque<const Mp3Handler*>* pvpHandlers;
+            switch (eSubset)
+            {
+            case SELECTED: pvpHandlers = &m_pCommonData->getSelHandlers(); break;
+            case ALL: pvpHandlers = &m_pCommonData->getViewHandlers(); break;
+            //case CURRENT: vpCrt.push_back(m_pCommonData->getCrtMp3Handler()); pvpHandlers = &vpCrt; break;
+            default: CB_ASSERT (false);
+            }
+            //qDebug("ctrl=%d", eSubset);
+
+            if (info.m_bConfirmLaunch && !askConfirm(*pvpHandlers, "Run \"" + info.m_strName + "\" on"))
+            {
+                return;
+            }
+
+            QStringList lFiles;
+            for (int i = 0; i < cSize(*pvpHandlers); ++i)
+            {
+                lFiles << convStr((*pvpHandlers)[i]->getName());
+            }
+            switch (info.m_eLaunchOption)
+            {
+            case ExternalToolInfo::WAIT_AND_KEEP_WINDOW_OPEN:
+            case ExternalToolInfo::WAIT_THEN_CLOSE_WINDOW:
+                {
+                    ExternalToolDlgImpl dlg (this, info.m_eLaunchOption == ExternalToolInfo::WAIT_AND_KEEP_WINDOW_OPEN, m_settings, m_pCommonData, info.m_strName, "299_ext_tools.html");
+                    dlg.run(convStr(info.m_strCommand), lFiles);
+                }
+                break;
+            case ExternalToolInfo::DONT_WAIT:
+                {
+                    QString qstrProg;
+                    QStringList lArgs;
+                    ExternalToolDlgImpl::prepareArgs(convStr(info.m_strCommand), lFiles, qstrProg, lArgs);
+                    if (!QProcess::startDetached(qstrProg, lArgs))
+                    {
+                        QMessageBox::critical(this, "Error", "Cannot start process. Check that the executable name and the parameters are correct.");
+                    }
+                }
+                break;
+            }
+
+            //l << "p1" << "p 2" << "p:3'" << "p\"4" << "p5";
+            //QProcess proc (this);
+            //proc.startDetached("konqueror");
+            //proc.start("konqueror"); PausableThread::sleep(10);
+            //proc.start("ParamsGui", l); PausableThread::sleep(10);
+            //proc.startDetached("ParamsGui", l);
+
+            //proc.kill();
+        }
+    }
+    //add external tools
+}
+
+
+bool MainFormDlgImpl::askConfirm(const deque<const Mp3Handler*>& vpHandlers, const string& strAction)
+{
+    if (vpHandlers.empty())
+    {
+        return false;
+    }
+
+    QString qstrConf = convStr(strAction);
+
+    qstrConf += " ";
+    qstrConf += convStr(vpHandlers[0]->getShortName());
+    if (vpHandlers.size() > 1)
+    {
+        if (vpHandlers.size() == 2)
+        {
+            qstrConf += " and ";
+        }
+        else
+        {
+            qstrConf += ", ";
+        }
+        qstrConf += convStr(vpHandlers[1]->getShortName());
+        if (vpHandlers.size() > 2)
+        {
+            qstrConf += " and ";
+            if (vpHandlers.size() == 3)
+            {
+                qstrConf += convStr(vpHandlers[2]->getShortName());
+            }
+            else
+            {
+                qstrConf += QString().sprintf("%d other files", (int)vpHandlers.size() - 2);
+            }
+        }
+    }
+
+    qstrConf += "?";
+
+    QMessageBox::StandardButton res (QMessageBox::question(this, "Confirmation", qstrConf, QMessageBox::Yes | QMessageBox::No, QMessageBox::No));
+    return QMessageBox::Yes == res;
+}
 
 //=============================================================================================================================
 //=============================================================================================================================
@@ -3217,10 +3435,23 @@ Development machine:
 
 
 
-//ttt2 perhaps "open file manager" on right-click (QDesktopServices::openUrl seems to do it)
 
 //ttt0 look at /d/test_mp3/1/tmp4/tmp2/unsupported/bad-decoding
 
 // favicon.ico : not sure how to create it; currently it's done with GIMP, with 8bpp/1 bit alpha, not compressed; however, konqueror doesn't show it when using a local page
 
 //ttt0 run CppCheck
+
+
+
+
+//ttt0 maybe: thread to write to tmp that crt proc is alive and what session it's using; then start new process / bring existing one on top, as needed
+
+
+//ttt1 warn when folders are missing (perhaps as network drives are not mounted, usb sticks not inserted, ...), to avoid erasing the database
+
+
+//ttt0 scripting: http://mp3diags.blogspot.com/2011/12/new-discogs-api-and-various-fixes-in.html
+
+//ttt0 link from stable to unstable in doc. perhaps also have a notification popup
+
