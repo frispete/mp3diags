@@ -50,39 +50,61 @@ void logTransformation(const string& strLogFile, const char* szActionName, const
 namespace {
 
 
+struct Mp3TransformThread;
+
+struct Mp3TransformerGui : public Mp3Transformer
+{
+    Mp3TransformThread* m_pMp3TransformThread;
+
+    Mp3TransformerGui(
+        CommonData* pCommonData,
+        const TransfConfig& transfConfig,
+        const deque<const Mp3Handler*>& vpHndlr,
+        vector<const Mp3Handler*>& vpDel,
+        vector<const Mp3Handler*>& vpAdd,
+        vector<Transformation*>& vpTransf,
+        Mp3TransformThread* pMp3TransformThread) :
+
+        Mp3Transformer(
+            pCommonData,
+            transfConfig,
+            vpHndlr,
+            vpDel,
+            vpAdd,
+            vpTransf,
+            0),
+        m_pMp3TransformThread(pMp3TransformThread)
+    {
+    }
+
+    /*override*/ bool isAborted();
+    /*override*/ void checkPause();
+    /*override*/ void emitStepChanged(const StrList& v, int nStep);
+};
+
+
 struct Mp3TransformThread : public PausableThread
 {
-    CommonData* m_pCommonData;
-    const TransfConfig& m_transfConfig;
-    //bool m_bAll; // if to use all handlers or only the selected ones
-    const deque<const Mp3Handler*>& m_vpHndlr;
-
-    vector<const Mp3Handler*>& m_vpDel;
-    vector<const Mp3Handler*>& m_vpAdd; // for proc files that are in the same directory as the source and have a different name
-
-    vector<Transformation*>& m_vpTransf;
+    Mp3TransformerGui m_mp3TransformerGui;
 
     Mp3TransformThread(
-        CommonData* pCommonData, const TransfConfig& transfConfig,
+        CommonData* pCommonData,
+        const TransfConfig& transfConfig,
         const deque<const Mp3Handler*>& vpHndlr,
         vector<const Mp3Handler*>& vpDel,
         vector<const Mp3Handler*>& vpAdd,
         vector<Transformation*>& vpTransf) :
 
-        m_pCommonData(pCommonData), m_transfConfig(transfConfig),
-        m_vpHndlr(vpHndlr),
-        m_vpDel(vpDel),
-        m_vpAdd(vpAdd),
-        m_vpTransf(vpTransf),
-        m_bWriteError(true),
-        m_bFileChanged(false)
+        m_mp3TransformerGui(
+            pCommonData,
+            transfConfig,
+            vpHndlr,
+            vpDel,
+            vpAdd,
+            vpTransf,
+            this)
     {
     }
-
-    string m_strErrorFile; // normally this is empty; if it's not, writing to the specified file failed
-    string m_strErrorDir; // normally this is empty; if it's not, creating the specified backup file failed
-    bool m_bWriteError;
-    bool m_bFileChanged;
 
     /*override*/ void run()
     {
@@ -90,7 +112,7 @@ struct Mp3TransformThread : public PausableThread
         {
             CompleteNotif notif(this);
 
-            notif.setSuccess(transform());
+            notif.setSuccess(m_mp3TransformerGui.transform());
         }
         catch (...)
         {
@@ -99,9 +121,25 @@ struct Mp3TransformThread : public PausableThread
         }
     }
 
-    bool transform();
+    using PausableThread::emitStepChanged;
 };
 
+
+/*override*/ bool Mp3TransformerGui::isAborted()
+{
+    return m_pMp3TransformThread->isAborted();
+}
+
+/*override*/ void Mp3TransformerGui::checkPause()
+{
+    m_pMp3TransformThread->checkPause();
+}
+
+/*override*/ void Mp3TransformerGui::emitStepChanged(const StrList& v, int nStep)
+{
+    //emit m_pMp3TransformThread->stepChanged(v, nStep);
+    m_pMp3TransformThread->emitStepChanged(v, nStep);
+}
 
 
 // the idea is to mark a file for deletion but only rename it, so other things can be done as if the file got erased, but if something goes wrong the file can be restored;
@@ -219,8 +257,12 @@ void logTransformation(const string& strLogFile, const char* szActionName, const
 }
 
 
+} // namespace
 
-bool Mp3TransformThread::transform()
+
+
+
+bool Mp3Transformer::transform()
 {
     bool bAborted (false);
 
@@ -279,7 +321,8 @@ bool Mp3TransformThread::transform()
                     Transformation& t (*m_vpTransf[j]);
                     TRACER("Mp3TransformThread::transform()" + strOrigName + "/" + t.getActionName());
                     l[1] = t.getActionName();
-                    emit stepChanged(l, i + 1);
+                    //emit stepChanged(l, i + 1);
+                    emitStepChanged(l, i + 1);
                     Transformation::Result eTransf;
                     try
                     {
@@ -318,10 +361,15 @@ bool Mp3TransformThread::transform()
                         return false;
                     }
 //TRACER1A("transf ", 14);
+                    //cout << "trying to apply " << t.getActionName() << " to " << pNewHndl.get()->getName() << endl;
                     if (eTransf != Transformation::NOT_CHANGED)
                     {
                     //TRACER1A("transf ", 15);
                         CB_ASSERT (!m_pCommonData->m_strTransfLog.empty()); //ttt0 triggered according to http://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=45 ; however, the code is quite simple and it doesn't seem to be a valid reason for m_strTransfLog to be empty (aside from corrupted memory) ; according to https://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=49 removing the .dat file solved the issue
+                        if (0 != m_pLog)
+                        {
+                            (*m_pLog) << "applied " << t.getActionName() << " to " << pNewHndl.get()->getName() << endl;
+                        }
                         if (m_pCommonData->m_bLogTransf)
                         {
                             logTransformation(m_pCommonData->m_strTransfLog, t.getActionName(), pNewHndl.get());
@@ -566,8 +614,6 @@ bool Mp3TransformThread::transform()
 }
 //ttt2 try to avoid rescanning the last file in a transform when intermediaries are removed;
 
-} // namespace
-
 
 
 
@@ -578,18 +624,14 @@ bool transform(const deque<const Mp3Handler*>& vpHndlr, vector<Transformation*>&
     vector<const Mp3Handler*> vpDel;
     vector<const Mp3Handler*> vpAdd;
 
-    string strErrorFile, strErrorDir;
-    bool bWriteError;
-    bool bFileChanged;
+    string strError;
+
     {
         Mp3TransformThread* pThread (new Mp3TransformThread(pCommonData, transfConfig, vpHndlr, vpDel, vpAdd, vpTransf));
         ThreadRunnerDlgImpl dlg (pParent, getNoResizeWndFlags(), pThread, ThreadRunnerDlgImpl::SHOW_COUNTER, ThreadRunnerDlgImpl::TRUNCATE_BEGIN);
         dlg.setWindowTitle(convStr(strTitle));
         dlg.exec();
-        strErrorFile = pThread->m_strErrorFile;
-        strErrorDir = pThread->m_strErrorDir;
-        bWriteError = pThread->m_bWriteError;
-        bFileChanged = pThread->m_bFileChanged;
+        strError = pThread->m_mp3TransformerGui.getError();
     }
 
 
@@ -598,33 +640,43 @@ bool transform(const deque<const Mp3Handler*>& vpHndlr, vector<Transformation*>&
         pCommonData->mergeHandlerChanges(vpAdd, vpDel, CommonData::SEL | CommonData::CURRENT);
     }
 
-    if (!strErrorFile.empty())
+    if (!strError.empty())
     {
-        if (bWriteError)
+        QMessageBox::critical(pParent, "Error", convStr(strError));
+    }
+
+    return strError.empty();
+}
+
+std::string Mp3Transformer::getError() const
+{
+    if (!m_strErrorFile.empty())
+    {
+        if (m_bWriteError)
         {
-            QMessageBox::critical(pParent, "Error", "There was an error writing to the following file:\n\n" + toNativeSeparators(convStr(strErrorFile)) + "\n\nMake sure that you have write permissions and that there is enough space on the disk.\n\nProcessing aborted.");
+            return "There was an error writing to the following file:\n\n" + toNativeSeparators(m_strErrorFile) + "\n\nMake sure that you have write permissions and that there is enough space on the disk.\n\nProcessing aborted.";
         }
         else
         {
-            if (bFileChanged)
+            if (m_bFileChanged)
             {
-                QMessageBox::critical(pParent, "Error", "The file \"" + toNativeSeparators(convStr(strErrorFile)) + "\" seems to have been modified since the last scan. You need to rescan it before continuing.\n\nProcessing aborted.");
+                return "The file \"" + toNativeSeparators(m_strErrorFile) + "\" seems to have been modified since the last scan. You need to rescan it before continuing.\n\nProcessing aborted.";
             }
             else
             {
-                if (strErrorDir.empty())
+                if (m_strErrorDir.empty())
                 {
-                    QMessageBox::critical(pParent, "Error", "There was an error processing the following file:\n\n" + toNativeSeparators(convStr(strErrorFile)) + "\n\nProbably the file was deleted or modified since the last scan, in which case you should reload / rescan your collection. Or it may be used by another program; if that's the case, you should stop the other program first.\n\nThis may also be caused by access restrictions or a full disk.\n\nProcessing aborted.");
+                    return "There was an error processing the following file:\n\n" + toNativeSeparators(m_strErrorFile) + "\n\nProbably the file was deleted or modified since the last scan, in which case you should reload / rescan your collection. Or it may be used by another program; if that's the case, you should stop the other program first.\n\nThis may also be caused by access restrictions or a full disk.\n\nProcessing aborted.";
                 }
                 else
                 {
-                    QMessageBox::critical(pParent, "Error", "There was an error processing the following file:\n" + toNativeSeparators(convStr(strErrorFile)) + "\n\nThe following folder couldn't be created:\n" + toNativeSeparators(convStr(strErrorDir)) + "\n\nProcessing aborted.");
+                    return "There was an error processing the following file:\n" + toNativeSeparators(m_strErrorFile) + "\n\nThe following folder couldn't be created:\n" + toNativeSeparators(m_strErrorDir) + "\n\nProcessing aborted.";
                 }
             }
         }
     }
 
-    return strErrorFile.empty();
+    return "";
 }
 
 
@@ -641,60 +693,6 @@ bool transform(const deque<const Mp3Handler*>& vpHndlr, vector<Transformation*>&
 17:47:58.435 Caught unknown exception in Mp3TransformThread::transform()
 17:47:58.443 Assertion failure in file Mp3TransformThread.cpp, line 98: false. The program will exit.
 */
-
-
-
-
-
-
-
-
-/*
-
-Elbert Pol
-
-10:38:55.129 < Mp3TransformThread::transform()P:/Mp3/Caro Emerald -
-Deleted Scenes From The Cutting Room Floor (2010)/01 - Caro Emerald -
-That Man.mp3/Save ID3V2.3.0 tags
-10:38:55.129 < transf 4
-10:38:55.131 > transf 28
-10:38:55.131 > transf 29
-10:38:55.131 > transf 33
-10:38:55.131 > transf 34
-10:38:55.133 > transf 35
-10:38:55.147 > transf 36
-10:38:55.147 > transf 37
-10:38:55.149 > P:/Mp3/Caro Emerald - Deleted Scenes From The Cutting
-Room Floor (2010)/01 - Caro Emerald - That Man.mp3
-10:38:55.149 < P:/Mp3/Caro Emerald - Deleted Scenes From The Cutting
-Room Floor (2010)/01 - Caro Emerald - That Man.mp3
-10:38:55.149 < transf 37
-10:38:55.151 < transf 36
-10:38:55.151 < transf 35
-10:38:55.153 < transf 34
-10:38:55.155 < transf 33
-10:38:55.155 < transf 29
-10:38:55.157 < transf 28
-10:38:55.159 > transf 63
-10:38:55.159 < transf 63
-10:38:55.159 < transf 3
-10:38:55.160 > Mp3Handler destr: P:/Mp3/Caro Emerald - Deleted Scenes
- From The Cutting Room Floor (2010)/01 - Caro Emerald - That Man.mp3.HU3356
-10:38:55.160 < Mp3Handler destr: P:/Mp3/Caro Emerald - Deleted Scenes
- From The Cutting Room Floor (2010)/01 - Caro Emerald - That Man.mp3.HU3356
-10:38:55.160 < transf 2
-10:38:55.162 < transf 1
-10:38:55.162 > transf 66
-10:38:55.162  Caught unknown exception in Mp3TransformThread::transform()
-10:38:55.164 < transf 66
-10:38:55.164 Assertion failure in file
-..\..\..\QT\MP3Diags-1.0.06.051\src\Mp3TransformThread.cpp, line 98:
-false. The program will exit.
-
-
-*/
-
-
 
 
 

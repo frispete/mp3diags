@@ -793,7 +793,7 @@ MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bDefaultForVisib
 
     m_pCommonData = new CommonData(m_settings, m_pFilesG, m_pNotesG, m_pStreamsG, m_pUniqueNotesG, /*m_pCurrentFileG, m_pCurrentAlbumG,*/ /*m_pLogG,*/ /*m_pAssignedB,*/ m_pNoteFilterB, m_pDirFilterB, m_pModeAllB, m_pModeAlbumB, m_pModeSongB, bDefaultForVisibleSessBtn);
 
-    m_settings.loadMiscConfigSettings(m_pCommonData);
+    m_settings.loadMiscConfigSettings(m_pCommonData, SessionSettings::INIT_GUI);
 
     m_pCommonData->m_bScanAtStartup = m_settings.loadScanAtStartup();
 
@@ -3445,7 +3445,6 @@ Development machine:
 
 
 
-//ttt0 maybe: thread to write to tmp that crt proc is alive and what session it's using; then start new process / bring existing one on top, as needed
 
 
 //ttt1 warn when folders are missing (perhaps as network drives are not mounted, usb sticks not inserted, ...), to avoid erasing the database
