@@ -1,3 +1,36 @@
+mp3diags (1.1.12.068) testing; urgency=low
+
+  * external tools
+  * possibility of applying transformation lists in CLI mode
+  * "Open containing folder" in the main window
+  * delete files from the main window
+  * close buttons for Gnome 3
+  * APE remover
+  * non-audio remover
+  * CLI analyzer uses session settings to determine quality thresholds
+  * fixed menu tooltips that disappeared too quickly
+
+ -- Marian Ciobanu <ciobi@inbox.com>  Wed, 01 Feb 2012 22:00:00 +0200
+
+mp3diags (1.1.09.064) testing; urgency=low
+
+  * moved to Discogs API V2
+  * added codepage support when copying ID3V1 to ID3V2
+  * fixed crash caused by ID3V2.4 tag with invalid flags
+  * fixed splitting of unsupported ID3V2 tags
+  * fixed Xing generation for small bitrates
+
+ -- Marian Ciobanu <ciobi@inbox.com>  Sat, 03 Dec 2011 22:00:00 +0200
+
+mp3diags (1.1.08.062) testing; urgency=low
+
+  * made Discogs queries after a Discogs API change
+  * fixed track numbering when querying multi-volume albums from Discogs
+  * made Linux shell integration accept file names containing spaces
+  * added close button for dialogs on Gnome 3
+
+ -- Marian Ciobanu <ciobi@inbox.com>  Sun, 28 Aug 2011 22:00:00 +0200
+
 mp3diags (1.1.07.061) testing; urgency=low
 
   * shell integration for Linux
