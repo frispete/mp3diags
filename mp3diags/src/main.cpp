@@ -51,6 +51,9 @@
 #include  "Notes.h"
 #include  "Version.h"
 #include  "Widgets.h"
+#include  "CommonData.h"
+#include  "ConfigDlgImpl.h"
+#include  "Mp3TransformThread.h"
 
 
 //#include  "Profiler.h"
@@ -230,6 +233,9 @@ OptionInfo s_inputFileOpt ("input-file", "", "Input file");
 OptionInfo s_hiddenFolderSessOpt ("hidden-session", "f", "Creates a new session for the specified folder and stores it inside that folder. The session will be hidden when the program exits.");
 OptionInfo s_loadedFolderSessOpt ("visible-session", "v", "Creates a new session for the specified folder and stores it inside that folder. The session will be visible in the session list after the program is restarted.");
 OptionInfo s_tempSessOpt ("temp-session", "t", "Creates a temporary session for the specified folder, which will be deleted when the program exits");
+OptionInfo s_transfListOpt ("transf-list", "l", "A number between 1 and 4. Applies the specified custom transformation list to the files and/or folders passed"); //ttt1 use CUSTOM_TRANSF_CNT instead of 4
+OptionInfo s_sessionOpt ("session", "w", "Session file name");
+
 OptionInfo s_overrideSess ("", "", ""); // ttt1 maybe implement - for s_folderSessOpt and s_tempSessOpt (and s_inputFileOpt) - session with settings to use instead of the template
 
 
@@ -294,7 +300,25 @@ struct SessEraser
 } // namespace
 
 
-//ttt0 in 10.3 loading a session seemed to erase the templates, but couldn't reproduce later
+//ttt1 in 10.3 loading a session seemed to erase the templates, but couldn't reproduce later
+
+string getActiveSession(const po::variables_map& options, int& nSessCnt, bool& bOpenLast, string& strTempSessTempl, string& strDirSessTempl)
+{
+    string strRes;
+    vector<string> vstrSess;
+    //string strLast;
+    GlobalSettings st;
+
+    st.loadSessions(vstrSess, strRes, bOpenLast, strTempSessTempl, strDirSessTempl);
+    nSessCnt = cSize(vstrSess);
+
+    if (options.count(s_sessionOpt.m_szLongOpt) > 0)
+    {
+        strRes = options[s_sessionOpt.m_szLongOpt].as<string>();
+    }
+
+    return strRes;
+}
 
 
 // http://stackoverflow.com/questions/760323/why-does-my-qt4-5-app-open-a-console-window-under-windows - The option under Visual Studio for setting the subsystem is under Project Settings->Linker->System->SubSystem
@@ -334,13 +358,7 @@ int guiMain(const po::variables_map& options) {
 
     SessEraser sessEraser;
 
-    {
-        vector<string> vstrSess;
-        //string strLast;
-        GlobalSettings st;
-        st.loadSessions(vstrSess, strLastSession, bOpenLast, strTempSessTempl, strDirSessTempl);
-        nSessCnt = cSize(vstrSess);
-    }
+    strLastSession = getActiveSession(options, nSessCnt, bOpenLast, strTempSessTempl, strDirSessTempl);
 
     bool bOpenSelDlg (false);
 
@@ -521,21 +539,34 @@ int guiMain(const po::variables_map& options) {
 
 namespace {
 
-
-class CmdLineAnalyzer
+class CmdLineProcessor
 {
-    Note::Severity m_minLevel;
-
-    const QualThresholds& m_qualThresholds;
+    QualThresholds m_qualThresholds;
     int m_nCut; // for relative dirs
+
+    const vector<string>& m_vstrNames;
+
+    virtual bool processFile(const string& strFullName, Mp3Handler* mp3Handler) = 0;
 
     // returns "true" if there are no problems
     bool processFile(const string& strFullName)
     {
-        Mp3Handler* mp3;
+        if (strFullName.size() <= 4)
+        {
+            return true;
+        }
+
+        QString qs;
+        qs = convStr(strFullName.substr(strFullName.size() - 4)).toLower();
+        if (qs != ".mp3") // ttt1 unify with test in Mp3ProcThread::scan()
+        {
+            return true;
+        }
+
+        Mp3Handler* mp3Handler;
         try
         {
-            mp3 = new Mp3Handler(strFullName, false, m_qualThresholds);
+            mp3Handler = new Mp3Handler(strFullName, false, m_qualThresholds);
         }
         catch (Mp3Handler::FileNotFound)
         {
@@ -543,38 +574,11 @@ class CmdLineAnalyzer
             return false;
         }
 
-        bool thisFileHasProblems = false;
-        const NoteColl& notes (mp3->getNotes());
-        for (int i = 0, n = cSize(notes.getList()); i < n; ++i) // ttt2 poor performance
-        {
-            const Note* pNote (notes.getList()[i]);
-
-            // category --include/--exclude options would be nice, too.
-            bool showThisNote = (pNote->getSeverity() <= m_minLevel);
-            if (!showThisNote)
-            {
-                continue;
-            }
-
-            if (!thisFileHasProblems)
-            {
-                thisFileHasProblems = true;
-                cout << toNativeSeparators(strFullName.substr(m_nCut)) << endl;
-            }
-
-            cout << "- " << (Note::severityToString(pNote->getSeverity())) << ": " << pNote->getDescription() << endl;
-        }
-
-        if (thisFileHasProblems)
-        {
-            cout << endl;
-        }
-
-        return !thisFileHasProblems;
+        return processFile(strFullName, mp3Handler);
     }
 
     // returns "true" if there are no problems
-    bool processDir(const string& strFullName)
+    bool processFullName(const string& strFullName) //ttt1 make FileSearcher take wildcards; then this function could take files, directories, and wildcard names (which might match both files and directories); in particular, a FileSearcher might take the name of a specific file, and then it should list it
     {
         bool bRes (true);
         FileSearcher fs (strFullName);
@@ -587,7 +591,7 @@ class CmdLineAnalyzer
             }
             else if (fs.isDir())
             {
-                bRes = processDir(fs.getName()) && bRes;
+                bRes = processFullName(fs.getName()) && bRes;
             }
             else
             {
@@ -598,10 +602,6 @@ class CmdLineAnalyzer
         }
         return bRes;
     }
-
-public:
-
-    CmdLineAnalyzer(Note::Severity minLevel, const QualThresholds& qualThresholds) : m_minLevel(minLevel), m_qualThresholds(qualThresholds) {}
 
     // returns "true" if there are no problems
     bool processName(const string& strName)
@@ -616,7 +616,7 @@ public:
         }
         else if (dirExists(strFullName))
         {
-            return processDir(strFullName);
+            return processFullName(strFullName);
         }
         else
         {
@@ -626,26 +626,206 @@ public:
         return false;
     }
 
-    // returns "true" if there are no problems
-    bool processNames(const vector<string>& vstrNames)
+protected:
+    void setQualThresholds(const QualThresholds& qualThresholds) { m_qualThresholds = qualThresholds; }
+    string getRelativeName(const string& strFullName)
     {
-        bool anyFileHasProblems (false);
-        for (int i = 0, n = cSize(vstrNames); i < n; ++i)
-        {
-            const string& file (vstrNames[i]);
+        return strFullName.substr(m_nCut);
+    }
 
-            anyFileHasProblems = processName(file) || anyFileHasProblems; //ttt2 make wildcards recognized on Windows (perhaps Linux too but Bash takes care of this; not sure about other shells)
+    CmdLineProcessor(const vector<string>& vstrNames) : m_vstrNames(vstrNames) {}
+    virtual ~CmdLineProcessor() {}
+
+public:
+    // returns "true" if there are no problems
+    bool run()
+    {
+        bool bAnyFileHasProblems (false);
+        for (int i = 0, n = cSize(m_vstrNames); i < n; ++i)
+        {
+            const string& file (m_vstrNames[i]);
+
+            bAnyFileHasProblems = processName(file) || bAnyFileHasProblems; //ttt1 make wildcards recognized on Windows (perhaps Linux too but Bash takes care of this; not sure about other shells)
         }
 
-        return !anyFileHasProblems;
+        return !bAnyFileHasProblems;
     }
 };
 
 
 
+class CmdLineAnalyzer : public CmdLineProcessor
+{
+    Note::Severity m_minLevel;
+
+    /*override*/ bool processFile(const string& strFullName, Mp3Handler* pmp3Handler)
+    {
+        bool bThisFileHasProblems = false;
+        const NoteColl& notes (pmp3Handler->getNotes());
+        for (int i = 0, n = cSize(notes.getList()); i < n; ++i) // ttt2 poor performance
+        {
+            const Note* pNote (notes.getList()[i]);
+
+            // category --include/--exclude options would be nice, too.
+            bool bShowThisNote = (pNote->getSeverity() <= m_minLevel);
+            if (!bShowThisNote)
+            {
+                continue;
+            }
+
+            if (!bThisFileHasProblems)
+            {
+                bThisFileHasProblems = true;
+                cout << toNativeSeparators(getRelativeName(strFullName)) << endl;
+            }
+
+            cout << "- " << (Note::severityToString(pNote->getSeverity())) << ": " << pNote->getDescription() << endl;
+        }
+
+        if (bThisFileHasProblems)
+        {
+            cout << endl;
+        }
+
+        return !bThisFileHasProblems;
+    }
+
+public:
+    CmdLineAnalyzer(Note::Severity minLevel, const QualThresholds& qualThresholds, const vector<string>& vstrNames) : CmdLineProcessor(vstrNames), m_minLevel(minLevel)
+    {
+        setQualThresholds(qualThresholds);
+    }
+
+};
+
+
+
+
+class TransfListRunner : public CmdLineProcessor
+{
+    struct Mp3TransformerCli : public Mp3Transformer
+    {
+        Mp3TransformerCli(
+            CommonData* pCommonData,
+            const TransfConfig& transfConfig,
+            const deque<const Mp3Handler*>& vpHndlr,
+            vector<const Mp3Handler*>& vpDel,
+            vector<const Mp3Handler*>& vpAdd,
+            vector<Transformation*>& vpTransf) :
+
+            Mp3Transformer(
+                pCommonData,
+                transfConfig,
+                vpHndlr,
+                vpDel,
+                vpAdd,
+                vpTransf,
+                &cout)
+        {
+        }
+
+        /*override*/ bool isAborted() { return false; }
+        /*override*/ void checkPause() {}
+        /*override*/ void emitStepChanged(const StrList&, int) {}
+    };
+
+    SessionSettings m_settings;
+    CommonData m_commonData;
+    TransfConfig m_transfConfig;
+
+    deque<const Mp3Handler*> m_vpHndlr;
+    vector<const Mp3Handler*> m_vpDel;
+    vector<const Mp3Handler*> m_vpAdd;
+    vector<Transformation*> m_vpTransf;
+    Mp3TransformerCli m_mp3TransformerCli;
+
+    void loadCustomTransf(int nTransfList) // ttt1 unify with MainFormDlgImpl::loadCustomTransf() - perhaps make it member of SessionSettings
+    {
+        char bfr [50];
+        sprintf(bfr, "customTransf/set%04d", nTransfList);
+        //vector<string> vstrNames (m_settings.loadCustomTransf(k));
+        bool bErr;
+        vector<string> vstrNames (m_settings.loadVector(bfr, bErr));
+        vector<int> v;
+        const vector<Transformation*>& u (m_commonData.getAllTransf());
+        int m (cSize(u));
+        for (int i = 0, n = cSize(vstrNames); i < n; ++i)
+        {
+            string strName (vstrNames[i]);
+            int j (0);
+            for (; j < m; ++j)
+            {
+                if (u[j]->getActionName() == strName)
+                {
+                    v.push_back(j);
+                    break;
+                }
+            }
+
+            if (j == m)
+            {
+                //QMessageBox::warning(this, "Error setting up custom transformations", "Couldn't find a transformation with the name \"" + convStr(strName) + "\". The program will proceed, but you should review the custom transformations lists.");
+                cerr << "Error setting up custom transformations: " << "Couldn't find a transformation with the name \"" + strName + "\". The program will proceed, but you should review the custom transformations lists." << endl;
+            }
+        }
+
+        if (v.empty())
+        {
+            vector<vector<int> > vv (CUSTOM_TRANSF_CNT);
+            initDefaultCustomTransf(nTransfList, vv, &m_commonData);
+            v = vv[nTransfList];
+        }
+
+        m_commonData.setCustomTransf(nTransfList, v);
+    }
+
+    /*override*/ bool processFile(const string& strFullName, Mp3Handler* pmp3Handler)
+    {
+        m_vpHndlr.clear();
+        m_vpHndlr.push_back(pmp3Handler);
+        m_vpDel.clear();
+        m_vpAdd.clear();
+        bool bRes (m_mp3TransformerCli.transform());
+        if (!bRes)
+        {
+            string strErr (m_mp3TransformerCli.getError());
+            if (strErr.empty())
+            {
+                strErr = "Unknown error while processing " + strFullName;
+            }
+            cerr << strErr << endl;
+        }
+        return bRes;
+    }
+
+public:
+    TransfListRunner(const vector<string>& vstrNames, int nTransfList, const string& strSessFile) :
+        CmdLineProcessor(vstrNames),
+        m_settings(strSessFile),
+        m_commonData(m_settings, 0, 0, 0, 0, 0, 0, 0, 0, 0, false),
+        m_mp3TransformerCli(&m_commonData, m_transfConfig, m_vpHndlr, m_vpDel, m_vpAdd, m_vpTransf)
+    {
+        m_settings.loadMiscConfigSettings(&m_commonData, SessionSettings::DONT_INIT_GUI);
+        m_settings.loadTransfConfig(m_transfConfig);
+        for (int i = 0; i < CUSTOM_TRANSF_CNT; ++i)
+        {
+            loadCustomTransf(i);
+        }
+
+        m_vpTransf.clear();
+        for (int i = 0, n = cSize(m_commonData.getCustomTransf()[nTransfList]); i < n; ++i)
+        {
+            m_vpTransf.push_back(m_commonData.getAllTransf()[m_commonData.getCustomTransf()[nTransfList][i]]);
+        }
+
+        setQualThresholds(m_commonData.getQualThresholds());
+        m_commonData.m_strTransfLog = SessionEditorDlgImpl::getLogFileName(strSessFile);
+    }
+};
+
+
 
 void noMessageOutput(QtMsgType, const char*) { }
-
 
 
 int cmdlineMain(const po::variables_map& options)
@@ -666,12 +846,15 @@ int cmdlineMain(const po::variables_map& options)
     const vector<string> inputFiles = options[s_inputFileOpt.m_szLongOpt].as< vector<string> >();
 
     Note::Severity minLevel (Note::WARNING);
-    try
+    if (options.count(s_severityOpt.m_szLongOpt) > 0)
     {
-        minLevel = options[s_severityOpt.m_szLongOpt].as<Note::Severity>(); //ttt2 see how to use default params in cmdlineDesc.add_options()
-    }
-    catch (...)
-    { // nothing
+        try
+        {
+            minLevel = options[s_severityOpt.m_szLongOpt].as<Note::Severity>(); //ttt2 see how to use default params in cmdlineDesc.add_options()
+        }
+        catch (...)
+        { // nothing
+        }
     }
 
     // In cmdline mode, we want to make sure the user only sees our
@@ -679,14 +862,48 @@ int cmdlineMain(const po::variables_map& options)
     // places in the program.
     qInstallMsgHandler(noMessageOutput);
 
+    string strSessFile;
 
-    // ttt2 For now, we always use the default quality thresholds; however,
-    // it certainly would make sense to load those from the last session,
-    // or make it possible to specify them on the command line.
-    CmdLineAnalyzer cmdLineAnalyzer (minLevel, QualThresholds::getDefaultQualThresholds());
+    {
+        int nSessCnt;
+        bool bOpenLast;
+        string strTempSessTempl;
+        string strDirSessTempl;
+        strSessFile = getActiveSession(options, nSessCnt, bOpenLast, strTempSessTempl, strDirSessTempl);
+    }
 
-    return cmdLineAnalyzer.processNames(inputFiles) ? 0 : 1;
+    if (options.count(s_transfListOpt.m_szLongOpt) > 0)
+    {
+
+        int nTransfList (options[s_transfListOpt.m_szLongOpt].as<int>() - 1); // [1..4] -> [0..3]
+        if (nTransfList < 0 || nTransfList >= CUSTOM_TRANSF_CNT)
+        {
+            cerr << "Transformation list must be a number between 1 and " << CUSTOM_TRANSF_CNT << endl;
+            return 1;
+        }
+
+        TransfListRunner transfListRunner (inputFiles, nTransfList, strSessFile);
+
+        return transfListRunner.run() ? 0 : 1;
+    }
+
+    SessionSettings settings (strSessFile);
+    CommonData commonData (settings, 0, 0, 0, 0, 0, 0, 0, 0, 0, false);
+
+    settings.loadMiscConfigSettings(&commonData, SessionSettings::DONT_INIT_GUI);
+    //settings.loadTransfConfig(transfConfig);
+    //commonData.m_strTransfLog = SessionEditorDlgImpl::getLogFileName(strSessFile);
+
+    CmdLineAnalyzer cmdLineAnalyzer (minLevel, commonData.getQualThresholds(), inputFiles);
+
+    return cmdLineAnalyzer.run() ? 0 : 1;
 }
+
+/*
+
+ttt1 CLI-friendly function restructuring:
+- errors and warnings should be returned in strings / lists and outputting from CLI tools done from a central place
+*/
 
 
 //static const char* CMD_HELP = "help"; static const char* CMD_HELP_SHORT = "h"; static const char* CMD_HELP_FULL = "help,h";
@@ -714,6 +931,13 @@ static void validate(boost::any& v, vector<string> const& values, Note::Severity
 
 int main(int argc, char *argv[])
 {
+    //ifstream_unicode in ("/home/ciobi/cpp/Mp3Utils/mp3diags/trunk/mp3diags/src/2/testä.txt");
+    /*ifstream_unicode in ("/home/ciobi/cpp/Mp3Utils/mp3diags/trunk/mp3diags/src/2/test_.txt");
+    string s;
+    getline(in, s);
+    cout << s;
+    return 4;//*/
+
 //char *argv[] = {"aa", "-s", "support", "pppqqq"}; argc = 4;
 //char *argv[] = {"aa", "pppqqq"}; argc = 2;
 //char *argv[] = {"aa", "/d/test_mp3/1/tmp2/c pic/vbri assertion.mp3"}; argc = 2;
@@ -750,6 +974,7 @@ int main(int argc, char *argv[])
     genericDesc.add_options()
         (s_helpOpt.m_szFullOpt, s_helpOpt.m_szDescr)
         (s_uninstOpt.m_szFullOpt, s_uninstOpt.m_szDescr)
+        (s_sessionOpt.m_szFullOpt, po::value<string>(), s_sessionOpt.m_szDescr)
     ;
 
     po::options_description cmdlineDesc ("Commandline mode");
@@ -758,6 +983,7 @@ int main(int argc, char *argv[])
         //("severity,s", po::value<Note::Severity>()->default_value(Note::WARNING), "minimum severity to show (one of error, warning, support); default: warning") //ttt1 see if this can be made to work; it sort of does, but when invoked with "--help" it prints "arg (=1)" rather than "arg (=warning)"
         (s_severityOpt.m_szFullOpt, po::value<Note::Severity>(), s_severityOpt.m_szDescr)
         //("severity,s", "minimum severity to show (one of error, warning, support")
+        (s_transfListOpt.m_szFullOpt, po::value<int>(), s_transfListOpt.m_szDescr)
     ;
 
     po::options_description folderSessDesc ("New, per-folder, session mode");
@@ -800,8 +1026,14 @@ int main(int argc, char *argv[])
         po::store(po::command_line_parser(argc, argv).style(style).options(fullDesc).positional(positionalDesc).run(), options);
         po::notify(options);
     }
+    catch (const exception& ex)
+    {
+        cerr << ex.what() << endl;
+        err = true;
+    }
     catch (...)//const po::unknown_option&)
     {
+        cerr << "unknown exception" << endl;
         err = true;
     }
 
@@ -897,11 +1129,19 @@ WARNING: it is ignored, until you registered a Category at adrian@suse.de .
 //ttt1 CLI-support: scan some files, create logs, apply some transforms, ...
 
 //ttt1 explorer right-click; create a new session vs. add to existing one
-//ttt0 make AdjustMt.sh work
+//ttt0 perhaps look at building Boost serialization, so it can be statically linked
 
 //ttt0 config screenshots need "shell" tab
-//ttt0 "shell" tab has smaller font
+//ttt0 "shell" tab has smaller font in screenshots
 
 //ttt0 look at running multiple instances concurrently / exit when second starts
+//use a .pid file in the session dir with its name based on the session name, so multiple instances programs can start for different sessions; if pid matches and it's mp3diags exit and bring the other program up
+//ttt0 maybe: thread to write to tmp that crt proc is alive and what session it's using; then start new process / bring existing one on top, as needed
 
-//ttt0 Windows changelog should use \n\r
+//ttt1 Windows changelog should use \n\r (probably by replacing "copy /y changelog.txt bin\\changelog.txt" in BuildMp3Diags.hta with something that reads the file line by line
+
+//ttt0 does TIFF cover art work? On Windows?
+
+//ttt2 non-utf8 file in /d/test_mp3/1/tmp2/crt_test/martin/dj not showing (reason: ListEnumerator::ListEnumerator calls QDir::entryInfoList(), which simply doesn't include the file, probably because its name is not UTF-8)
+
+//ttt0 config restructuring: session data: general settings, gui settings, gui controls, files
