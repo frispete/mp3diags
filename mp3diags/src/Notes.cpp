@@ -38,7 +38,7 @@ using namespace pearl;
 /*static*/ vector<const Note*> Notes::s_vpAllNotes;
 
 
-static const char* s_szPlaceholderDescr ("<Placeholder for a note that can no longer be found, most likely as a result of a software upgrade. You should rescan the file.>");
+static const char* s_szPlaceholderDescr (QT_TRANSLATE_NOOP("Notes", "<Placeholder for a note that can no longer be found, most likely as a result of a software upgrade. You should rescan the file.>"));
 
 // to be used by serialization: if a description is no longer found, the note gets replace with a default, "missing", one
 /*static*/ const Note* Notes::getMissingNote()
@@ -305,7 +305,6 @@ static const char* s_szPlaceholderDescr ("<Placeholder for a note that can no lo
 }
 
 
-
 //============================================================================================================
 //============================================================================================================
 //============================================================================================================
@@ -320,7 +319,7 @@ static const char* s_szPlaceholderDescr ("<Placeholder for a note that can no lo
 //======================================================================================================
 
 
-Note::Note(const Note& note, std::streampos pos, const std::string& strDetail /*= ""*/) :
+Note::Note(const Note& note, std::streampos pos, const std::string& strDetail /* = ""*/) :
         m_pSharedData(note.m_pSharedData),
         m_pos(pos),
         m_strDetail(strDetail)
@@ -328,7 +327,7 @@ Note::Note(const Note& note, std::streampos pos, const std::string& strDetail /*
     //char a [30]; sprintf(a, "1 Note::Note() %p", this); TRACER(a);
 }
 
-Note::Note(SharedData& sharedData, std::streampos pos, const std::string& strDetail /*= ""*/) :
+Note::Note(SharedData& sharedData, std::streampos pos, const std::string& strDetail /* = ""*/) :
         m_pSharedData(&sharedData),
         m_pos(pos),
         m_strDetail(strDetail)
@@ -375,6 +374,13 @@ string Note::getPosHex() const
     return s.str();
 }
 
+
+/*static*/ const std::string Note::severityToString(Severity s) {
+    if (s == ERR) return convStr(Notes::tr("ERROR"));
+    if (s == WARNING) return convStr(Notes::tr("WARNING"));
+    if (s == SUPPORT) return convStr(Notes::tr("SUPPORT"));
+    throw std::invalid_argument(boost::lexical_cast<std::string>((int)s));
+}
 
 
 
