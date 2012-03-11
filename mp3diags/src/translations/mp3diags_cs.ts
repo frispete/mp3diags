@@ -74,7 +74,7 @@
     <message>
         <location filename="../AboutDlgImpl.cpp" line="58"/>
         <source>Czech translation by %1, %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Překlad do češtiny %1, %2</translation>
     </message>
     <message>
         <location filename="../AboutDlgImpl.cpp" line="59"/>
@@ -1325,12 +1325,12 @@ Podtržené písmo je dovoleno, aby byly viděny mezery</translation>
     <message>
         <location filename="../ConfigDlgImpl.cpp" line="1129"/>
         <source>Info</source>
-        <translation type="unfinished">Informace</translation>
+        <translation>Informace</translation>
     </message>
     <message>
         <location filename="../ConfigDlgImpl.cpp" line="1129"/>
         <source>You need to restart the program to use the new language.</source>
-        <translation type="unfinished"></translation>
+        <translation>Aby se projevila změna jazyka, je třeba program spustit znovu.</translation>
     </message>
     <message>
         <location filename="../ConfigDlgImpl.cpp" line="1147"/>
@@ -4680,12 +4680,13 @@ will store its settings in this file.
 The name was generated automatically. If you want to choose a different name, simply click on
 the button at the right to change it.</source>
         <comment>this is a multiline tooltip</comment>
-        <translation type="unfinished">Toto je název &quot;souboru s nastavením&quot;
+        <translation>Toto je název &quot;souboru s nastavením&quot;
 
 Předpokládá se, že je to soubor, který již neexistuje. Není třeba jej vytvářet.
 MP3 Diags bude uchovávat svá nastavení v tomto souboru.
 
-Název byl vytvořen automaticky. Pokud chcete vybrat jiný název, jednoduše klepněte na tlačítko napravo pro jeho změnu.</translation>
+Název byl vytvořen automaticky. Pokud chcete vybrat jiný název, jednoduše
+klepněte na tlačítko napravo pro jeho změnu.</translation>
     </message>
     <message>
         <location filename="../SessionEditorDlgImpl.cpp" line="122"/>
