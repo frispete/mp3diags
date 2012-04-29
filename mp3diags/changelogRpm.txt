@@ -1,3 +1,6 @@
+* Sun Apr 29 2012 Marian Ciobanu <ciobi@inbox.com> 1.1.19.075
+- French translation
+
 * Sat Apr 06 2012 Marian Ciobanu <ciobi@inbox.com> 1.1.18.074
 - German translation
 - made code compilable on GCC 4.7
