@@ -484,13 +484,13 @@ Nepřebaleno do</translation>
         <translation>Žádný obrázek</translation>
     </message>
     <message>
-        <location filename="../DiscogsDownloader.cpp" line="681"/>
+        <location filename="../DiscogsDownloader.cpp" line="686"/>
         <location filename="../MusicBrainzDownloader.cpp" line="515"/>
         <source>getting album info ...</source>
         <translation>Získávají se informace o albu...</translation>
     </message>
     <message>
-        <location filename="../DiscogsDownloader.cpp" line="704"/>
+        <location filename="../DiscogsDownloader.cpp" line="709"/>
         <location filename="../MusicBrainzDownloader.cpp" line="541"/>
         <source>getting image ...</source>
         <translation>Získává se obrázek...</translation>
@@ -1811,27 +1811,27 @@ zpět nepřivede. Pro jejich zobrazení je potřeba nové prohledání.</transla
 <context>
     <name>DiscogsDownloader</name>
     <message>
-        <location filename="../DiscogsDownloader.cpp" line="506"/>
+        <location filename="../DiscogsDownloader.cpp" line="511"/>
         <source>Download album data from Discogs.com</source>
         <translation>Stáhnout data o albu z Discogs.com</translation>
     </message>
     <message>
-        <location filename="../DiscogsDownloader.cpp" line="529"/>
+        <location filename="../DiscogsDownloader.cpp" line="534"/>
         <source>Genres</source>
         <translation>Žánry</translation>
     </message>
     <message>
-        <location filename="../DiscogsDownloader.cpp" line="529"/>
+        <location filename="../DiscogsDownloader.cpp" line="534"/>
         <source>Genres, Styles</source>
         <translation>Žánry, styly</translation>
     </message>
     <message>
-        <location filename="../DiscogsDownloader.cpp" line="529"/>
+        <location filename="../DiscogsDownloader.cpp" line="534"/>
         <source>Genres (Styles)</source>
         <translation>Žánry (styly)</translation>
     </message>
     <message>
-        <location filename="../DiscogsDownloader.cpp" line="529"/>
+        <location filename="../DiscogsDownloader.cpp" line="534"/>
         <source>Styles</source>
         <translation>Styly</translation>
     </message>
@@ -2298,121 +2298,126 @@ Zamýšleno pro používání při vytváření souborů M3U obsahujících rela
         <translation>Zdroj nenalezen</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="591"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="586"/>
+        <source>Cannot create folder %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../FileRenamerDlgImpl.cpp" line="595"/>
         <source>Unknown error</source>
         <translation>Neznámá chyba</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="618"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="622"/>
         <source>No patterns exist</source>
         <translation>Neexistuje žádný vzor</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="618"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="622"/>
         <source>You must create at least a pattern before you can start renaming files.</source>
         <translation>Musíte vytvořit alespoň vzor, předtím než můžete začít přejmenovávat soubory.</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="653"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="657"/>
         <source>Copy all the files?</source>
         <translation>Kopírovat všechny soubory?</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="653"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="657"/>
         <source>Copy the selected files?</source>
         <translation>Kopírovat vybrané soubory?</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="653"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="657"/>
         <source>Rename all the files?</source>
         <translation>Přejmenovat všechny soubory?</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="653"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="657"/>
         <source>Rename the selected files?</source>
         <translation>Přejmenovat vybrané soubory?</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="653"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="657"/>
         <source>Confirm</source>
         <translation>Potvrdit</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="653"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="657"/>
         <source>&amp;Yes</source>
         <translation>&amp;Ano</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="653"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="657"/>
         <source>Cancel</source>
         <translation>Zrušit</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="662"/>
-        <location filename="../FileRenamerDlgImpl.cpp" line="669"/>
-        <location filename="../FileRenamerDlgImpl.cpp" line="675"/>
-        <location filename="../FileRenamerDlgImpl.cpp" line="681"/>
-        <location filename="../FileRenamerDlgImpl.cpp" line="700"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="666"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="673"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="679"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="685"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="704"/>
         <source>Error</source>
         <translation>Chyba</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="662"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="666"/>
         <source>Operation aborted because file &quot;%1&quot; doesn&apos;t have an ID3V2 tag.</source>
         <translation>Operace zrušena, protože soubor &quot;%1&quot; nemá značku ID3V2.</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="669"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="673"/>
         <source>Operation aborted because file &quot;%1&quot; is missing some required fields in its ID3V2 tag.</source>
         <translation>Operace zrušena, protože souboru &quot;%1&quot; v jeho značce ID3V2 chybí některá požadovaná pole.</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="675"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="679"/>
         <source>Operation aborted because it would create 2 copies of a file called &quot;%1&quot;</source>
         <translation>Operace zrušena, protože by vytvořila dvě kopie souboru s názvem &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="681"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="685"/>
         <source>Operation aborted because a file called &quot;%1&quot; already exists.</source>
         <translation>Operace zrušena, protože soubor s názvem &quot;%1&quot; již existuje.</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="695"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="699"/>
         <source>Copying all the files in the current album</source>
         <translation>Kopírování všech souborů v nynějším albu</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="695"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="699"/>
         <source>Copying the selected files in the current album</source>
         <translation>Kopírování vybraných souborů v nynějším albu</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="695"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="699"/>
         <source>Renaming all the files in the current album</source>
         <translation>Přejmenování všech souborů v nynějším albu</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="695"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="699"/>
         <source>Renaming the selected files in the current album</source>
         <translation>Přejmenování vybraných souborů v nynějším albu</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="813"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="817"/>
         <source>Single artist</source>
         <translation>Jeden umělec</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="813"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="817"/>
         <source>Various artists</source>
         <translation>Různí umělci</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="849"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="853"/>
         <source>Error setting up patterns</source>
         <translation>Chyba při nastavování vzorů</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="849"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="853"/>
         <source>An invalid value was found in the configuration file. You&apos;ll have to set up the patterns manually.</source>
         <translation>V souboru s nastavením byla nalezena neplatná hodnota. Budete muset vzory nastavit ručně.</translation>
     </message>
@@ -3415,8 +3420,8 @@ Ukončuje se...</translation>
     </message>
     <message>
         <location filename="../MainFormDlgImpl.cpp" line="2247"/>
-        <source>Apply the following transformations to %s?</source>
-        <translation>Použít následující proměnu na %s?</translation>
+        <source>Apply the following transformations to %1?</source>
+        <translation>Použít následující proměnu na %1?</translation>
     </message>
     <message>
         <location filename="../MainFormDlgImpl.cpp" line="2257"/>
@@ -4490,43 +4495,43 @@ Zpracování zrušeno.</translation>
 <context>
     <name>Renamer</name>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="1079"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="1083"/>
         <source>A pattern cannot be empty</source>
         <translation>Vzor nemůže být prázdný</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="1086"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="1090"/>
         <source>A pattern must either begin with &apos;%1&apos; or contain no &apos;%1&apos; at all</source>
         <translation>Vzor musí začínat buď &apos;%1&apos; nebo nesmí vůbec obsahovat &apos;%1&apos; </translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="1092"/>
         <location filename="../FileRenamerDlgImpl.cpp" line="1096"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="1100"/>
         <source>A pattern must either begin with &quot;&lt;drive&gt;:\&quot; or contain no &apos;\&apos; at all</source>
         <translation>Vzor musí začínat buď &lt;drive&gt;:\&quot; nebo nesmí vůbec obsahovat &apos;\&apos;</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="1154"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="1158"/>
         <source>Error in column %1.</source>
         <translation>Chyba ve sloupci %1.</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="1163"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="1167"/>
         <source>Nested optional elements are not allowed</source>
         <translation>Vnořené volitelné prvky nejsou povoleny</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="1172"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="1176"/>
         <source>Trying to close and optional element although none is open</source>
         <translation>Pokus o zavření volitelného prvku, ačkoli žádný není otevřen</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="1186"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="1190"/>
         <source>Optional element must be closed</source>
         <translation>Musí se zavřít volitelný prvek</translation>
     </message>
     <message>
-        <location filename="../FileRenamerDlgImpl.cpp" line="1188"/>
+        <location filename="../FileRenamerDlgImpl.cpp" line="1192"/>
         <source>Title entry (%t) must be present</source>
         <translation>Položka názvu (%t) musí být přítomna</translation>
     </message>
