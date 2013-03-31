@@ -124,6 +124,9 @@
       <runarguments>
         <MP3Diags></MP3Diags>
       </runarguments>
+      <cwd>
+        <MP3Diags>/home/ciobi/cpp/Mp3Utils/MP3Diags/..</MP3Diags>
+      </cwd>
       <debugarguments>
         <MP3Diags></MP3Diags>
       </debugarguments>
@@ -203,5 +206,6 @@
     <QMAKE>/usr/bin/qmake</QMAKE>
     <VERSION>0.99</VERSION>
     <YEAR>2009</YEAR>
+    <dest>/home/ciobi/cpp/Mp3Utils/MP3Diags</dest>
   </substmap>
 </kdevelop>
