@@ -122,10 +122,10 @@
       <programargs/>
       <directoryradio>executable</directoryradio>
       <runarguments>
-        <MP3Diags></MP3Diags>
+        <MP3Diags/>
       </runarguments>
       <debugarguments>
-        <MP3Diags></MP3Diags>
+        <MP3Diags/>
       </debugarguments>
     </run>
     <general>
