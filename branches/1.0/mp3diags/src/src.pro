@@ -162,4 +162,3 @@ QMAKE_CXXFLAGS_DEBUG += -DGENERATE_TOC_zz
 LIBS += -lz \
   -lboost_serialization-mt
 
-
