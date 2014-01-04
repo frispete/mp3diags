@@ -20,6 +20,7 @@
  ***************************************************************************/
 
 
+#include  <unistd.h>
 #include  <iostream>
 #include  "fstream_unicode.h"
 #include  <sstream>
