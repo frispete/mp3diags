@@ -1,3 +1,20 @@
+mp3diags (1.3.00) testing; urgency=low
+
+  * build fix for clang and for Solaris
+  * added offset to the output created via the command line
+  * fixed incorrect message occurring some times when start after a crash
+  * better logging and retries for write errors
+  * fixed broken links in documentation and moved alternate downloads from Dropbox to my ISP
+  * new version number to support the new "unstable" branch
+
+ -- Marian Ciobanu <ciobi@inbox.com>  Thu, 16 Jan 2014 22:00:00 -0800
+
+mp3diags (1.2.00) testing; urgency=low
+
+  * new version number to support the new "stable" branch
+
+ -- Marian Ciobanu <ciobi@inbox.com>  Sun, 31 Mar 2013 22:00:00 -0800
+
 mp3diags (1.1.21.080) testing; urgency=low
 
   * fixed bug that caused a "%s" to be shown instead of the list of files about to be changed
