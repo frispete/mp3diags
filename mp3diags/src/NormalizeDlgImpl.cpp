@@ -27,7 +27,7 @@
 #include  <QMessageBox>
 #include  <QCloseEvent>
 
-#include  "ExternalToolDlgImpl.h"
+#include  "NormalizeDlgImpl.h"
 
 #include  "Widgets.h"
 #include  "StoredSettings.h"
@@ -57,22 +57,20 @@ ttt2 doc: might seem frozen at the end; just press abort and wait for at most a 
 same may happen after pressing abort while the normalization is running
 */
 
-ExternalToolDlgImpl::ExternalToolDlgImpl(QWidget* pParent, bool bKeepOpen, SessionSettings& settings, const CommonData* pCommonData, const std::string& strCommandName, const char* szHelpFile) : QDialog(pParent, getDialogWndFlags()), Ui::ExternalToolDlg(), m_pProc(0), m_bFinished(false), m_settings(settings), m_pCommonData(pCommonData), m_strCommandName(strCommandName), m_szHelpFile(szHelpFile)
+NormalizeDlgImpl::NormalizeDlgImpl(QWidget* pParent, bool bKeepOpen, SessionSettings& settings, const CommonData* pCommonData) : QDialog(pParent, getDialogWndFlags()), Ui::NormalizeDlg(), m_pProc(0), m_bFinished(false), m_settings(settings), m_pCommonData(pCommonData)
 {
     setupUi(this);
     m_pKeepOpenCkM->setChecked(bKeepOpen);
 
     int nWidth, nHeight;
-    m_settings.loadExternalToolSettings(nWidth, nHeight);
+    m_settings.loadNormalizeSettings(nWidth, nHeight);
     if (nWidth > 400 && nHeight > 300) { resize(nWidth, nHeight); }
-
-    setWindowTitle(convStr(strCommandName));
 
     { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("F1")); connect(p, SIGNAL(triggered()), this, SLOT(onHelp())); addAction(p); }
 }
 
 
-ExternalToolDlgImpl::~ExternalToolDlgImpl()
+NormalizeDlgImpl::~NormalizeDlgImpl()
 {
     CursorOverrider crs;
     delete m_pProc;
@@ -81,87 +79,8 @@ ExternalToolDlgImpl::~ExternalToolDlgImpl()
 
 void logTransformation(const string& strLogFile, const char* szActionName, const string& strMp3File);
 
-/*static*/ void ExternalToolDlgImpl::prepareArgs(const QString& qstrCommand, const QStringList& lFiles, QString& qstrProg, QStringList& lArgs)
-{
-    if (qstrCommand.contains('"'))
-    {
-        bool bInsideQuotes (false);
-        qstrProg.clear();
-        QString qstrCrt;
-        for (int i = 0; i < qstrCommand.size(); ++i)
-        {
-            QChar c (qstrCommand[i]);
-            if (' ' == c)
-            {
-                if (bInsideQuotes)
-                {
-                    qstrCrt += c;
-                }
-                else
-                {
-                    if (!qstrCrt.isEmpty())
-                    {
-                        if (qstrProg.isEmpty())
-                        {
-                            qstrProg = qstrCrt;
-                        }
-                        else
-                        {
-                            lArgs << qstrCrt;
-                        }
-                        qstrCrt.clear();
-                    }
-                }
-            }
-            else if ('"' == c)
-            {
-                bInsideQuotes = !bInsideQuotes;
-                if (!bInsideQuotes && qstrCrt.isEmpty())
-                {
-                    if (i == qstrCommand.size() - 1 || qstrCommand[i + 1] == ' ')
-                    { // add an empty param
-                        lArgs << qstrCrt;
-                    }
-                }
-            }
-            else
-            {
-                qstrCrt += c;
-            }
-        }
 
-        if (!qstrCrt.isEmpty())
-        {
-            if (qstrProg.isEmpty())
-            {
-                qstrProg = qstrCrt;
-            }
-            else
-            {
-                lArgs << qstrCrt;
-            }
-            qstrCrt.clear();
-        }
-        //ttt2 maybe: trigger some error if bInsideQuotes is "false" at the end
-        //ttt3 maybe allow <<ab "" cd>> to be interpreted as 3 params, with the second one empty; currently it is interpreted as 2 non-empty params
-    }
-    else
-    {
-        int k (1);
-        for (; k < qstrCommand.size() && (qstrCommand[k - 1] != ' '  || (qstrCommand[k] != '-' && qstrCommand[k] != '/')); ++k) {} //ttt2 perhaps better: look for spaces from the end and stop when a dir exists from the beginning of the name till the current space
-        qstrProg = qstrCommand.left(k).trimmed();
-        QString qstrArg (qstrCommand.right(qstrCommand.size() - k).trimmed());
-        //qDebug("prg <%s>  arg <%s>", qstrProg.toUtf8().constData(), qstrArg.toUtf8().constData());
-
-        lArgs = qstrArg.split(" ", QString::SkipEmptyParts); // ttt2 perhaps accomodate params that contain spaces, but mp3gain doesn't seem to need them;
-        //QString qstrName (l.front());
-        //l.removeFirst();
-    }
-    lArgs << lFiles;
-}
-
-
-void ExternalToolDlgImpl::run(const QString& qstrProg1, const QStringList& lFiles) //ttt2 in Windows MP3Gain doesn't seem to care about Unicode (well, the GUI version does, but that doesn't help). aacgain doesn't work either; see if there's a good way to deal with this; doc about using short filenames
+void NormalizeDlgImpl::normalize(const QString& qstrProg1, const QStringList& lFiles) //ttt2 in Windows MP3Gain doesn't seem to care about Unicode (well, the GUI version does, but that doesn't help). aacgain doesn't work either; see if there's a good way to deal with this; doc about using short filenames
 {
     m_pProc = new QProcess(this);
     //m_pProc = new QProcess(); // !!! m_pProc is not owned; it will be destroyed
@@ -173,19 +92,26 @@ void ExternalToolDlgImpl::run(const QString& qstrProg1, const QStringList& lFile
     {
         for (int i = 0; i < lFiles.size(); ++i)
         {
-            logTransformation(m_pCommonData->m_strTransfLog, m_strCommandName.c_str(), convStr(lFiles[i]));
+            logTransformation(m_pCommonData->m_strTransfLog, "Normalize", convStr(lFiles[i]));
         }
     }
 
-    QString qstrProg;
-    QStringList l;
-    prepareArgs(qstrProg1, lFiles, qstrProg, l);
+    //
+    int k (1);
+    for (; k < qstrProg1.size() && (qstrProg1[k - 1] != ' '  || (qstrProg1[k] != '-' && qstrProg1[k] != '/')); ++k) {} //ttt2 perhaps better: look for spaces from the end and stop when a dir exists from the beginning of the name till the current space
+    QString qstrProg (qstrProg1.left(k).trimmed());
+    QString qstrArg (qstrProg1.right(qstrProg1.size() - k).trimmed());
+    //qDebug("prg <%s>  arg <%s>", qstrProg.toUtf8().constData(), qstrArg.toUtf8().constData());
 
+    QStringList l (qstrArg.split(" ", QString::SkipEmptyParts)); // ttt2 perhaps accomodate params that contain spaces, but mp3gain doesn't seem to need them;
+    //QString qstrName (l.front());
+    //l.removeFirst();
+    l << lFiles;
     m_pProc->start(qstrProg, l);
 
     if (!m_pProc->waitForStarted(5000))
     {
-        showCritical(this, tr("Error"), tr("Cannot start process. Check that the executable name and the parameters are correct."));
+        QMessageBox::critical(this, "Error", "Cannot start process. Check that the executable name and the parameters are correct.");
         return;
     }
 
@@ -198,17 +124,17 @@ void ExternalToolDlgImpl::run(const QString& qstrProg1, const QStringList& lFile
 
     exec();
 
-    m_settings.saveExternalToolSettings(width(), height());
+    m_settings.saveNormalizeSettings(width(), height());
 }
 
 
-void ExternalToolDlgImpl::onOutputTxt()
+void NormalizeDlgImpl::onOutputTxt()
 {
     addText(m_pProc->readAllStandardOutput()); //ttt2 perhaps use different colors for std and err, or use 2 separate text boxes
 }
 
 
-void ExternalToolDlgImpl::onErrorTxt()
+void NormalizeDlgImpl::onErrorTxt()
 {
     //addText("####" + m_pProc->readAllStandardError());
     QString s (m_pProc->readAllStandardError().trimmed());
@@ -233,7 +159,7 @@ void ExternalToolDlgImpl::onErrorTxt()
 }
 
 
-void ExternalToolDlgImpl::addText(QString s)
+void NormalizeDlgImpl::addText(QString s)
 {
     s = s.trimmed();
     if (s.isEmpty()) { return; }
@@ -257,15 +183,14 @@ void ExternalToolDlgImpl::addText(QString s)
 }
 
 
-void ExternalToolDlgImpl::onFinished()
+void NormalizeDlgImpl::onFinished()
 {
     if (m_bFinished) { return; } // !!! needed because sometimes terminating with kill() triggers onFinished() and sometimes it doesn't
     m_bFinished = true;
     // !!! doesn't need to destroy m_pProc and QAction, because they will be destroyed anyway when the dialog will be destroyed, which is going to be pretty soon
-    if (m_pKeepOpenCkM->isChecked()) //ttt2 perhaps save in config
+    if (m_pKeepOpenCkM->isChecked())
     {
-        addText("==================================");
-        addText(tr("Finished"));
+        addText("==================================\nFinished");
         m_pDetailE->setText("");
     }
     else
@@ -274,18 +199,18 @@ void ExternalToolDlgImpl::onFinished()
     }
 }
 
-void ExternalToolDlgImpl::on_m_pCloseB_clicked()
+void NormalizeDlgImpl::on_m_pCloseB_clicked()
 {
     if (!m_bFinished)
     {
-        showWarning(this, tr("Warning"), tr("Cannot close while \"%1\" is running.").arg(convStr(m_strCommandName)));
+        QMessageBox::warning(this, "Warning", "Cannot close while the normalization is running.");
         return;
     }
     accept();
 }
 
 
-void ExternalToolDlgImpl::on_m_pAbortB_clicked()
+void NormalizeDlgImpl::on_m_pAbortB_clicked()
 {
 qDebug("proc state %d", int(m_pProc->state()));
     if (m_bFinished)
@@ -294,7 +219,7 @@ qDebug("proc state %d", int(m_pProc->state()));
         return;
     }
 
-    if (0 == showMessage(this, QMessageBox::Warning, 1, 1, tr("Confirm"), tr("Stopping \"%1\" may leave the files in an inconsistent state or may prevent temporary files from being deleted. Are you sure you want to abort \"%1\"?").arg(convStr(m_strCommandName)), tr("Yes, abort"), tr("Don't abort")))
+    if (0 == showMessage(this, QMessageBox::Warning, 1, 1, "Confirm", "Stopping normalization may leave the files in an inconsistent state or may prevent temporary files from being deleted. Are you sure you want to abort the normalization?", "Yes, abort", "Don't abort"))
     {
         CursorOverrider crs;
         m_pProc->kill();
@@ -306,7 +231,7 @@ qDebug("proc state %d", int(m_pProc->state()));
 
 // !!! Can't allow the top-right close button or the ESC key to close the dialog, because that would kill the thread too and leave everything in an inconsistent state. So the corresponding events are intercepted and "ignore()"d and abort() is called instead
 
-/*override*/ void ExternalToolDlgImpl::closeEvent(QCloseEvent* pEvent)
+/*override*/ void NormalizeDlgImpl::closeEvent(QCloseEvent* pEvent)
 {
     /*
     Not sure if this should work: from the doc for QDialog:
@@ -322,7 +247,7 @@ qDebug("proc state %d", int(m_pProc->state()));
 }
 
 #if 0
-/*override*/ void ExternalToolDlgImpl::keyPressEvent(QKeyEvent* pEvent)
+/*override*/ void NormalizeDlgImpl::keyPressEvent(QKeyEvent* pEvent)
 {
 //qDebug("key prs %d", pEvent->key());
 
@@ -332,7 +257,7 @@ qDebug("proc state %d", int(m_pProc->state()));
 }
 
 
-/*override*/ void ExternalToolDlgImpl::keyReleaseEvent(QKeyEvent* pEvent)
+/*override*/ void NormalizeDlgImpl::keyReleaseEvent(QKeyEvent* pEvent)
 {
 //qDebug("key rel %d", pEvent->key());
     if (Qt::Key_Escape == pEvent->key())
@@ -344,9 +269,9 @@ qDebug("proc state %d", int(m_pProc->state()));
 #endif
 
 
-void ExternalToolDlgImpl::onHelp()
+void NormalizeDlgImpl::onHelp()
 {
-    openHelp(m_szHelpFile);
+    openHelp("230_normalize.html");
 }
 
 //ttt2 timer in normalizer

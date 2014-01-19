@@ -43,19 +43,13 @@
 #include  <QUrl>
 #include  <QFileInfo>
 #include  <QDir>
-#include  <QSettings>
-#include  <QProcess>
 
 #include  "Helpers.h"
 #include  "Widgets.h"
-#include  "Version.h"
 #include  "OsFile.h"
-
-#include  "DataStream.h" // for translation
 
 
 using namespace std;
-using namespace Version;
 
 
 void assertBreakpoint()
@@ -80,11 +74,6 @@ void appendFilePart(istream& in, ostream& out, streampos pos, streamoff nSize)
         out.write(pBfr, nCrtRead);
 
         nSize -= nCrtRead;
-    }
-
-    if (!out)
-    {
-        TRACER("appendFilePart() failed");
     }
 
     CB_CHECK1 (out, WriteError());
@@ -387,51 +376,51 @@ namespace
         const char* getSzLayer() const;
         const char* getSzChannelMode() const;
 
-        QString initialize(const unsigned char* bfr, bool* pbIsValid);
-        QString decodeMpegFrame(const unsigned char* bfr, const char* szSep, bool* pbIsValid);
+        string initialize(const unsigned char* bfr, bool* pbIsValid);
+        string decodeMpegFrame(const unsigned char* bfr, const char* szSep, bool* pbIsValid);
         string decodeMpegFrameAsXml(const unsigned char* bfr, bool* pbIsValid);
     };
 
     const char* Decoder::getSzVersion() const
     {
-        static const char* s_versionName[] = { QT_TRANSLATE_NOOP("DataStream", "MPEG-1"), QT_TRANSLATE_NOOP("DataStream", "MPEG-2") };
+        static const char* s_versionName[] = { "MPEG-1", "MPEG-2" };
         return s_versionName[m_eVersion];
     }
 
     const char* Decoder::getSzLayer() const
     {
-        static const char* s_layerName[] = { QT_TRANSLATE_NOOP("DataStream", "Layer I"), QT_TRANSLATE_NOOP("DataStream", "Layer II"), QT_TRANSLATE_NOOP("DataStream", "Layer III") };
+        static const char* s_layerName[] = { "Layer I", "Layer II", "Layer III" };
         return s_layerName[m_eLayer];
     }
 
     const char* Decoder::getSzChannelMode() const
     {
-        static const char* s_channelModeName[] = { QT_TRANSLATE_NOOP("DataStream", "Stereo"), QT_TRANSLATE_NOOP("DataStream", "Joint stereo"), QT_TRANSLATE_NOOP("DataStream", "Dual channel"), QT_TRANSLATE_NOOP("DataStream", "Single channel") };
+        static const char* s_channelModeName[] = { "Stereo", "Joint stereo", "Dual channel", "Single channel" };
         return s_channelModeName[m_eChannelMode];
     }
 
 
-    QString Decoder::initialize(const unsigned char* bfr, bool* pbIsValid) //ttt2 perhaps unify with MpegFrameBase::MpegFrameBase(), using the char* constructor; note that they also share translations
+    string Decoder::initialize(const unsigned char* bfr, bool* pbIsValid) //ttt2 perhaps unify with MpegFrameBase::MpegFrameBase(), using the char* constructor
     {
         bool b;
         bool& bRes (0 == pbIsValid ? b : *pbIsValid);
         bRes = true;
         const unsigned char* pHeader (bfr);
     //inspect(bfr, BFR_SIZE);
-        DECODE_CHECK (0xff == *pHeader && 0xe0 == (0xe0 & *(pHeader + 1)), DataStream::tr("Not an MPEG frame. Synch missing."));
+        DECODE_CHECK (0xff == *pHeader && 0xe0 == (0xe0 & *(pHeader + 1)), "Not an MPEG frame. Synch missing.");
         ++pHeader;
 
         {
             int nVer ((*pHeader & 0x18) >> 3);
             switch (nVer)
             {//TRACE
-            case 0x00: bRes = false; return DataStream::tr("Not an MPEG frame. Unsupported version (2.5)."); //ttt2 see about supporting this: search for MPEG1 to find other places
+            case 0x00: bRes = false; return "Not an MPEG frame. Unsupported version (2.5)."; //ttt2 see about supporting this: search for MPEG1 to find other places
                 // ttt2 in a way it would make more sense to warn that it's not supported, with "MP3_THROW(SUPPORT, ...)", but before warn, make sure it's a valid 2.5 frame, followed by another frame ...
 
             case 0x02: m_eVersion = MPEG2; break;
             case 0x03: m_eVersion = MPEG1; break;
 
-            default: bRes = false; return DataStream::tr("Not an MPEG frame. Invalid version.");
+            default: bRes = false; return "Not an MPEG frame. Invalid version.";
             }
         }
 
@@ -443,7 +432,7 @@ namespace
             case 0x02: m_eLayer = LAYER2; break;
             case 0x03: m_eLayer = LAYER1; break;
 
-            default: bRes = false; return DataStream::tr("Not an MPEG frame. Invalid layer.");
+            default: bRes = false; return "Not an MPEG frame. Invalid layer.";
             }
         }
 
@@ -471,7 +460,7 @@ namespace
                     { 448,     384,     320,     256,     160 }
                 };
             int nRateIndex ((*pHeader & 0xf0) >> 4);
-            DECODE_CHECK (nRateIndex >= 1 && nRateIndex <= 14, DataStream::tr("Not an MPEG frame. Invalid bitrate."));
+            DECODE_CHECK (nRateIndex >= 1 && nRateIndex <= 14, "Not an MPEG frame. Invalid bitrate.");
             int nTypeIndex (m_eVersion*3 + m_eLayer);
             if (nTypeIndex == 5) { nTypeIndex = 4; }
             m_nBitrate = s_bitrates[nRateIndex - 1][nTypeIndex]*1000;
@@ -488,7 +477,7 @@ namespace
                 case 0x01: m_nFrequency = 48000; break;
                 case 0x02: m_nFrequency = 32000; break;
 
-                default: bRes = false; return DataStream::tr("Not an MPEG frame. Invalid frequency for MPEG1.");
+                default: bRes = false; return "Not an MPEG frame. Invalid frequency for MPEG1.";
                 }
                 break;
 
@@ -499,7 +488,7 @@ namespace
                 case 0x01: m_nFrequency = 24000; break;
                 case 0x02: m_nFrequency = 16000; break;
 
-                default: bRes = false; return DataStream::tr("Not an MPEG frame. Invalid frequency for MPEG2.");
+                default: bRes = false; return "Not an MPEG frame. Invalid frequency for MPEG2.";
                 }
                 break;
 
@@ -538,59 +527,26 @@ namespace
     }
 
 
-    QString Decoder::decodeMpegFrame(const unsigned char* bfr, const char* szSep, bool* pbIsValid) //ttt2 perhaps unify with MpegFrameBase::MpegFrameBase(), using the char* constructor
+    string Decoder::decodeMpegFrame(const unsigned char* bfr, const char* szSep, bool* pbIsValid) //ttt2 perhaps unify with MpegFrameBase::MpegFrameBase(), using the char* constructor
     {
-        QString s (initialize(bfr, pbIsValid));
-        if (!s.isEmpty()) { return s; }
+        string s (initialize(bfr, pbIsValid));
+        if (!s.empty()) { return s; }
 
-        //ostringstream out;
+        ostringstream out;
         /*out << getSzVersion() << " " << getSzLayer() << ", " << m_nBitrate/1000 << "kbps, " << m_nFrequency << "Hz, " << getSzChannelMode() << ", padding=" << (m_nPadding ? "true" : "false") << ", length " <<
                 m_nSize << " (0x" << hex << m_nSize << dec << ")";*/
+        out << boolalpha << getSzVersion() << " " << getSzLayer() << szSep << getSzChannelMode() <<
+                szSep << m_nFrequency << "Hz" << szSep << m_nBitrate << "bps" << szSep << "CRC=" << boolAsYesNo(m_bCrc) << szSep <<
+                "length " << m_nSize << " (0x" << hex << m_nSize << dec << ")" << szSep << "padding=" << (m_nPadding ? "true" : "false");
 
-
-        /*out << boolalpha <<
-               getSzVersion() << " " <<
-               getSzLayer() <<
-               szSep <<
-               getSzChannelMode()/ *4* / <<
-                szSep <<
-               m_nFrequency << "Hz" <<
-               szSep <<
-               m_nBitrate / *8* / << "bps" <<
-               szSep << "CRC=" <<
-               boolAsYesNo(m_bCrc) <<
-               szSep / *11* /<< "length " <<
-               m_nSize <<
-               " (0x" << hex << m_nSize << dec << ")" <<
-               szSep / *14* /<< "padding=" <<
-               (m_nPadding ? "true" : "false");*/
-
-
-
-
-        return DataStream::tr("%1 %2%3%4%5%6Hz%7%8bps%9CRC=%10%11length %12 (0x%13)%14padding=%15")
-                .arg(DataStream::tr(getSzVersion()))
-                .arg(DataStream::tr(getSzLayer()))
-                .arg(szSep)
-                .arg(DataStream::tr(getSzChannelMode()))
-                .arg(szSep)
-                .arg(m_nFrequency)
-                .arg(szSep)
-                .arg(m_nBitrate)
-                .arg(szSep)
-                .arg(GlobalTranslHlp::tr(boolAsYesNo(m_bCrc)))
-                .arg(szSep)
-                .arg(m_nSize)
-                .arg(m_nSize, 0, 16)
-                .arg(szSep)
-                .arg(GlobalTranslHlp::tr(boolAsYesNo(m_nPadding)));
+        return out.str();
     }
 
 
     string Decoder::decodeMpegFrameAsXml(const unsigned char* bfr, bool* pbIsValid) //ttt2 perhaps unify with MpegFrameBase::MpegFrameBase(), using the char* constructor
     {
-        QString s (initialize(bfr, pbIsValid)); // !!! XML is not translated
-        if (!s.isEmpty()) { return convStr(s); }
+        string s (initialize(bfr, pbIsValid));
+        if (!s.empty()) { return s; }
 
         ostringstream out;
         out << " version=\"" << getSzVersion() << "\""
@@ -601,7 +557,7 @@ namespace
             << " crc=\"" << boolAsYesNo(m_bCrc) << "\""
 
             << " mpegSize=\"" << m_nSize << "\""
-            << " padding=\"" << boolAsYesNo(m_nPadding) << "\""; // !!! XML isn't translated
+            << " padding=\"" << boolAsYesNo(m_nPadding) << "\"";
 
         return out.str();
     }
@@ -609,26 +565,26 @@ namespace
 
 
 
-string decodeMpegFrame(unsigned int x, const char* szSep, bool* pbIsValid /* = 0*/)
+string decodeMpegFrame(unsigned int x, const char* szSep, bool* pbIsValid /*= 0*/)
 {
     Decoder d;
     unsigned char bfr [4];
     unsigned char* q (reinterpret_cast<unsigned char*>(&x));
     bfr[0] = q[3]; bfr[1] = q[2]; bfr[2] = q[1]; bfr[3] = q[0];
 
-    return convStr(d.decodeMpegFrame(bfr, szSep, pbIsValid));
+    return d.decodeMpegFrame(bfr, szSep, pbIsValid);
 }
 
 
-string decodeMpegFrame(const char* bfr, const char* szSep, bool* pbIsValid /* = 0*/)
+string decodeMpegFrame(const char* bfr, const char* szSep, bool* pbIsValid /*= 0*/)
 {
     Decoder d;
     const unsigned char* q (reinterpret_cast<const unsigned char*>(bfr));
-    return convStr(d.decodeMpegFrame(q, szSep, pbIsValid));
+    return d.decodeMpegFrame(q, szSep, pbIsValid);
 }
 
 
-string decodeMpegFrameAsXml(const char* bfr, bool* pbIsValid /* = 0*/)
+string decodeMpegFrameAsXml(const char* bfr, bool* pbIsValid /*= 0*/)
 {
     Decoder d;
     const unsigned char* q (reinterpret_cast<const unsigned char*>(bfr));
@@ -678,7 +634,6 @@ streampos getSize(istream& in)
 
 void writeZeros(ostream& out, int nCnt)
 {
-    CB_ASSERT (nCnt >= 0);
     char c (0);
     for (int i = 0; i < nCnt; ++i) //ttt2 perhaps make this faster
     {
@@ -689,7 +644,7 @@ void writeZeros(ostream& out, int nCnt)
 }
 
 
-void listWidget(QWidget* p, int nIndent /* = 0*/)
+void listWidget(QWidget* p, int nIndent /*= 0*/)
 {
     //if (nIndent > 1) { return; }
     if (0 == nIndent) { cout << "\n----------------------------\n"; }
@@ -751,6 +706,9 @@ struct DesktopDetector {
 
 
 #if defined(__linux__)
+
+// look for gnome-settings-daemon or gnome-settings-daemon-3.0 to determine if running in Gnome (3) and if so add close button
+// or run lsof and get the list
 
 DesktopDetector::DesktopDetector() : m_eDesktop(Unknown)
 {
@@ -827,9 +785,7 @@ DesktopDetector::DesktopDetector() : m_eDesktop(Unknown)
                         bIsKde = true;
                     }
 
-                    //if (string::npos != strBfr.find("kde4/libexec")) // this gives false positives on openSUSE 11.4 from KDE 3:
-                    // for i in `ls /proc | grep '^[0-9]'` ; do a=`cat /proc/$i/cmdline 2>/dev/null` ; echo $a | grep kde4/libexec ; done
-                    if (string::npos != strBfr.find("kde4/libexec/start")) // ttt2 probably works only on Suse and only in some cases
+                    if (string::npos != strBfr.find("kde4/libexec"))
                     {
                         bIsKde4 = true;
                     }
@@ -854,15 +810,6 @@ DesktopDetector::DesktopDetector() : m_eDesktop(Unknown)
         }
     }
 
-    if (Gnome2 == m_eDesktop)
-    { // while on openSUSE there's gnome-settings-daemon-3, on Fedora it's always gnome-settings-daemon, regardless of the Gnome version; so if Gnome 3 seems to be installed, we'll override a "Gnome2" value
-        QDir dir ("/usr/share/gnome-shell");
-        if (dir.exists())
-        {
-            m_eDesktop = Gnome3;
-        }
-    }
-
     switch (m_eDesktop)
     {
     case Gnome2: m_szDesktop = "Gnome 2"; break;
@@ -874,7 +821,7 @@ DesktopDetector::DesktopDetector() : m_eDesktop(Unknown)
     //cout << "desktop: " << m_eDesktop << endl;
 }
 
-#else // #if defined(__linux__)
+#else
 
 DesktopDetector::DesktopDetector() : m_eDesktop(Unknown) {}
 
@@ -889,11 +836,6 @@ const DesktopDetector& getDesktopDetector()
 
 } // namespace
 
-
-bool getDefaultForShowCustomCloseButtons()
-{
-    return DesktopDetector::Gnome3 == getDesktopDetector().m_eDesktop;
-}
 
 
 /*
@@ -911,17 +853,13 @@ Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint - nothing
 Ideally a modal dialog should minimize its parent. If that's not possible, it shouldn't be minimizable.
 */
 
-//ttt0 look at Qt::CustomizeWindowHint
 #ifndef WIN32
     //Qt::WindowFlags getMainWndFlags() { return isRunningOnGnome() ? Qt::Window : Qt::WindowTitleHint; } // !!! these are incorrect, but seem the best option; the values used for Windows are supposed to be OK; they work as expected with KDE but not with Gnome (asking for maximize button not only fails to show it, but causes the "Close" button to disappear as well); Since in KDE min/max buttons are shown when needed anyway, it's sort of OK // ttt2 see if there is workaround/fix
     Qt::WindowFlags getMainWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Kde) ? Qt::WindowTitleHint : Qt::Window; }
 #if QT_VERSION >= 0x040500
-    //Qt::WindowFlags getDialogWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Kde) ? Qt::WindowTitleHint | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint : (dd.onDesktop(DesktopDetector::Gnome3) ? Qt::Window : Qt::WindowTitleHint); }
-    Qt::WindowFlags getDialogWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Kde) ? Qt::WindowTitleHint | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint : (/*dd.onDesktop(DesktopDetector::Gnome3) ? Qt::Window :*/ Qt::WindowTitleHint); }
+    Qt::WindowFlags getDialogWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Kde) ? Qt::WindowTitleHint | Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint : (dd.onDesktop(DesktopDetector::Gnome3) ? Qt::Window : Qt::WindowTitleHint); }
 #else
-    //Qt::WindowFlags getDialogWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Gnome3) ? Qt::Window : Qt::WindowTitleHint; }
-    Qt::WindowFlags getDialogWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return /*dd.onDesktop(DesktopDetector::Gnome3) ? Qt::Window :*/ Qt::WindowTitleHint; }
-    // ttt0 perhaps better to make sure all dialogs have their ok/cancel buttons, so there's no need for a dedicated close button and let the app look more "native"
+    Qt::WindowFlags getDialogWndFlags() { const DesktopDetector& dd = getDesktopDetector(); return dd.onDesktop(DesktopDetector::Gnome3) ? Qt::Window : Qt::WindowTitleHint; } // ttt0 perhaps better to make sure all dialogs have their ok/cancel buttons, so there's no need for a dedicated close button and let the app look more "native"
 #endif
     Qt::WindowFlags getNoResizeWndFlags() { return Qt::WindowTitleHint; }
 #else
@@ -963,12 +901,12 @@ static void removeStr(string& main, const string& sub)
 }
 #endif
 
+extern const char* APP_VER;
 
-// !!! don't translate
+
 QString getSystemInfo() //ttt2 perhaps store this at startup, so fewer things may go wrong fhen the assertion handler needs it
 {
     QString s ("OS: ");
-    QString qstrDesktop;
 
 #ifndef WIN32
     QDir dir ("/etc");
@@ -1032,8 +970,6 @@ QString getSystemInfo() //ttt2 perhaps store this at startup, so fewer things ma
     }
 //ttt2 search /proc for kwin, metacity, ...
 
-    const DesktopDetector& dd = getDesktopDetector();
-    qstrDesktop = "Desktop: " + QString(dd.m_szDesktop) + "\n";
 
 #else
     //qstrVer += QString(" Windows version ID: %1").arg(QSysInfo::WinVersion);
@@ -1046,7 +982,7 @@ QString getSystemInfo() //ttt2 perhaps store this at startup, so fewer things ma
 
 #endif
     s.replace('\n', ' ');
-    s = QString("Version: %1 %2\nWord size: %3 bit\nQt version: %4\nBoost version: %5\n").arg(getAppName()).arg(getAppVer()).arg(QSysInfo::WordSize).arg(qVersion()).arg(BOOST_LIB_VERSION) + qstrDesktop + s;
+    s = QString("Version: MP3 Diags %1.\nWord size: %2 bit.\nQt version: %3.\nBoost version: %4\n").arg(APP_VER).arg(QSysInfo::WordSize).arg(qVersion()).arg(BOOST_LIB_VERSION) + s;
     return s;
 }
 
@@ -1150,10 +1086,10 @@ vector<QString> getLocalHelpDirs()
     if (s_v.empty())
     {
 #ifndef WIN32
-        //s_v.push_back("/home/ciobi/cpp/Mp3Utils/mp3diags/trunk/mp3diags/doc/html/");
-        s_v.push_back(QString("/usr/share/") + getHelpPackageName() + "-doc/html/"); //ttt0 lower/uppercase variations
-        s_v.push_back(QString("/usr/share/doc/") + getHelpPackageName() + "/html/");
-        s_v.push_back(QString("/usr/share/doc/") + getHelpPackageName() + "-QQQVERQQQ/html/");
+        s_v.push_back("/home/ciobi/cpp/Mp3Utils/mp3diags/doc/html/");
+        s_v.push_back("/usr/share/mp3diags-doc/html/");
+        s_v.push_back("/usr/share/doc/mp3diags/html/");
+        s_v.push_back("/usr/share/doc/mp3diags-QQQVERQQQ/html/");
 #else
         wchar_t wszModule [200];
         int nRes (GetModuleFileName(0, wszModule, 200));
@@ -1189,7 +1125,7 @@ void openHelp(const string& strFileName)
     QString qs (strDir);
     if (qs.isEmpty())
     {
-        qs = "http://mp3diags.sourceforge.net" + QString(getWebBranch()) + "/";
+        qs = "http://mp3diags.sourceforge.net/"; //ttt1 different for "unstable"
     }
     else
     {
@@ -1207,11 +1143,11 @@ void openHelp(const string& strFileName)
 
 
 // meant for displaying tooltips; converts some spaces to \n, so the tooltips have several short lines instead of a single wide line
-QString makeMultiline(const QString& qstrDescr)
+QString makeMultiline(const char* szDescr) //ttt2 param should probably be changed for localized versions, so this takes and returns QString
 {
-    QString s (qstrDescr);
+    QString s (szDescr);
     int SIZE (50);
-    for (int i = SIZE; i < qstrDescr.size(); ++i)
+    for (int i = SIZE; i < s.size(); ++i)
     {
         if (' ' == s[i])
         {
@@ -1257,444 +1193,6 @@ QString getTempDir()
 }
 
 
-
-//=============================================================================================
-//=============================================================================================
-//=============================================================================================
-
-
-#if defined(__linux__)
-
-namespace {
-
-//const char* DSK_FOLDER ("~/.local/share/applications/");
-const string& getDesktopIntegrationDir()
-{
-    static string s_s;
-    if (s_s.empty())
-    {
-        s_s = convStr(QDir::homePath() + "/.local/share/applications");
-        try
-        {
-            createDir(s_s);
-        }
-        catch (...)
-        { // nothing; this will cause shell integration to be disabled
-            cerr << "failed to create dir " << s_s << endl;
-        }
-        s_s += "/";
-    }
-    return s_s;
-}
-
-const char* DSK_EXT (".desktop");
-
-class ShellIntegrator
-{
-    Q_DECLARE_TR_FUNCTIONS(ShellIntegrator)
-
-    string m_strFileName;
-    string m_strAppName;
-    string m_strArg;
-    bool m_bRebuildAssoc;
-
-    static string escape(const string& s)
-    {
-        string s1;
-        static string s_strReserved (" '\\><~|&;$*?#()`"); // see http://standards.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
-        for (int i = 0; i < cSize(s); ++i)
-        {
-            char c (s[i]);
-            if (s_strReserved.find(c) != string::npos)
-            {
-                s1 += '\\';
-            }
-            s1 += c;
-        }
-        return s1;
-    }
-
-public:
-    ShellIntegrator(const string& strFileNameBase, const char* szSessType, const string& strArg, bool bRebuildAssoc) :
-        m_strFileName(getDesktopIntegrationDir() + strFileNameBase + DSK_EXT),
-        m_strAppName(convStr(tr("%1 - %2").arg(getAppName()).arg(tr(szSessType)))),
-        m_strArg(strArg),
-        m_bRebuildAssoc(bRebuildAssoc) {}
-
-    enum { DONT_REBUILD_ASSOC = 0, REBUILD_ASSOC = 1 };
-
-    bool isEnabled()
-    {
-        return fileExists(m_strFileName);
-    }
-
-    void enable(bool b)
-    {
-        if (!(b ^ isEnabled())) { return; }
-
-        if (b)
-        {
-            char szBfr [5000] = "mP3DiAgS";
-            szBfr[0] = 0;
-            int k (readlink("/proc/self/exe", szBfr, sizeof(szBfr)));
-            if (k >= 0)
-            {
-                szBfr[k] = 0;
-            }
-            szBfr[5000 - 1] = 0;
-
-            ofstream_utf8 out (m_strFileName.c_str());
-            if (!out)
-            {
-                qDebug("couldn't open file %s", m_strFileName.c_str());
-            }
-
-            out << "[Desktop Entry]" << endl;
-            out << "Comment=" << m_strAppName << endl;
-            out << "Encoding=UTF-8" << endl;
-            out << "Exec=" << escape(szBfr) << " " << m_strArg << " %f" << endl;
-            out << "GenericName=" << m_strAppName << endl;
-            out << "Icon=" << getIconName() << endl;
-            out << "Name=" << m_strAppName << endl;
-            out << "Path=" << endl;
-            out << "StartupNotify=false" << endl;
-            out << "Terminal=0" << endl;
-            out << "TerminalOptions=" << endl;
-            out << "Type=Application" << endl;
-            out << "X-KDE-SubstituteUID=false" << endl;
-            out << "X-KDE-Username=" << endl;
-            out << "MimeType=inode/directory" << endl;
-            out << "NoDisplay=true" << endl;
-
-            out.close();
-
-            static bool s_bErrorReported (false);
-            bool bError (false);
-
-            if (m_bRebuildAssoc && getDesktopDetector().onDesktop(DesktopDetector::Kde))
-            {
-                TRACER1A("ShellIntegrator::enable()", 1);
-                QProcess kbuildsycoca4;
-                kbuildsycoca4.start("kbuildsycoca4");
-                TRACER1A("ShellIntegrator::enable()", 2);
-
-                if (!kbuildsycoca4.waitForStarted()) //ttt1 switch to non-blocking calls if these don't work well enough
-                {
-                    TRACER1A("ShellIntegrator::enable()", 3);
-                    bError = true;
-                }
-                else
-                {
-                    TRACER1A("ShellIntegrator::enable()", 4);
-                    kbuildsycoca4.closeWriteChannel();
-                    TRACER1A("ShellIntegrator::enable()", 5);
-                    if (!kbuildsycoca4.waitForFinished())
-                    {
-                        TRACER1A("ShellIntegrator::enable()", 6);
-                        bError = true;
-                    }
-                }
-                TRACER1A("ShellIntegrator::enable()", 7);
-
-                if (bError && !s_bErrorReported)
-                {
-                    s_bErrorReported = true;
-                    HtmlMsg::msg(0, 0, 0, 0, HtmlMsg::CRITICAL, tr("Error setting up shell integration"), tr("It appears that setting up shell integration didn't complete successfully. You might have to configure it manually.") + "<p/>"
-                                 + tr("This message will not be shown again until the program is restarted, even if more errors occur.")
-                                 , 400, 300, tr("O&K"));
-                }
-            }
-        }
-        else
-        {
-            try
-            {
-                deleteFile(m_strFileName);
-            }
-            catch (...)
-            { //ttt2 do something
-            }
-        }
-    }
-};
-
-ShellIntegrator g_tempShellIntegrator ("mp3DiagsTempSess", QT_TRANSLATE_NOOP("ShellIntegrator", "temporary folder"), "-t", ShellIntegrator::REBUILD_ASSOC);
-ShellIntegrator g_hiddenShellIntegrator ("mp3DiagsHiddenSess", QT_TRANSLATE_NOOP("ShellIntegrator", "hidden folder"), "-f", ShellIntegrator::REBUILD_ASSOC);
-ShellIntegrator g_visibleShellIntegrator ("mp3DiagsVisibleSess", QT_TRANSLATE_NOOP("ShellIntegrator", "visible folder"), "-v", ShellIntegrator::REBUILD_ASSOC);
-
-ShellIntegrator g_testShellIntegrator ("mp3DiagsTestSess_000", "test", "", ShellIntegrator::DONT_REBUILD_ASSOC);
-
-} // namespace
-
-
-/*static*/ bool ShellIntegration::isShellIntegrationEditable()
-{
-    g_testShellIntegrator.enable(true);
-    bool b (g_testShellIntegrator.isEnabled());
-    g_testShellIntegrator.enable(false);
-    return b;
-}
-
-
-/*static*/ string ShellIntegration::getShellIntegrationError()
-{
-    return "";
-}
-
-
-/*static*/ void ShellIntegration::enableTempSession(bool b)
-{
-    g_tempShellIntegrator.enable(b);
-}
-
-/*static*/ bool ShellIntegration::isTempSessionEnabled()
-{
-    return g_tempShellIntegrator.isEnabled();
-}
-
-/*static*/ void ShellIntegration::enableVisibleSession(bool b)
-{
-    g_visibleShellIntegrator.enable(b);
-}
-
-/*static*/ bool ShellIntegration::isVisibleSessionEnabled()
-{
-    return g_visibleShellIntegrator.isEnabled();
-}
-
-/*static*/ void ShellIntegration::enableHiddenSession(bool b)
-{
-    g_hiddenShellIntegrator.enable(b);
-}
-
-/*static*/ bool ShellIntegration::isHiddenSessionEnabled()
-{
-    return g_hiddenShellIntegrator.isEnabled();
-}
-
-
-#elif defined (WIN32)
-
-namespace {
-
-//ttt2 use a class instead of functions, to handle errors better
-
-struct RegKey
-{
-    HKEY m_hKey;
-    RegKey() : m_hKey(0) {}
-
-    ~RegKey()
-    {
-        RegCloseKey(m_hKey);
-    }
-};
-
-/*
-{
-    HKEY hkey;
-    if (ERROR_SUCCESS == RegOpenKeyEx(HKEY_CLASSES_ROOT, L"Directory\\shell", 0, KEY_READ, &hkey))
-    {
-        RegCloseKey(hkey);
-    }
-
-    if (ERROR_SUCCESS == RegOpenKeyEx(HKEY_CLASSES_ROOT, L"Directory\\shell", 0, KEY_WRITE, &hkey))
-    {
-        HKEY hSubkey;
-        if (ERROR_SUCCESS == RegCreateKeyEx(hkey, L"MySubkey", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hSubkey, NULL))
-        {
-            if (ERROR_SUCCESS == RegSetValueExA(hSubkey, NULL, 0, REG_SZ, (const BYTE*)("my string"), 10))
-            {
-                cout << "OK\n";
-            }
-            RegCloseKey(hSubkey);
-        }
-        RegCloseKey(hkey);
-    }
-}
-
-*/
-
-
-//bool doesKeyExist(const wchar_t* wszPath)
-bool doesKeyExist(const char* szPath)
-{
-    RegKey key;
-    return ERROR_SUCCESS == RegOpenKeyExA(HKEY_CLASSES_ROOT, szPath, 0, KEY_READ, &key.m_hKey);
-}
-
-//bool createEntries(const wchar_t* wszPath, const wchar_t* wszSubkey, const wchar_t* wszDescr, const wchar_t* wszCommand)
-bool createEntries(const char* szPath, const char* szSubkey, const char* szDescr, const char* szParam)
-{
-    string s (string("\"") + _pgmptr + "\" " + szParam);
-    const char* szCommand (s.c_str());
-
-    RegKey key;
-
-    if (ERROR_SUCCESS != RegOpenKeyExA(HKEY_CLASSES_ROOT, szPath, 0, KEY_WRITE, &key.m_hKey)) { return false; }
-
-    RegKey subkey;
-    if (ERROR_SUCCESS != RegCreateKeyExA(key.m_hKey, szSubkey, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &subkey.m_hKey, NULL)) { return false; }
-    if (ERROR_SUCCESS != RegSetValueExA(subkey.m_hKey, NULL, 0, REG_SZ, (const BYTE*)szDescr, strlen(szDescr) + 1)) { return false; }
-
-    RegKey commandKey;
-    if (ERROR_SUCCESS != RegCreateKeyExA(subkey.m_hKey, "command", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &commandKey.m_hKey, NULL)) { return false; }
-    if (ERROR_SUCCESS != RegSetValueExA(commandKey.m_hKey, NULL, 0, REG_SZ, (const BYTE*)szCommand, strlen(szCommand) + 1)) { return false; }
-
-    return true;
-}
-
-bool deleteKey(const char* szPath, const char* szSubkey)
-{
-    RegKey key;
-
-    if (ERROR_SUCCESS != RegOpenKeyExA(HKEY_CLASSES_ROOT, szPath, 0, KEY_WRITE, &key.m_hKey)) { return false; }
-
-    RegKey subkey;
-    if (ERROR_SUCCESS != RegCreateKeyExA(key.m_hKey, szSubkey, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &subkey.m_hKey, NULL)) { return false; }
-
-    if (ERROR_SUCCESS != RegDeleteKeyA(subkey.m_hKey, "command")) { return false; }
-
-    if (ERROR_SUCCESS != RegDeleteKeyA(key.m_hKey, szSubkey)) { return false; }
-
-    return true;
-}
-
-} // namespace
-
-//--------------------------------------------------------------
-
-//ttt1 use something like ShellIntegrator in the Linux code
-
-/*static*/ bool ShellIntegration::isShellIntegrationEditable()
-{
-    //RegKey key;
-    // return ERROR_SUCCESS == RegOpenKeyExA(HKEY_CLASSES_ROOT, "Directory\\shell", 0, KEY_WRITE, &key.m_hKey); //!!! if compiled with MinGW on XP there's this issue on W7: it seems to work but it looks like it uses a temporary path, which gets soon deleted
-
-    createEntries("Directory\\shell", "test_000_mp3diags", "test", "-t \"%1\"");
-    if (!doesKeyExist("Directory\\shell\\test_000_mp3diags")) { return false; }
-
-    deleteKey("Directory\\shell", "test_000_mp3diags");
-
-    return true;
-}
-
-
-/*static*/ string ShellIntegration::getShellIntegrationError()
-{
-    if (isShellIntegrationEditable()) { return ""; }
-    return convStr(GlobalTranslHlp::tr("These settings cannot currently be changed. In order to make changes you should probably run the program as an administrator."));
-}
-
-
-
-/*static*/ void ShellIntegration::enableTempSession(bool b)
-{
-    if (!(isTempSessionEnabled() ^ b)) { return; } // no change needed
-    if (b)
-    {
-        createEntries("Directory\\shell", "mp3diags_temp_dir", "Open as temporary folder in MP3 Diags", "-t \"%1\"");
-        createEntries("Drive\\shell", "mp3diags_temp_dir", "Open as temporary folder in MP3 Diags", "-t %1");
-    }
-    else
-    {
-        deleteKey("Directory\\shell", "mp3diags_temp_dir");
-        deleteKey("Drive\\shell", "mp3diags_temp_dir");
-    }
-}
-
-/*static*/ bool ShellIntegration::isTempSessionEnabled()
-{
-    return doesKeyExist("Directory\\shell\\mp3diags_temp_dir");
-}
-
-
-/*static*/ void ShellIntegration::enableVisibleSession(bool b)
-{
-    if (!(isVisibleSessionEnabled() ^ b)) { return; } // no change needed
-    if (b)
-    {
-        createEntries("Directory\\shell", "mp3diags_visible_dir", "Open as visible folder in MP3 Diags", "-v \"%1\"");
-        createEntries("Drive\\shell", "mp3diags_visible_dir", "Open as visible folder in MP3 Diags", "-v %1");
-    }
-    else
-    {
-        deleteKey("Directory\\shell", "mp3diags_visible_dir");
-        deleteKey("Drive\\shell", "mp3diags_visible_dir");
-    }
-}
-
-/*static*/ bool ShellIntegration::isVisibleSessionEnabled()
-{
-    return doesKeyExist("Directory\\shell\\mp3diags_visible_dir");
-}
-
-
-/*static*/ void ShellIntegration::enableHiddenSession(bool b)
-{
-    if (!(isHiddenSessionEnabled() ^ b)) { return; } // no change needed
-    if (b)
-    {
-        createEntries("Directory\\shell", "mp3diags_hidden_dir", "Open as hidden folder in MP3 Diags", "-f \"%1\"");
-        createEntries("Drive\\shell", "mp3diags_hidden_dir", "Open as hidden folder in MP3 Diags", "-f %1");
-    }
-    else
-    {
-        deleteKey("Directory\\shell", "mp3diags_hidden_dir");
-        deleteKey("Drive\\shell", "mp3diags_hidden_dir");
-    }
-}
-
-/*static*/ bool ShellIntegration::isHiddenSessionEnabled()
-{
-    return doesKeyExist("Directory\\shell\\mp3diags_hidden_dir");
-}
-
-#else
-
-/*static*/ bool ShellIntegration::isShellIntegrationEditable()
-{
-    return false;
-}
-
-
-/*static*/ string ShellIntegration::getShellIntegrationError()
-{
-    return convStr(GlobalTranslHlp::tr("Platform not supported"));
-}
-
-
-/*static*/ void ShellIntegration::enableTempSession(bool)
-{
-}
-
-/*static*/ bool ShellIntegration::isTempSessionEnabled()
-{
-    return false;
-}
-
-/*static*/ void ShellIntegration::enableVisibleSession(bool)
-{
-}
-
-/*static*/ bool ShellIntegration::isVisibleSessionEnabled()
-{
-    return false;
-}
-
-/*static*/ void ShellIntegration::enableHiddenSession(bool)
-{
-}
-
-/*static*/ bool ShellIntegration::isHiddenSessionEnabled()
-{
-    return false;
-}
-
-#endif
-
-
-
 //=============================================================================================
 //=============================================================================================
 //=============================================================================================
@@ -1728,12 +1226,4 @@ LastStepTracer::~LastStepTracer()
 
 
 //ttt2 F1 help was very slow on XP once, not sure why; later it was OK
-
-
-
-
-
-//ttt1 maybe switch to new spec, lower-case for exe name, package, and icons
-
-
 

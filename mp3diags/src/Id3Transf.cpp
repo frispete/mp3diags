@@ -61,7 +61,7 @@ bool Id3V2Cleaner::processId3V2Stream(Id3V2StreamBase& strm, ofstream_utf8& out)
                 string s (pFrm->getRawUtf8String());
                 if (!s.empty())
                 {
-                    wrt.addTextFrame(pFrm->m_szName, s); // ttt0 see about TXXX, which isn't text, and how it's used for normalization: Id3V2StreamBase::hasReplayGain() MP3GAIN_MINMAX
+                    wrt.addTextFrame(pFrm->m_szName, s);
                 }
             }
             catch (const Id3V2Frame::UnsupportedId3V2Frame&)
@@ -322,9 +322,14 @@ e1:
 //========================================================================================================================
 
 
-/*override*/ QString Id3V2UnicodeTransformer::getVisibleActionName() const
+/*override*/ const char* Id3V2UnicodeTransformer::getVisibleActionName() const
 {
-    return Transformation::tr("Convert non-ASCII ID3V2 text frames to Unicode assuming codepage %1").arg(m_pCommonData->m_pCodec->name().constData());
+    string strActionName (string("Convert non-ASCII ID3V2 text frames to Unicode assuming codepage ") + m_pCommonData->m_pCodec->name().constData());
+    if (strActionName != m_strActionName)
+    {
+        m_strActionName = strActionName; // to make sure that pointer comparisons still work (though they should probably be replaced by string comparisons) //ttt2 replace ptr comparisons
+    }
+    return m_strActionName.c_str();
 }
 
 
@@ -442,9 +447,15 @@ PLPAS llpwwe;
 
 
 
-/*override*/ QString Id3V2CaseTransformer::getVisibleActionName() const
+/*override*/ const char* Id3V2CaseTransformer::getVisibleActionName() const
 {
-    return Transformation::tr("Change case for ID3V2 text frames: Artists - %1; Others - %2").arg(TagReader::tr(getCaseAsStr(m_pCommonData->m_eCaseForArtists))).arg(TagReader::tr(getCaseAsStr(m_pCommonData->m_eCaseForOthers)));
+    string strActionName (string("Change case for ID3V2 text frames: Artists - ") + getCaseAsStr(m_pCommonData->m_eCaseForArtists) + "; Others - " + getCaseAsStr(m_pCommonData->m_eCaseForOthers));
+
+    if (strActionName != m_strActionName)
+    {
+        m_strActionName = strActionName; // to make sure that pointer comparisons still work (though they should probably be replaced by string comparisons) //ttt2 replace ptr comparisons
+    }
+    return m_strActionName.c_str();
 }
 
 
@@ -566,13 +577,6 @@ bool Id3V2CaseTransformer::processId3V2Stream(Id3V2StreamBase& strm, ofstream_ut
 //========================================================================================================================
 
 
-string Id3V1ToId3V2Copier::convert(const string& s)
-{
-    QString q (convStr(s));
-    QByteArray arr (q.toLatin1());
-    QString qstrTxt (m_pCommonData->m_pCodec->toUnicode(arr));
-    return convStr(qstrTxt);
-}
 
 
 bool Id3V1ToId3V2Copier::processId3V2Stream(Id3V2StreamBase& strm, ofstream_utf8& out, Id3V1Stream* pId3V1Stream)
@@ -582,13 +586,13 @@ bool Id3V1ToId3V2Copier::processId3V2Stream(Id3V2StreamBase& strm, ofstream_utf8
     if (strm.getTitle().empty())
     {
         string s (pId3V1Stream->getTitle());
-        if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_TITLE(), convert(s)); }
+        if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_TITLE(), s); }
     }
 
     if (strm.getArtist().empty())
     {
         string s (pId3V1Stream->getArtist());
-        if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_ARTIST(), convert(s)); }
+        if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_ARTIST(), s); }
     }
 
     if (strm.getTrackNumber().empty())
@@ -612,7 +616,7 @@ bool Id3V1ToId3V2Copier::processId3V2Stream(Id3V2StreamBase& strm, ofstream_utf8
     if (strm.getAlbumName().empty())
     {
         string s (pId3V1Stream->getAlbumName());
-        if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_ALBUM(), convert(s)); }
+        if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_ALBUM(), s); }
     }
 
     wrt.write(out);
@@ -653,12 +657,12 @@ bool Id3V1ToId3V2Copier::processId3V2Stream(Id3V2StreamBase& strm, ofstream_utf8
 
         {
             string s (pId3V1Stream->getTitle());
-            if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_TITLE(), convert(s)); }
+            if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_TITLE(), s); }
         }
 
         {
             string s (pId3V1Stream->getArtist());
-            if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_ARTIST(), convert(s)); }
+            if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_ARTIST(), s); }
         }
 
         {
@@ -678,7 +682,7 @@ bool Id3V1ToId3V2Copier::processId3V2Stream(Id3V2StreamBase& strm, ofstream_utf8
 
         {
             string s (pId3V1Stream->getAlbumName());
-            if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_ALBUM(), convert(s)); }
+            if (!s.empty()) { wrt.addTextFrame(KnownFrames::LBL_ALBUM(), s); }
         }
 
         if (wrt.isEmpty())
@@ -734,12 +738,6 @@ bool Id3V1ToId3V2Copier::processId3V2Stream(Id3V2StreamBase& strm, ofstream_utf8
 
     deleteFile(strTempName);
     return NOT_CHANGED;
-}
-
-
-/*override*/ QString Id3V1ToId3V2Copier::getVisibleActionName() const
-{
-    return Transformation::tr("Copy missing ID3V2 frames from ID3V1 assuming codepage %1").arg(m_pCommonData->m_pCodec->name().constData());
 }
 
 

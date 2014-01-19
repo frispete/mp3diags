@@ -104,7 +104,7 @@ private:
 */
 struct AlbumXmlHandler : public SimpleSaxHandler<AlbumXmlHandler>
 {
-    AlbumXmlHandler(MusicBrainzAlbumInfo& albumInfo) : SimpleSaxHandler<AlbumXmlHandler>("metadata"), m_albumInfo(albumInfo), m_bTargetIsUrl(false)
+    AlbumXmlHandler(MusicBrainzAlbumInfo& albumInfo) : SimpleSaxHandler<AlbumXmlHandler>("metadata"), m_albumInfo(albumInfo)
     {
         Node& meta (getRoot()); meta.onEnd = &AlbumXmlHandler::onMetaEnd;
             Node& rel (makeNode(meta, "release")); rel.onStart = &AlbumXmlHandler::onRelStart;
@@ -277,7 +277,7 @@ private:
 
 MusicBrainzDownloader::MusicBrainzDownloader(QWidget* pParent, SessionSettings& settings, bool bSaveResults) : AlbumInfoDownloaderDlgImpl(pParent, settings, bSaveResults), m_nLastReqTime(0)
 {
-    setWindowTitle(tr("Download album data from MusicBrainz.org"));
+    setWindowTitle("Download album data from MusicBrainz.org");
 
     int nWidth, nHeight;
     m_settings.loadMusicBrainzSettings(nWidth, nHeight);
@@ -366,9 +366,10 @@ void MusicBrainzDownloader::delay()
         if (nDiff < 0) { nDiff = 0; }
         int nWait (999 - (int)nDiff);
         //qDebug("   wait: %d", nWait);
-        addNote(tr("waiting %1ms").arg(nWait + 100));
+        char a [15];
+        sprintf(a, "waiting %dms", nWait + 100);
+        addNote(a);
 
-        //ttt1 perhaps use PausableThread::usleep()
 #ifndef WIN32
         timespec ts;
         ts.tv_sec = 0;
@@ -461,17 +462,17 @@ QString MusicBrainzDownloader::getAmazonText() const
 LAST_STEP("MusicBrainzDownloader::getAmazonText");
     if (m_nCrtAlbum < 0 || m_nCrtAlbum >= cSize(m_vAlbums))
     {
-        return AlbumInfoDownloaderDlgImpl::tr(NOT_FOUND_AT_AMAZON);
+        return NOT_FOUND_AT_AMAZON;
     }
 
     const MusicBrainzAlbumInfo& album (m_vAlbums[m_nCrtAlbum]);
     if (album.m_strAmazonLink.empty())
     {
-        return AlbumInfoDownloaderDlgImpl::tr(NOT_FOUND_AT_AMAZON);
+        return NOT_FOUND_AT_AMAZON;
     }
     else
     {
-        return tr("<a href=\"%1\">view at amazon.com</a>").arg(album.m_strAmazonLink.c_str());
+        return convStr("<a href=\"" + album.m_strAmazonLink + "\">view at amazon.com</a>");
     }
 }
 
@@ -512,7 +513,7 @@ LAST_STEP("MusicBrainzDownloader::requestAlbum");
     delay();
     m_pQHttp->request(header);
     //cout << "sent album " << m_vAlbums[nAlbum].m_strId << " - " << m_pQHttp->request(header) << endl;
-    addNote(AlbumInfoDownloaderDlgImpl::tr("getting album info ..."));
+    addNote("getting album info ...");
 }
 
 
@@ -538,7 +539,7 @@ LAST_STEP("MusicBrainzDownloader::requestImage");
     //qDebug("%s", strUrl.c_str());
     m_pImageQHttp->get(url.path());
 
-    addNote(AlbumInfoDownloaderDlgImpl::tr("getting image ..."));
+    addNote("getting image ...");
 }
 
 

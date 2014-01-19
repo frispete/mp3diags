@@ -31,8 +31,6 @@
 #include  "FullSizeImgDlg.h"
 
 #include  "Helpers.h"
-#include  "DataStream.h" // for translations
-
 
 
 FullSizeImgDlg::FullSizeImgDlg(QWidget* pParent, const ImageInfo& imageInfo) : QDialog(pParent, getNoResizeWndFlags()), m_imageInfo(imageInfo)
@@ -45,8 +43,7 @@ FullSizeImgDlg::FullSizeImgDlg(QWidget* pParent, const ImageInfo& imageInfo) : Q
 
 
     QString s;
-    s.sprintf("%dx%d / %dkB\n", imageInfo.getWidth(), imageInfo.getHeight(), imageInfo.getSize()/1024);
-    s += TagReader::tr(imageInfo.getImageType());
+    s.sprintf("%dx%d / %dkB\n%s", imageInfo.getWidth(), imageInfo.getHeight(), imageInfo.getSize()/1024, imageInfo.getImageType());
 
     p = new QLabel(s, this);
     p->setAlignment(Qt::AlignHCenter);

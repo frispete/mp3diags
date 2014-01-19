@@ -123,7 +123,7 @@ LAST_STEP("HndlrListModel::data()");
     else if (0 == pId3V2)
     {
         //s = "N/A";
-        s = tr("<< missing ID3V2 >>");
+        s = "<< missing ID3V2 >>";
     }
     else if (1 == j)
     {
@@ -131,7 +131,7 @@ LAST_STEP("HndlrListModel::data()");
         if (0 == m_pRenamer)
         {
             //s = "N/A";
-            s = tr("<< no pattern defined >>");
+            s = "<< no pattern defined >>";
         }
         else
         {
@@ -139,7 +139,7 @@ LAST_STEP("HndlrListModel::data()");
             if (s.isEmpty())
             {
                 //s = "N/A";
-                s = tr("<< missing fields >>");
+                s = "<< missing fields >>";
             }
         }
     }
@@ -174,7 +174,7 @@ LAST_STEP("HndlrListModel::data()");
 }
 
 
-/*override*/ bool HndlrListModel::setData(const QModelIndex& index, const QVariant& value, int nRole /* = Qt::EditRole*/)
+/*override*/ bool HndlrListModel::setData(const QModelIndex& index, const QVariant& value, int nRole /*= Qt::EditRole*/)
 {
     if (Qt::EditRole != nRole) { return false; }
 
@@ -186,15 +186,15 @@ LAST_STEP("HndlrListModel::data()");
 
 
 
-/*override*/ QVariant HndlrListModel::headerData(int nSection, Qt::Orientation eOrientation, int nRole /* = Qt::DisplayRole*/) const
+/*override*/ QVariant HndlrListModel::headerData(int nSection, Qt::Orientation eOrientation, int nRole /*= Qt::DisplayRole*/) const
 {
 LAST_STEP("HndlrListModel::headerData");
     if (nRole != Qt::DisplayRole) { return QVariant(); }
 
     if (Qt::Horizontal == eOrientation)
     {
-        if (0 == nSection) { return tr("File name"); }
-        else if (1 == nSection) { return tr("New file name"); }
+        if (0 == nSection) { return "File name"; }
+        else if (1 == nSection) { return "New file name"; }
         else
         {
             nSection -= 2;
@@ -202,7 +202,7 @@ LAST_STEP("HndlrListModel::headerData");
             {
                 nSection += 1;
             }
-            return TagReader::tr(TagReader::getLabel(TagReader::FEATURE_ON_POS[nSection]));
+            return TagReader::getLabel(TagReader::FEATURE_ON_POS[nSection]);
         }
     }
 
@@ -316,13 +316,6 @@ FileRenamerDlgImpl::FileRenamerDlgImpl(QWidget* pParent, CommonData* pCommonData
         m_pPrevB->setEnabled(false);
         m_pNextB->setEnabled(false);
     }
-
-    if (!m_pCommonData->m_bShowCustomCloseButtons)
-    {
-        m_pCloseB->hide();
-    }
-
-
 
     QTimer::singleShot(1, this, SLOT(onShow())); // just calls reloadTable(); !!! needed to properly resize the table columns; album and file tables have very small widths until they are actually shown, so calling resizeTagEditor() earlier is pointless; calling update() on various layouts seems pointless as well; (see also DoubleList::resizeEvent() )
 }
@@ -563,27 +556,23 @@ bool RenameThread::proc()
             }
             catch (const FoundDir&)
             {
-                m_qstrErr = FileRenamerDlgImpl::tr("Source or destination is a directory");
+                m_qstrErr = "Source or destination is a directory";
             }
             catch (const CannotCopyFile&)
             {
-                m_qstrErr = FileRenamerDlgImpl::tr("Error during copying");
+                m_qstrErr = "Error during copying";
             }
             catch (const CannotRenameFile&)
             {
-                m_qstrErr = FileRenamerDlgImpl::tr("Error during renaming");
+                m_qstrErr = "Error during renaming";
             }
             catch (const AlreadyExists&)
             {
-                m_qstrErr = FileRenamerDlgImpl::tr("Destination already exists");
+                m_qstrErr = "Destination already exists";
             }
             catch (const NameNotFound&)
             {
-                m_qstrErr = FileRenamerDlgImpl::tr("Source not found");
-            }
-            catch (const CannotCreateDir& ex)
-            {
-                m_qstrErr = FileRenamerDlgImpl::tr("Cannot create folder %1").arg(convStr(ex.m_strDir));
+                m_qstrErr = "Source not found";
             }
             catch (const std::bad_alloc&) { throw; }
             catch (const IncorrectDirName&)
@@ -592,7 +581,7 @@ bool RenameThread::proc()
             }
             catch (...)
             {
-                m_qstrErr = FileRenamerDlgImpl::tr("Unknown error");
+                m_qstrErr = "Unknown error";
             }
 
             if (!m_qstrErr.isEmpty())
@@ -619,7 +608,7 @@ void FileRenamerDlgImpl::on_m_pRenameB_clicked()
 {
     if (m_vstrPatterns.empty())
     {
-        showCritical(this, tr("No patterns exist"), tr("You must create at least a pattern before you can start renaming files."));
+        QMessageBox::critical(this, "No patterns exist", "You must create at least a pattern before you can start renaming files.");
         return;
     }
 
@@ -654,8 +643,10 @@ void FileRenamerDlgImpl::on_m_pRenameB_clicked()
         }
     }
 
-    if (showMessage(this, QMessageBox::Question, 1, 1, tr("Confirm"), bKeepOrig ? (bAll ? tr("Copy all the files?") : tr("Copy the selected files?")) : (bAll ? tr("Rename all the files?") : tr("Rename the selected files?")), tr("&Yes"), tr("Cancel")) != 0) { return; }
-
+    if (QMessageBox::Yes != QMessageBox::question(this, "Confirmation", QString(bKeepOrig ? "Copy" : "Rename") + (bAll ? " all the" : " selected") + " files?", QMessageBox::Yes | QMessageBox::Cancel))
+    {
+        return;
+    }
 
     {
         set<string> s;
@@ -663,26 +654,26 @@ void FileRenamerDlgImpl::on_m_pRenameB_clicked()
         {
             if (0 == vpHndl[i]->getId3V2Stream())
             {
-                showCritical(this, tr("Error"), tr("Operation aborted because file \"%1\" doesn't have an ID3V2 tag.").arg(vpHndl[i]->getUiName()));
+                QMessageBox::critical(this, "Error", "Operation aborted because file \"" + vpHndl[i]->getUiName() + "\" doesn't have an ID3V2 tag.");
                 return;
             }
 
             string strDest (pRenamer->getNewName(vpHndl[i]));
             if (strDest.empty())
             {
-                showCritical(this, tr("Error"), tr("Operation aborted because file \"%1\" is missing some required fields in its ID3V2 tag.").arg(vpHndl[i]->getUiName()));
+                QMessageBox::critical(this, "Error", "Operation aborted because file \"" + vpHndl[i]->getUiName() + "\" is missing some required fields in its ID3V2 tag.");
                 return;
             }
 
             if (s.count(strDest) > 0)
             {
-                showCritical(this, tr("Error"), tr("Operation aborted because it would create 2 copies of a file called \"%1\"").arg(toNativeSeparators(convStr(strDest))));
+                QMessageBox::critical(this, "Error", "Operation aborted because it would create 2 copies of a file called \"" + toNativeSeparators(convStr(strDest)) + "\"");
                 return;
             }
 
             if (fileExists(strDest) && (strDest != vpHndl[i]->getName() || bKeepOrig))
             {
-                showCritical(this, tr("Error"), tr("Operation aborted because a file called \"%1\" already exists.").arg(toNativeSeparators(convStr(strDest))));
+                QMessageBox::critical(this, "Error", "Operation aborted because a file called \"" + toNativeSeparators(convStr(strDest)) + "\" already exists.");
                 return;
             }
 
@@ -696,12 +687,11 @@ void FileRenamerDlgImpl::on_m_pRenameB_clicked()
         RenameThread* pThread (new RenameThread(vpHndl, bKeepOrig, pRenamer, m_pCommonData, vpDel, vpAdd));
 
         ThreadRunnerDlgImpl dlg (this, getNoResizeWndFlags(), pThread, ThreadRunnerDlgImpl::SHOW_COUNTER, ThreadRunnerDlgImpl::TRUNCATE_BEGIN);
-        dlg.setWindowTitle(bKeepOrig ? (bAll ? tr("Copying all the files in the current album") : tr("Copying the selected files in the current album")) : (bAll ? tr("Renaming all the files in the current album") : tr("Renaming the selected files in the current album")));
-
+        dlg.setWindowTitle(QString(bKeepOrig ? "Copying" : "Renaming") + (bAll ? " all the" : " selected") + " files in the current album");
         dlg.exec();
         if (!pThread->m_qstrErr.isEmpty())
         {
-            showCritical(this, tr("Error"), pThread->m_qstrErr);
+            QMessageBox::critical(this, "Error", pThread->m_qstrErr);
         }
     }
 
@@ -814,7 +804,7 @@ void FileRenamerDlgImpl::selectPattern()
 
     resizeUi();
 
-    m_pAlbumTypeL->setText(isSingleArtist() ? tr("Single artist") : tr("Various artists")); //ttt2 see if "single" is the best word
+    m_pAlbumTypeL->setText(isSingleArtist() ? "Single artist" : "Various artists"); //ttt2 see if "single" is the best word
 }
 
 
@@ -850,7 +840,7 @@ void FileRenamerDlgImpl::loadPatterns()
 
     if (bErr)
     {
-        showWarning(this, tr("Error setting up patterns"), tr("An invalid value was found in the configuration file. You'll have to set up the patterns manually."));
+        QMessageBox::warning(this, "Error setting up patterns", "An invalid value was found in the configuration file. You'll have to set up the patterns manually.");
     }
 }
 
@@ -871,7 +861,6 @@ void FileRenamerDlgImpl::resizeIcons()
     v.push_back(m_pNextB);
     v.push_back(m_pEditPatternsB);
     v.push_back(m_pRenameB);
-    v.push_back(m_pCloseB);
 
     int k (m_pCommonData->m_nMainWndIconSize);
     for (int i = 0, n = cSize(v); i < n; ++i)
@@ -895,12 +884,6 @@ void FileRenamerDlgImpl::onHelp()
 void FileRenamerDlgImpl::on_m_pMarkUnratedAsDuplicatesCkB_clicked()
 {
     m_pHndlrListModel->setUnratedAsDuplicates(m_pMarkUnratedAsDuplicatesCkB->isChecked());
-}
-
-
-void FileRenamerDlgImpl::on_m_pCloseB_clicked()
-{
-    reject();
 }
 
 
@@ -1080,24 +1063,24 @@ Renamer::Renamer(const std::string& strPattern, const CommonData* pCommonData, b
     const char* p (strPattern.c_str());
 
     SequencePattern* pSeq (m_pRoot); // pSeq is either m_pRoot or a new sequence, for optional elements
-    if (0 == *p) { throw InvalidPattern(strPattern, tr("A pattern cannot be empty")); } // add pattern str on constr, to always have access to the pattern
+    if (0 == *p) { throw InvalidPattern(strPattern, "A pattern cannot be empty"); } // add pattern str on constr, to always have access to the pattern
 
     if (!m_bSameDir)
     {
 
 #ifndef WIN32
 
-        if (getPathSep() != *p) { throw InvalidPattern(strPattern, tr("A pattern must either begin with '%1' or contain no '%1' at all").arg(getPathSep())); }
+        if (getPathSep() != *p) { throw InvalidPattern(strPattern, "A pattern must either begin with '" + getPathSepAsStr() + "' or contain no '" + getPathSepAsStr() + "' at all"); }
 
 #else
 
         if (cSize(strPattern) < 3 || ((p[0] < 'a' || p[0] > 'z') && (p[0] < 'A' || p[0] > 'Z')) || p[1] != ':') // ttt2 allow network drives as well
         {
-            throw InvalidPattern(strPattern, tr("A pattern must either begin with \"<drive>:\\\" or contain no '\\' at all"));
+            throw InvalidPattern(strPattern, "A pattern must either begin with \"<drive>:\\\" or contain no '\\' at all");
         }
         p += 2;
         m_pRoot->addPattern(new StaticPattern(strPattern.substr(0, 2), m_pInvalidCharsReplacer.get()));
-        if (getPathSep() != *p) { throw InvalidPattern(strPattern, tr("A pattern must either begin with \"<drive>:\\\" or contain no '\\' at all")); }
+        if (getPathSep() != *p) { throw InvalidPattern(strPattern, "A pattern must either begin with \"<drive>:\\\" or contain no '\\' at all"); }
 
 #endif
 
@@ -1155,7 +1138,9 @@ Renamer::Renamer(const std::string& strPattern, const CommonData* pCommonData, b
 
                 default:
                     {
-                        throw InvalidPattern(strPattern, tr("Error in column %1.").arg(p - strPattern.c_str())); // ttt2 more details, perhaps make tag edt errors more similar to this
+                        ostringstream s;
+                        s << "Error in column " << p - strPattern.c_str() <<  ".";
+                        throw InvalidPattern(strPattern, s.str()); // ttt2 more details, perhaps make tag edt errors more similar to this
                     }
                 }
             }
@@ -1164,7 +1149,7 @@ Renamer::Renamer(const std::string& strPattern, const CommonData* pCommonData, b
         case '[':
             {
                 if (!strStatic.empty()) { pSeq->addPattern(new StaticPattern(strStatic, m_pInvalidCharsReplacer.get())); strStatic.clear(); }
-                if (pSeq != m_pRoot) { throw InvalidPattern(strPattern, tr("Nested optional elements are not allowed")); } //ttt2 column
+                if (pSeq != m_pRoot) { throw InvalidPattern(strPattern, "Nested optional elements are not allowed"); } //ttt2 column
                 pSeq = new SequencePattern(m_pInvalidCharsReplacer.get());
                 optAp.reset(pSeq);
                 break;
@@ -1173,7 +1158,7 @@ Renamer::Renamer(const std::string& strPattern, const CommonData* pCommonData, b
         case ']':
             {
                 if (!strStatic.empty()) { pSeq->addPattern(new StaticPattern(strStatic, m_pInvalidCharsReplacer.get())); strStatic.clear(); }
-                if (pSeq == m_pRoot) { throw InvalidPattern(strPattern, tr("Trying to close and optional element although none is open")); } //ttt2 column
+                if (pSeq == m_pRoot) { throw InvalidPattern(strPattern, "Trying to close and optional element although none is open"); } //ttt2 column
                 m_pRoot->addPattern(new OptionalPattern(pSeq, m_pInvalidCharsReplacer.get()));
                 pSeq = m_pRoot;
                 optAp.release();
@@ -1187,9 +1172,9 @@ Renamer::Renamer(const std::string& strPattern, const CommonData* pCommonData, b
 
     if (!strStatic.empty()) { pSeq->addPattern(new StaticPattern(strStatic, m_pInvalidCharsReplacer.get())); strStatic.clear(); }
 
-    if (pSeq != m_pRoot) { throw InvalidPattern(strPattern, tr("Optional element must be closed")); } //ttt2 column
+    if (pSeq != m_pRoot) { throw InvalidPattern(strPattern, "Optional element must be closed"); } //ttt2 column
 
-    if (!bTitleFound) { throw InvalidPattern(strPattern, tr("Title entry (%t) must be present")); }
+    if (!bTitleFound) { throw InvalidPattern(strPattern, "Title entry (%t) must be present"); }
 
     ap.release();
 }

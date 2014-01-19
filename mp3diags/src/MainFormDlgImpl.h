@@ -39,7 +39,6 @@ class QScrollArea;
 class QStackedLayout;
 class QHttp;
 class QHttpResponseHeader;
-class QPoint;
 
 struct FileEnumerator;
 
@@ -50,7 +49,7 @@ class MainFormDlgImpl : public QDialog, private Ui::MainFormDlg
 {
 Q_OBJECT
 public:
-    MainFormDlgImpl(const std::string& strSession, bool bDefaultForVisibleSessBtn);
+    MainFormDlgImpl(const std::string& strSession, bool bUniqueSession);
 
     ~MainFormDlgImpl();
 
@@ -114,8 +113,7 @@ public slots:
     void onNewVersionQueryFinished2(); // needed because some bug in Qt4.3.1, 4.4.3 and some others, resulting in a segfault if onNewVersionQueryFinished() lasts 14 seconds or more
     void readResponseHeader(const QHttpResponseHeader&);
 
-    void onMainGridRightClick();
-
+    void onFixCurrentNote();
 private:
     void scan(FileEnumerator& fileEnum, bool bForce, std::deque<const Mp3Handler*> vpExisting, int nKeepWhenUpdate); // a subset of vpExisting gets copied to vpDel in the m_pCommonData->mergeHandlerChanges() call; so if vpExisting is empty, vpDel will be empty too; if bForce is true, thw whole vpExisting is copied to vpDel;
 
@@ -150,9 +148,6 @@ private:
     void saveVisibleTransf();
     void loadVisibleTransf();
 
-    void saveExternalTools();
-    void loadExternalTools();
-
     enum Subset { SELECTED, ALL, CURRENT };
     void transform(std::vector<Transformation*>& vpTransf, Subset eSubset);
 
@@ -180,14 +175,10 @@ private:
     void showRestartAfterCrashMsg(const QString& qstrText, const QString& qstrCloseBtn);
     void checkForNewVersion(); // returns immediately; when the request completes it will send a signal
 
-    void fixCurrentNote(const QPoint& coords);
     void fixCurrentNoteOneFile();
     void fixCurrentNoteAllFiles(int nCol);
     std::vector<Transformation*> getFixes(const Note* pNote, const Mp3Handler* pHndl) const; // what might fix a note
     void showFixes(std::vector<Transformation*>& vpTransf, Subset eSubset);
-
-    void showExternalTools();
-    bool askConfirm(const std::deque<const Mp3Handler*>& vpHandlers, const QString& qstrAction);
 
     QHttp* m_pQHttp;
     QString m_qstrNewVer; // needed by onNewVersionQueryFinished2()

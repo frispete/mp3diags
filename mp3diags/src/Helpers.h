@@ -281,8 +281,7 @@ std::string decodeMpegFrame(unsigned int n, const char* szSep, bool* pbIsValid =
 std::string decodeMpegFrame(const char* bfr, const char* szSep, bool* pbIsValid = 0);
 std::string decodeMpegFrameAsXml(const char* bfr, bool* pbIsValid = 0);
 
-
-inline const char* boolAsYesNo(bool b) { return b ? QT_TRANSLATE_NOOP("GlobalTranslHlp", "yes") : QT_TRANSLATE_NOOP("GlobalTranslHlp", "no"); }
+inline const char* boolAsYesNo(bool b) { return b ? "yes" : "no"; }
 
 char getPathSep();
 const std::string& getPathSepAsStr();
@@ -326,7 +325,6 @@ Qt::WindowFlags getMainWndFlags();   // minimize, maximize, no "what's this"
 Qt::WindowFlags getDialogWndFlags(); // maximize, no "what's this"
 Qt::WindowFlags getNoResizeWndFlags(); // no "what's this"; the window may be resizable, but the min/max icons aren't shown
 
-bool getDefaultForShowCustomCloseButtons();
 
 QString getSystemInfo();
 
@@ -344,7 +342,7 @@ void openHelp(const std::string& strFileName);
 
 
 // meant for displaying tooltips; converts some spaces to \n, so the tooltips have several short lines instead of a single wide line
-QString makeMultiline(const QString& qstrDescr);
+QString makeMultiline(const char* szDescr);
 
 QString toNativeSeparators(const QString&);
 QString fromNativeSeparators(const QString&);
@@ -354,18 +352,6 @@ inline std::string fromNativeSeparators(const std::string& s) { return convStr(f
 QString getTempDir();
 
 
-struct ShellIntegration
-{
-    static bool isShellIntegrationEditable();
-    static std::string getShellIntegrationError();
-
-    static void enableTempSession(bool);
-    static bool isTempSessionEnabled();
-    static void enableVisibleSession(bool);
-    static bool isVisibleSessionEnabled();
-    static void enableHiddenSession(bool);
-    static bool isHiddenSessionEnabled();
-};
 
 //======================================================================================================
 //======================================================================================================

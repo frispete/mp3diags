@@ -27,7 +27,6 @@
 #include  "ui_DirFilter.h"
 
 #include  "DoubleList.h"
-#include  "Helpers.h"
 
 class CommonData;
 
@@ -48,7 +47,7 @@ Q_OBJECT
     void populateLists();
 
     /*override*/ int getColCount() const { return 1; }
-    /*override*/ std::string getColTitle(int /*nCol*/) const { return convStr(tr("Folder")); }
+    /*override*/ std::string getColTitle(int /*nCol*/) const { return "Folder"; }
     /*override*/ void getColor(int /*nIndex*/, int /*nColumn*/, bool /*bSubList*/, QColor& /*bckgColor*/, QColor& /*penColor*/, double& /*dGradStart*/, double& /*dGradEnd*/) const { }
     /*override*/ int getColWidth(int /*nCol*/) const { return -1; } // positive values are used for fixed widths, while negative ones are for "stretched"
     /*override*/ int getHdrHeight() const;

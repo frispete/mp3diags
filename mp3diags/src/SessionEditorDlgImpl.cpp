@@ -32,10 +32,7 @@
 #include  "Helpers.h"
 #include  "Transformation.h"
 #include  "StoredSettings.h"
-#include  "OsFile.h"
-#include  "Translation.h"
-#include  "CommonData.h"
-#include  "Widgets.h"
+
 
 using namespace std;
 //using namespace pearl;
@@ -62,34 +59,18 @@ void SessionEditorDlgImpl::commonConstr() // common code for both constructors
     grayPalette.setColor(QPalette::Base, grayPalette.color(QPalette::Disabled, QPalette::Window));
     m_pBackupE->setPalette(grayPalette);
     m_pFileNameE->setPalette(grayPalette);
-
-    { // language
-        int nCrt (0);
-        const vector<string>& vstrTranslations (TranslatorHandler::getGlobalTranslator().getTranslations());
-        string strTmpTranslation (m_strTranslation); // !!! needed because on_m_pTranslationCbB_currentIndexChanged() will get triggered and change m_strTranslation
-        for (int i = 0; i < cSize(vstrTranslations); ++i)
-        {
-            m_pTranslationCbB->addItem(convStr(TranslatorHandler::getLanguageInfo(vstrTranslations[i])));
-            if (strTmpTranslation == vstrTranslations[i])
-            {
-                nCrt = i;
-            }
-        }
-        m_pTranslationCbB->setCurrentIndex(nCrt);
-        m_strTranslation = vstrTranslations[m_pTranslationCbB->currentIndex()];
-    }
 }
 
 
 // used for creating a new session;
-SessionEditorDlgImpl::SessionEditorDlgImpl(QWidget* pParent, const string& strDir, bool bFirstTime, const string& strTranslation) : QDialog(pParent, getDialogWndFlags()), Ui::SessionEditorDlg(), m_strDir(strDir), m_bNew(true), m_strTranslation(strTranslation)
+SessionEditorDlgImpl::SessionEditorDlgImpl(QWidget* pParent, const string& strDir, bool bFirstTime) : QDialog(pParent, getDialogWndFlags()), Ui::SessionEditorDlg(), m_strDir(strDir), m_bNew(true)
 {
     commonConstr();
 
     bool bAutoFileName (false);
     {
 #ifndef WIN32
-        QString qs (QDir::homePath() + "/Documents"); // OK on openSUSE, not sure how standardized it is //ttt0 this is localized, so not OK; look at Qt
+        QString qs (QDir::homePath() + "/Documents"); // OK on openSUSE, not sure how standardized it is
 #else
         QSettings settings (QSettings::UserScope, "Microsoft", "Windows");
         settings.beginGroup("CurrentVersion/Explorer/Shell Folders");
@@ -97,8 +78,7 @@ SessionEditorDlgImpl::SessionEditorDlgImpl(QWidget* pParent, const string& strDi
 #endif
         if (QFileInfo(qs).isDir())
         {
-            qs += "/MP3Diags";
-            qs += SESS_EXT;
+            qs += "/MP3Diags.ini";
             if (!QDir().exists(qs))
             {
                 m_pFileNameE->setText(toNativeSeparators(qs));
@@ -108,21 +88,21 @@ SessionEditorDlgImpl::SessionEditorDlgImpl(QWidget* pParent, const string& strDi
     }
 
     //setWindowTitle("MP3 Diags - Create a new session or load an existing one");
-    setWindowTitle();
+    setWindowTitle("MP3 Diags - Create new session");
     m_pDontCreateBackupRB->setChecked(true);
     m_pScanAtStartupCkB->setChecked(true);
 
     m_pFileNameE->setToolTip(bAutoFileName ?
-        tr("This is the name of the \"settings file\"\n\n"
+        "This is the name of the \"settings file\"\n\n"
         "It is supposed to be a file that doesn't already exist. You don't need to set it up. MP3 Diags\n"
         "will store its settings in this file.\n\n"
         "The name was generated automatically. If you want to choose a different name, simply click on\n"
-        "the button at the right to change it.", "this is a multiline tooltip") :
+        "the button at the right to change it." :
 
-        tr("Here you need to specify the name of a \"settings file\"\n\n"
+        "Here you need to specify the name of a \"settings file\"\n\n"
         "This is supposed to be a file that doesn't already exist. You don't need to set it up. MP3 Diags\n"
         "will store its settings in this file.\n\n"
-        "To change it, simply click on the button at the right to choose the name of the settings file.", "this is a multiline tooltip"));
+        "To change it, simply click on the button at the right to choose the name of the settings file.");
 
     if (!bFirstTime)
     {
@@ -133,29 +113,22 @@ SessionEditorDlgImpl::SessionEditorDlgImpl(QWidget* pParent, const string& strDi
 
 
 // used for editing an existing session;
-SessionEditorDlgImpl::SessionEditorDlgImpl(QWidget* pParent, const string& strSessFile) : QDialog(pParent, getDialogWndFlags()), Ui::SessionEditorDlg(), m_bNew(false)
+SessionEditorDlgImpl::SessionEditorDlgImpl(QWidget* pParent, const string& strIniFile) : QDialog(pParent, getDialogWndFlags()), Ui::SessionEditorDlg(), m_bNew(false)
 {
-    SessionSettings st (strSessFile);
-    {
-        CommonData commonData(st, 0, 0, 0, 0, 0, 0, 0, 0, 0, false);
-        st.loadMiscConfigSettings(&commonData, SessionSettings::DONT_INIT_GUI);
-        m_strTranslation = commonData.m_strTranslation;
-    }
-
     commonConstr();
 
-    setWindowTitle();
+    setWindowTitle("MP3 Diags - Edit session");
     m_pFileNameE->setReadOnly(true);
-    m_pFileNameE->setText(toNativeSeparators(convStr(strSessFile)));
+    m_pFileNameE->setText(toNativeSeparators(convStr(strIniFile)));
     m_pFileNameB->hide();
     m_pOpenLastCkB->hide();
     //m_pLoadB->hide();
     m_pOpenSessionsB->hide();
 
-    m_strSessFile = strSessFile;
-    CB_ASSERT (!m_strSessFile.empty());
+    m_strIniFile = strIniFile;
+    CB_ASSERT (!m_strIniFile.empty());
 
-    //SessionSettings st (m_strSessFile);
+    SessionSettings st (m_strIniFile);
     vector<string> vstrCheckedDirs, vstrUncheckedDirs;
     st.loadDirs(vstrCheckedDirs, vstrUncheckedDirs);
 
@@ -190,10 +163,7 @@ void SessionEditorDlgImpl::onShow()
 }
 
 
-void SessionEditorDlgImpl::setWindowTitle()
-{
-    QDialog::setWindowTitle(m_bNew ? tr("MP3 Diags - Create new session") : tr("MP3 Diags - Edit session"));
-}
+
 
 // returns the name of an INI file for OK and an empty string for Cancel; returns "*" to just go to the sessions dialog;
 string SessionEditorDlgImpl::run()
@@ -206,10 +176,10 @@ string SessionEditorDlgImpl::run()
     if (QDialog::Accepted != exec()) { return ""; }
 
     gs.saveSessionEdtSize(width(), height());
-    m_strTranslation = TranslatorHandler::getGlobalTranslator().getTranslations()[m_pTranslationCbB->currentIndex()];
 
-    return m_strSessFile;
+    return m_strIniFile;
 }
+
 
 
 void SessionEditorDlgImpl::on_m_pOkB_clicked()
@@ -221,12 +191,12 @@ void SessionEditorDlgImpl::on_m_pOkB_clicked()
     if (m_bNew)
     {
         QString qstrFile (fromNativeSeparators(m_pFileNameE->text()));
-        if (!qstrFile.isEmpty() && !qstrFile.endsWith(SESS_EXT)) { qstrFile += SESS_EXT; m_pFileNameE->setText(toNativeSeparators(qstrFile)); }
-        //m_strSessFile = convStr(QFileInfo(qstrFile).canonicalFilePath());
-        m_strSessFile = convStr(qstrFile);
-        if (m_strSessFile.empty())
+        if (!qstrFile.isEmpty() && !qstrFile.endsWith(".ini")) { qstrFile += ".ini"; m_pFileNameE->setText(toNativeSeparators(qstrFile)); }
+        //m_strIniFile = convStr(QFileInfo(qstrFile).canonicalFilePath());
+        m_strIniFile = convStr(qstrFile);
+        if (m_strIniFile.empty())
         {
-            showCritical(this, tr("Error"), tr("You need to specify the name of the settings file.\n\nThis is supposed to be a file that doesn't already exist. You don't need to set it up, but just to pick a name for it. MP3 Diags will store its settings in this file."));
+            QMessageBox::critical(this, "Error", "You need to specify the name of the settings file.\n\nThis is supposed to be a file that doesn't already exist. You don't need to set it up, but just to pick a name for it. MP3 Diags will store its settings in this file.");
             on_m_pFileNameB_clicked();
             return;
         }
@@ -236,7 +206,7 @@ void SessionEditorDlgImpl::on_m_pOkB_clicked()
 
     if (vstrCheckedDirs.empty())
     {
-        showCritical(this, tr("Error"), tr("You need to select at least a directory to be included in the session."));
+        QMessageBox::critical(this, "Error", "You need to select at least a directory to be included in the session.");
         return;
     }
 
@@ -245,7 +215,7 @@ void SessionEditorDlgImpl::on_m_pOkB_clicked()
         QString s (fromNativeSeparators(m_pBackupE->text()));
         if (s.isEmpty() || !QFileInfo(s).isDir())
         {
-            showCritical(this, tr("Error"), tr("If you want to create backups, you must select an existing directory to store them."));
+            QMessageBox::critical(this, "Error", "If you want to create backups, you must select an existing directory to store them.");
             return;
         }
     }
@@ -255,10 +225,10 @@ void SessionEditorDlgImpl::on_m_pOkB_clicked()
     {
         if (m_bNew)
         {
-            removeSession(m_strSessFile);
+            removeSession(m_strIniFile);
         }
 
-        SessionSettings st (m_strSessFile);
+        SessionSettings st (m_strIniFile);
 
         TransfConfig tc;
         if (!m_bNew)
@@ -282,20 +252,12 @@ void SessionEditorDlgImpl::on_m_pOkB_clicked()
 
         st.saveScanAtStartup(m_pScanAtStartupCkB->isChecked());
 
-        {
-            CommonData commonData(st, 0, 0, 0, 0, 0, 0, 0, 0, 0, false);
-            st.loadMiscConfigSettings(&commonData, SessionSettings::DONT_INIT_GUI);
-            commonData.m_strTranslation = m_strTranslation;
-            st.saveMiscConfigSettings(&commonData);
-        }
-
-
         if (!st.sync())
         {
-            showCritical(this, tr("Error"), tr("Failed to write to file %1").arg(m_pFileNameE->text()));
+            QMessageBox::critical(this, "Error", "Failed to write to file " + m_pFileNameE->text());
             if (m_bNew)
             {
-                removeSession(m_strSessFile);
+                removeSession(m_strIniFile);
             }
             return;
         }
@@ -317,7 +279,7 @@ void SessionEditorDlgImpl::on_m_pBackupB_clicked()
     {
         s = QDir::homePath();
     }
-    QFileDialog dlg (this, tr("Select folder"), s, tr("All files (*)"));
+    QFileDialog dlg (this, "Select folder", s, "All files (*)");
     //dlg.setAcceptMode(QFileDialog::AcceptSave);
 
     dlg.setFileMode(QFileDialog::Directory);
@@ -353,7 +315,7 @@ void SessionEditorDlgImpl::on_m_pFileNameB_clicked()
             s = convStr(m_strDir);
         }
     }
-    QFileDialog dlg (this, tr("Enter configuration file"), s, tr("MP3 Diags session files (*%1)").arg(SESS_EXT));
+    QFileDialog dlg (this, "Enter configuration file", s, "INI files (*.ini)");
     dlg.setAcceptMode(QFileDialog::AcceptSave);
 
     //dlg.setFileMode(QFileDialog::Directory);
@@ -364,65 +326,37 @@ void SessionEditorDlgImpl::on_m_pFileNameB_clicked()
 
     s = fileNames.first();
 
-    if (!s.endsWith(SESS_EXT)) { s += SESS_EXT; }
+    if (!s.endsWith(".ini")) { s += ".ini"; }
 
     m_pFileNameE->setText(toNativeSeparators(s));
 }
 
 
-/*static*/ string SessionEditorDlgImpl::getDataFileName(const string& strSessFile)
+/*static*/ string SessionEditorDlgImpl::getDataFileName(const string& strIniName)
 {
-    CB_ASSERT (endsWith(strSessFile, SESS_EXT));
-    return strSessFile.substr(0, strSessFile.size() - SESS_EXT_LEN) + ".dat";
+    CB_ASSERT (endsWith(strIniName, ".ini"));
+    return strIniName.substr(0, strIniName.size() - 4) + ".dat";
 }
 
-/*static*/ string SessionEditorDlgImpl::getLogFileName(const string& strSessFile)
+/*static*/ string SessionEditorDlgImpl::getLogFileName(const string& strIniName)
 {
-    CB_ASSERT (endsWith(strSessFile, SESS_EXT));
-    return strSessFile.substr(0, strSessFile.size() - SESS_EXT_LEN) + ".transf_log.txt";
-}
-
-/*static*/ string SessionEditorDlgImpl::getBaseName(const string& strSessFile)
-{
-    CB_ASSERT (endsWith(strSessFile, SESS_EXT));
-    return strSessFile.substr(0, strSessFile.size() - SESS_EXT_LEN);
-}
-
-/*static*/ string SessionEditorDlgImpl::getTitleName(const string& strSessFile)
-{
-    CB_ASSERT (endsWith(strSessFile, SESS_EXT));
-
-    string::size_type n (strSessFile.rfind(getPathSep()));
-    return strSessFile.substr(n + 1, strSessFile.size() - n - SESS_EXT_LEN - 1);
+    CB_ASSERT (endsWith(strIniName, ".ini"));
+    return strIniName.substr(0, strIniName.size() - 4) + ".transf_log.txt";
 }
 
 
- // removes all files associated with a session: .ini, .mp3ds, .log, .dat, _trace.txt, _step1.txt, _step2.txt
-/*static*/ void SessionEditorDlgImpl::removeSession(const string& strSessFile)
+/*static*/ void SessionEditorDlgImpl::removeSession(const string& strIniName) // removes INI, DAT, and LOG
 {
-    eraseFiles(strSessFile.substr(0, strSessFile.size() - SESS_EXT_LEN));
+    QFile::remove(convStr(strIniName)); // ttt2 perhaps check ...
+    QFile::remove(convStr(getDataFileName(strIniName)));
+    QFile::remove(convStr(getLogFileName(strIniName)));
 }
-
-
-/*static*/ const char* const SessionEditorDlgImpl::SESS_EXT (".ini"); //ttt0 perhaps switch to .mp3ds (keep in mind that there may be many folders with .ini in them now); the point is to be able to double-click on a .mp3ds file
-/*static*/ int SessionEditorDlgImpl::SESS_EXT_LEN (strlen(SessionEditorDlgImpl::SESS_EXT));
 
 
 void SessionEditorDlgImpl::on_m_pOpenSessionsB_clicked()
 {
-    m_strSessFile = "*";
+    m_strIniFile = "*";
     accept();
-}
-
-
-void SessionEditorDlgImpl::on_m_pTranslationCbB_currentIndexChanged(int)
-{
-    const vector<string>& vstrTranslations (TranslatorHandler::getGlobalTranslator().getTranslations());
-    m_strTranslation = vstrTranslations[m_pTranslationCbB->currentIndex()];
-
-    TranslatorHandler::getGlobalTranslator().setTranslation(m_strTranslation);
-    retranslateUi(this);
-    setWindowTitle();
 }
 
 

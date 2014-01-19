@@ -63,7 +63,7 @@ public:
 
     /*override*/ QVariant headerData(int nSection, Qt::Orientation eOrientation, int nRole = Qt::DisplayRole) const;
     /*override*/ Qt::ItemFlags flags(const QModelIndex& index) const;
-    /*override*/ bool setData(const QModelIndex& index, const QVariant& value, int nRole /* = Qt::EditRole*/);
+    /*override*/ bool setData(const QModelIndex& index, const QVariant& value, int nRole /*= Qt::EditRole*/);
 
     void emitLayoutChanged() { emit layoutChanged(); }
 };
@@ -246,7 +246,6 @@ protected slots:
     void on_m_pPasteB_clicked();
     void on_m_pSortB_clicked();
     void on_m_pConfigB_clicked();
-    void on_m_pCloseB_clicked();
 
     void onAlbSelChanged();
     void onAlbCrtChanged();

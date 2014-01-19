@@ -25,23 +25,10 @@
 #include  "AboutDlgImpl.h"
 
 #include  "Helpers.h"
-#include  "Version.h"
 
+extern const char* APP_VER;
 
-using namespace Version;
-
-/*
-" + QString(::AboutDlgImpl::tr("QQQ")).arg("QQQ").arg("QQQ").arg("QQQ") + "
-" + QString(::AboutDlgImpl::tr("QQQ")).arg("QQQ").arg("QQQ") + "
-" + QString(::AboutDlgImpl::tr("QQQ")).arg("QQQ") + "
-
-" + ::AboutDlgImpl::tr("QQQ").arg("QQQ").arg("QQQ").arg("QQQ") + "
-" + ::AboutDlgImpl::tr("QQQ").arg("QQQ").arg("QQQ") + "
-" + ::AboutDlgImpl::tr("QQQ").arg("QQQ") + "
-
-*/
-
-AboutDlgImpl::AboutDlgImpl(QWidget* pParent /* = 0*/) : QDialog(pParent, getDialogWndFlags()), Ui::AboutDlg()
+AboutDlgImpl::AboutDlgImpl(QWidget* pParent /*= 0*/) : QDialog(pParent, getDialogWndFlags()), Ui::AboutDlg()
 {
     setupUi(this);
 
@@ -53,25 +40,23 @@ AboutDlgImpl::AboutDlgImpl(QWidget* pParent /* = 0*/) : QDialog(pParent, getDial
 <a href=\"DDDDDDDDDDDDD\">NNNNNNNNNNNNNN</a>
 */
     m_pMainTextM->setHtml(
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Written by %1, %2").arg("<a href=\"mailto:mp3diags@gmail.com?subject=000 MP3 Diags\">Marian Ciobanu (Ciobi)</a>").arg("2008 - 2013") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Command-line mode by %1, %2").arg("Michael Elsd&#xf6;rfer").arg("2011") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("%1 translation by %2, %3").arg(AboutDlgImpl::tr("Czech")).arg("<a href=\"http://fripohled.blogspot.com/\">Pavel Fric</a>").arg("2012") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("%1 translation by %2, %3").arg(AboutDlgImpl::tr("German")).arg("<a href=\"mailto:2711271+translate@gmail.com?subject=MP3 Diags translation\">Marco Krause</a>").arg("2012") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("%1 translation by %2, %3").arg(AboutDlgImpl::tr("French")).arg("<a href=\"mailto:gwilherm_b@hotmail.com?subject=MP3 Diags translation\">Gwilherm Baudic</a>").arg("2012") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Distributed under %1").arg("<a href=\"http://www.gnu.org/licenses/gpl-2.0.html#TOC1\">GPL V2</a>") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Using %1, released under %2").arg("<a href=\"http://qt-project.org\">Qt</a>").arg("<a href=\"http://www.gnu.org/licenses/lgpl-2.1.html\">LGPL 2.1</a>") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Using %1, released under the %2zlib License%3").arg("<a href=\"http://www.zlib.net/\">zlib</a>").arg("<a href=\"http://www.zlib.net/zlib_license.html\">").arg("</a>") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Using %1 and %2, distributed under the %3Boost Software License%4").arg("<a href=\"http://www.boost.org/libs/serialization\">Boost Serialization</a>").arg("<a href=\"http://www.boost.org/libs/program_options\">Boost Program Options</a>").arg("<a href=\"http://www.boost.org/users/license.html\">").arg("</a>") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Using original and modified icons from the %1 for %2, distributed under %3LGPL V3%4").arg("<a href=\"http://www.oxygen-icons.org/\">Oxygen Project</a>").arg("<a href=\"http://www.kde.org/\">KDE 4</a>").arg("<a href=\"http://www.gnu.org/licenses/lgpl.html\">").arg("</a>") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Using web services provided by %1 to retrieve album data").arg("<a href=\"http://www.discogs.com/\">Discogs</a>") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Using web services provided by %1 to retrieve album data").arg("<a href=\"http://musicbrainz.org/\">MusicBrainz</a>") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Home page and documentation: %1").arg("<a href=\"http://mp3diags.sourceforge.net" + QString(getWebBranch()) + "/\">http://mp3diags.sourceforge.net" + QString(getWebBranch()) + "/</a>") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Feedback and support: %1 or %2 at SourceForge").arg("<a href=\"http://sourceforge.net/projects/mp3diags/forums/forum/947206\">Open Discussion Forum</a>").arg("<a href=\"http://sourceforge.net/projects/mp3diags/forums/forum/947207\">Help Forum</a>") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Bug reports and feature requests: %1 at SourceForge").arg("<a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">MantisBT Issue Tracker</a>") + "</p>"
-        "<p style=\"margin-bottom:8px; margin-top:1px; \">" + AboutDlgImpl::tr("Change log for the latest version: %1").arg("<a href=\"http://mp3diags.sourceforge.net" + QString(getWebBranch()) + "/015_changelog.html\">http://mp3diags.sourceforge.net" + QString(getWebBranch()) + "/015_changelog.html</a>") + "</p>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Written by <a href=\"mailto:ciobi@inbox.com?subject=000 MP3 Diags\">Marian Ciobanu (Ciobi)</a>, 2008 - 2009</p>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Distributed under <a href=\"http://www.gnu.org/licenses/gpl-2.0.html#TOC1\">GPL V2</a></p>"
+        //"Using <a href=\"http://doc.trolltech.com/4/opensourceedition.html\">Qt 4 Open Source Edition</a><p/>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Using <a href=\"http://www.qtsoftware.com/\">Qt Free Edition</a>, released under <a href=\"http://www.gnu.org/licenses/lgpl-2.1.html\">LGPL 2.1</a></p>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Using <a href=\"http://www.zlib.net/\">zlib</a>, released under the <a href=\"http://www.zlib.net/zlib_license.html\">zlib License</a></p>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Using <a href=\"http://www.boost.org/doc/libs/1_39_0/libs/serialization/doc/index.html\">Boost Serialization</a>, distributed under the <a href=\"http://www.boost.org/users/license.html\">Boost Software License</a></p>"
+        //"Most icons are either copies or modified versions of icons from the <a href=\"http://www.oxygen-icons.org/\">Oxygen Project</a> for <a href=\"http://www.kde.org/\">KDE 4</a>. They are distributed under <a href=\"http://www.gnu.org/licenses/lgpl.html\">LGPL V3</a><p/>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Using original and modified icons from the <a href=\"http://www.oxygen-icons.org/\">Oxygen Project</a> for <a href=\"http://www.kde.org/\">KDE 4</a>, distributed under <a href=\"http://www.gnu.org/licenses/lgpl.html\">LGPL V3</a></p>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Using web services provided by <a href=\"http://www.discogs.com/\">Discogs</a> to retrieve album data</p>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Using web services provided by <a href=\"http://musicbrainz.org/\">MusicBrainz</a> to retrieve album data</p>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Home page and documentation: <a href=\"http://mp3diags.sourceforge.net/\">http://mp3diags.sourceforge.net/</a></p>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Feedback and support: <a href=\"http://sourceforge.net/forum/forum.php?forum_id=947206\">Open Discussion Forum</a> or <a href=\"http://sourceforge.net/forum/forum.php?forum_id=947207\">Help Forum</a> at SourceForge</p>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Bug reports and feature requests: <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">MantisBT Issue Tracker</a> at SourceForge</p>"
+        "<p style=\"margin-bottom:8px; margin-top:1px; \">Change log for the latest version: <a href=\"http://mp3diags.sourceforge.net/015_changelog.html\">http://mp3diags.sourceforge.net/015_changelog.html</a></p>"
         );
 
-    m_pVersionL->setText(QString(getAppName()) + " " + getAppVer()); //ttt1 write "unstable" in red
+    m_pVersionL->setText(QString("MP3 Diags ") + APP_VER);
 
     initText(m_pGplV2M, ":/licences/gplv2.txt");
     initText(m_pGplV3M, ":/licences/gplv3.txt");

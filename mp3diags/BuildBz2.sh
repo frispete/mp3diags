@@ -28,23 +28,11 @@ if [ -f /etc/fedora-release ] ; then
     QMake=qmake-qt4
 fi
 
-if [ -d bin ] ; then
-    rm bin/*
-fi
-
-if [[ "$1" != "" ]] ; then
-    $QMake "$1"
-else
-    $QMake
-fi
-
+$QMake "$1"
 if [ $? -ne 0 ] ; then exit 1 ; fi
 
 make
 if [ $? -ne 0 ] ; then exit 1 ; fi
-
-./MakeTranslations.sh
-cp src/translations/*.qm bin
 
 BranchSlash=`cat branch.txt`
 BranchDash=`echo "$BranchSlash" | sed 's#/#-#'`
@@ -54,9 +42,9 @@ strip bin/$exe
 
 Cpu=`uname -m`
 
+cd bin
 NewName=$exe-Linux-$Cpu-QQQVERQQQ
-mv bin/$exe bin/$NewName
-tar -c bin | bzip2 > $NewName.tar.bz2
-mv $NewName.tar.bz2 bin
-mv bin/$NewName bin/$exe
-
+mv $exe $NewName
+tar -c $NewName | bzip2 > $NewName.tar.bz2
+mv $NewName $exe
+cd ..

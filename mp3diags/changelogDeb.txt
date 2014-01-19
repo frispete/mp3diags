@@ -1,130 +1,27 @@
-mp3diags (1.3.00) testing; urgency=low
-
-  * build fix for clang and for Solaris
-  * added offset to the output created via the command line
-  * fixed incorrect message occurring some times when start after a crash
-  * better logging and retries for write errors
-  * fixed broken links in documentation and moved alternate downloads from Dropbox to my ISP
-  * new version number to support the new "unstable" branch
-
- -- Marian Ciobanu <ciobi@inbox.com>  Thu, 16 Jan 2014 22:00:00 -0800
-
-mp3diags (1.2.00) testing; urgency=low
-
-  * new version number to support the new "stable" branch
-
- -- Marian Ciobanu <ciobi@inbox.com>  Sun, 31 Mar 2013 22:00:00 -0800
-
-mp3diags (1.1.21.080) testing; urgency=low
-
-  * fixed bug that caused a "%s" to be shown instead of the list of files about to be changed
-
- -- Marian Ciobanu <ciobi@inbox.com>  Sat, 01 Dec 2012 22:00:00 -0800
-
-mp3diags (1.1.20.077) testing; urgency=low
+mp3diags (1.0.12.079) testing; urgency=low
 
   * Discogs fix
 
  -- Marian Ciobanu <ciobi@inbox.com>  Sat, 20 Oct 2012 22:00:00 +0200
 
-mp3diags (1.1.19.075) testing; urgency=low
+mp3diags (1.0.11.076) testing; urgency=low
 
-  * French translation
+  * made program compilable with GCC 4.7
 
- -- Marian Ciobanu <ciobi@inbox.com>  Sun, 29 Apr 2012 22:00:00 +0200
+ -- Marian Ciobanu <ciobi@inbox.com>  Fri, 11 May 2011 22:00:00 +0200
 
-mp3diags (1.1.18.074) testing; urgency=low
+mp3diags (1.0.10.065) testing; urgency=low
 
-  * German translation
-  * made code compilable on GCC 4.7
-  * several translation fixes
+  * updated Discogs API calls to current version
 
- -- Marian Ciobanu <ciobi@inbox.com>  Sat, 06 Apr 2012 22:00:00 +0200
+ -- Marian Ciobanu <ciobi@inbox.com>  Sat, 31 Dec 2011 22:00:00 +0200
 
-mp3diags (1.1.17.073) testing; urgency=low
+mp3diags (1.0.09.063) testing; urgency=low
 
-  * fixed crash introduced in 1.1.16 with translation changes
+  * made Discogs queries work again, after a Discogs API change
+  * added close button for windows on Gnome 3
 
- -- Marian Ciobanu <ciobi@inbox.com>  Sat, 17 Mar 2012 22:00:00 +0200
-
-mp3diags (1.1.16.072) testing; urgency=low
-
-  * made program translatable
-  * added Czech translation
-
- -- Marian Ciobanu <ciobi@inbox.com>  Sun, 11 Mar 2012 22:00:00 +0200
-
-mp3diags (1.1.12.068) testing; urgency=low
-
-  * external tools
-  * possibility of applying transformation lists in CLI mode
-  * "Open containing folder" in the main window
-  * delete files from the main window
-  * close buttons for Gnome 3
-  * APE remover
-  * non-audio remover
-  * CLI analyzer uses session settings to determine quality thresholds
-  * fixed menu tooltips that disappeared too quickly
-
- -- Marian Ciobanu <ciobi@inbox.com>  Wed, 01 Feb 2012 22:00:00 +0200
-
-mp3diags (1.1.09.064) testing; urgency=low
-
-  * moved to Discogs API V2
-  * added codepage support when copying ID3V1 to ID3V2
-  * fixed crash caused by ID3V2.4 tag with invalid flags
-  * fixed splitting of unsupported ID3V2 tags
-  * fixed Xing generation for small bitrates
-
- -- Marian Ciobanu <ciobi@inbox.com>  Sat, 03 Dec 2011 22:00:00 +0200
-
-mp3diags (1.1.08.062) testing; urgency=low
-
-  * made Discogs queries after a Discogs API change
-  * fixed track numbering when querying multi-volume albums from Discogs
-  * made Linux shell integration accept file names containing spaces
-  * added close button for dialogs on Gnome 3
-
- -- Marian Ciobanu <ciobi@inbox.com>  Sun, 28 Aug 2011 22:00:00 +0200
-
-mp3diags (1.1.07.061) testing; urgency=low
-
-  * shell integration for Linux
-  * replaced MP3Diags with MP3Diags-unstable in places where this wasn't done
-  * restructured the .spec file
-  * added close button on Gnome 3
-
- -- Marian Ciobanu <ciobi@inbox.com>  Sat, 30 Jul 2011 22:00:00 +0200
-
-mp3diags (1.1.06.059) testing; urgency=low
-
-  * shell integration fixes
-
- -- Marian Ciobanu <ciobi@inbox.com>  Fri, 22 Jul 2011 22:00:00 +0200
-
-mp3diags (1.1.05.058) testing; urgency=low
-
-  * shell integration (Windows only)
-
- -- Marian Ciobanu <ciobi@inbox.com>  Thu, 21 Jul 2011 22:00:00 +0200
-
-mp3diags (1.1.04.057) testing; urgency=low
-
-  * folder-based sessions based on command-line parameters
-
- -- Marian Ciobanu <ciobi@inbox.com>  Sun, 17 Jul 2011 22:00:00 +0200
-
-mp3diags (1.1.03.056) testing; urgency=low
-
-  * integrated command-line mode by Michael Elsdörfer
-
- -- Marian Ciobanu <ciobi@inbox.com>  Wed, 15 Jun 2011 22:00:00 +0200
-
-mp3diags (1.1.01.054) testing; urgency=low
-
-  * created unstable branch
-
- -- Marian Ciobanu <ciobi@inbox.com>  Mon, 30 May 2011 22:00:00 +0200
+ -- Marian Ciobanu <ciobi@inbox.com>  Sat, 10 Sep 2011 22:00:00 +0200
 
 mp3diags (1.0.08.053) testing; urgency=low
 

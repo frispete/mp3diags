@@ -28,7 +28,6 @@
 #include  <QColorDialog>
 #include  <QPainter>
 #include  <QStackedLayout>
-#include  <QCloseEvent>
 
 #include  "ConfigDlgImpl.h"
 
@@ -38,12 +37,8 @@
 #include  "Helpers.h"
 #include  "Id3Transf.h"
 #include  "Id3V230Stream.h"
-#include  "MpegStream.h"
 #include  "CommonData.h"
 #include  "StoredSettings.h"
-#include  "ColumnResizer.h"
-#include  "Widgets.h"
-#include  "Translation.h"
 
 ////#include  <iostream> //ttt remove
 
@@ -69,16 +64,15 @@ public:
 
 /*override*/ std::string TransfListElem::getText(int nCol) const
 {
-    if (0 == nCol) { return convStr(Transformation::tr(m_pTransformation->getActionName())); }
-    return convStr(Transformation::tr(m_pTransformation->getDescription()));
+    if (0 == nCol) { return m_pTransformation->getActionName(); }
+    return m_pTransformation->getDescription();
 }
 
 
 class CustomTransfListPainter : public ListPainter
 {
-    Q_DECLARE_TR_FUNCTIONS(CustomTransfListPainter)
     /*override*/ int getColCount() const { return 2; }
-    /*override*/ std::string getColTitle(int nCol) const { return 0 == nCol ? convStr(tr("Action")) : convStr(tr("Description")); }
+    /*override*/ std::string getColTitle(int nCol) const { return 0 == nCol ? "Action" : "Description"; }
     /*override*/ void getColor(int /*nIndex*/, int /*nColumn*/, bool /*bSubList*/, QColor& /*bckgColor*/, QColor& /*penColor*/, double& /*dGradStart*/, double& /*dGradEnd*/) const { }
     /*override*/ int getColWidth(int /*nCol*/) const { return -1; } // positive values are used for fixed widths, while negative ones are for "stretched"
     /*override*/ int getHdrHeight() const { return CELL_HEIGHT; }
@@ -119,12 +113,12 @@ CustomTransfListPainter::~CustomTransfListPainter()
     {
     case SELECTED_G: return "";//"Notes to be included";
     case AVAILABLE_G: return "";//"Available notes";
-    case ADD_B: return convStr(tr("Add selected transformation(s)"));
-    case DELETE_B: return convStr(tr("Remove selected transformation(s)"));
+    case ADD_B: return "Add selected transformation(s)";
+    case DELETE_B: return "Remove selected transformation(s)";
     case ADD_ALL_B: return "";//"Add all transformations";
     case DELETE_ALL_B: return "";//"Remove all transformations";
-    case RESTORE_DEFAULT_B: return convStr(tr("Restore current list to its default value"));
-    case RESTORE_OPEN_B: return convStr(tr("Restore current list to the configuration it had when the window was open"));
+    case RESTORE_DEFAULT_B: return "Restore current list to its default value";
+    case RESTORE_OPEN_B: return "Restore current list to the configuration it had when the window was open";
     default: CB_ASSERT(false);
     }
 }
@@ -142,9 +136,8 @@ CustomTransfListPainter::~CustomTransfListPainter()
 
 class VisibleTransfPainter : public ListPainter
 {
-    Q_DECLARE_TR_FUNCTIONS(VisibleTransfPainter)
     /*override*/ int getColCount() const { return 2; }
-    /*override*/ std::string getColTitle(int nCol) const { return 0 == nCol ? convStr(tr("Action")) : convStr(tr("Description")); }
+    /*override*/ std::string getColTitle(int nCol) const { return 0 == nCol ? "Action" : "Description"; }
     /*override*/ void getColor(int /*nIndex*/, int /*nColumn*/, bool /*bSubList*/, QColor& /*bckgColor*/, QColor& /*penColor*/, double& /*dGradStart*/, double& /*dGradEnd*/) const { }
     /*override*/ int getColWidth(int /*nCol*/) const { return -1; } // positive values are used for fixed widths, while negative ones are for "stretched"
     /*override*/ int getHdrHeight() const { return CELL_HEIGHT; }
@@ -188,12 +181,12 @@ VisibleTransfPainter::~VisibleTransfPainter()
     {
     case SELECTED_G: return "";//"Notes to be included";
     case AVAILABLE_G: return "";//"Available notes";
-    case ADD_B: return convStr(tr("Add selected transformation(s)"));
-    case DELETE_B: return convStr(tr("Remove selected transformation(s)"));
+    case ADD_B: return "Add selected transformation(s)";
+    case DELETE_B: return "Remove selected transformation(s)";
     case ADD_ALL_B: return "";//"Add all transformations";
     case DELETE_ALL_B: return "";//"Remove all transformations";
-    case RESTORE_DEFAULT_B: return convStr(tr("Restore current list to its default value"));
-    case RESTORE_OPEN_B: return convStr(tr("Restore current list to the configuration it had when the window was open"));
+    case RESTORE_DEFAULT_B: return "Restore current list to its default value";
+    case RESTORE_OPEN_B: return "Restore current list to the configuration it had when the window was open";
     default: CB_ASSERT(false);
     }
 }
@@ -271,25 +264,20 @@ public:
 */
 
 
-
-
 ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, QWidget* pParent, bool bFull) :
         QDialog(pParent, getDialogWndFlags()),
         Ui::ConfigDlg(),
-        NoteListPainterBase(pCommonData, convStr(tr("<all notes>"))),
+        NoteListPainterBase(pCommonData, "<all notes>"),
         m_transfCfg(transfCfg),
 
         m_pCommonData(pCommonData),
-        m_bFull(bFull),
         m_pCustomTransfListPainter(0),
         m_pCustomTransfDoubleList(0),
         m_vvnCustomTransf(pCommonData->getCustomTransf()),
         m_nCurrentTransf(-1),
         m_vvnDefaultCustomTransf(CUSTOM_TRANSF_CNT),
         m_pVisibleTransfPainter(0),
-        m_vnVisibleTransf(pCommonData->getVisibleTransf()),
-        m_bExtToolChanged(false),
-        m_vExternalToolInfos(pCommonData->m_vExternalToolInfos)
+        m_vnVisibleTransf(pCommonData->getVisibleTransf())
 {
     setupUi(this);
 
@@ -299,8 +287,6 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
 
     if (!bFull)
     {
-        m_pMainTabWidget->removeTab(8);
-        m_pMainTabWidget->removeTab(7);
         m_pMainTabWidget->removeTab(6);
         m_pMainTabWidget->removeTab(5);
         m_pMainTabWidget->removeTab(4);
@@ -320,16 +306,6 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
     }
 
     m_pSourceDirF->hide();
-
-    {
-        m_pExternalToolsModel = new ExternalToolsModel(this);
-        m_pExternalToolsG->setModel(m_pExternalToolsModel);
-        m_pExternalToolsG->verticalHeader()->setMinimumSectionSize(CELL_HEIGHT);
-        m_pExternalToolsG->verticalHeader()->setDefaultSectionSize(CELL_HEIGHT);
-
-        connect(m_pExternalToolsG->selectionModel(), SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)), this, SLOT(onExternalToolsGCurrentChanged()));
-        connect(m_pExternalToolsG->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex &)), this, SLOT(onExternalToolsGCurrentChanged()));
-    }
 
     int nWidth, nHeight;
     m_pCommonData->m_settings.loadConfigSize(nWidth, nHeight);
@@ -356,47 +332,18 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
 
                 if (0 != pId3V2)
                 {
-                    QString q;
                     const vector<Id3V2Frame*>& vpFrames (pId3V2->getFrames());
                     for (int i = 0, n = cSize(vpFrames); i < n; ++i)
                     {
                         const Id3V2Frame* pFrm (vpFrames[i]);
                         if ('T' == pFrm->m_szName[0] && pFrm->m_bHasLatin1NonAscii)
                         {
-                            q += convStr(pFrm->getUtf8String()) + "\n";
-                        }
-                    }
-                    if (!q.isEmpty())
-                    {
-                        qstr += "*************************************************************************\nID3V2\n" + q + "\n\n";
-                    }
-                }
-
-                Id3V1Stream* pId3V1 (dynamic_cast<Id3V1Stream*>(p));
-
-                if (0 != pId3V1)
-                {
-                    vector<string> v;
-                    QString q;
-                    v.push_back(pId3V1->getTitle());
-                    v.push_back(pId3V1->getArtist());
-                    v.push_back(pId3V1->getAlbumName());
-                    v.push_back(pId3V1->getOtherInfo());
-                    for (int i = 0; i < cSize(v); ++i)
-                    {
-                        for (int j = 0; j < cSize(v[i]); ++j)
-                        {
-                            unsigned char c (v[i][j]);
-                            if (c >= 128)
+                            if (!qstr.isEmpty())
                             {
-                                q += convStr(v[i]) + "\n";
-                                break;
+                                qstr += '\n';
                             }
+                            qstr += convStr(pFrm->getUtf8String());
                         }
-                    }
-                    if (!q.isEmpty())
-                    {
-                        qstr += "*************************************************************************\nID3V1\n" + q + "\n\n";
                     }
                 }
             }
@@ -404,7 +351,7 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
 
         if (qstr.isEmpty())
         {
-            qstr = tr("If you don't know exactly what codepage you want, it's better to make current a file having an ID3V2 tag that contains text frames using the Latin-1 encoding and having non-ASCII characters. Then the content of those frames will replace this text, allowing you to decide which codepage is a match for your file. ID3V1 tags are supported as well, if you want to copy data from them to ID3V2.");
+            qstr = "If you don't know exactly what codepage you want, it's better to make current a file having an ID3V2 tag that contains text frames using the Latin-1 encoding and having non-ASCII characters. Then the content of those frames will replace this text, allowing you to decide which codepage is a match for your file.";
         }
 
         m_codepageTestText = qstr.toLatin1();
@@ -483,8 +430,8 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
             *this,
             DoubleList::ADD_ALL | DoubleList::DEL_ALL | DoubleList::RESTORE_OPEN | DoubleList::RESTORE_DEFAULT,
             DoubleList::SINGLE_UNSORTABLE,
-            convStr(tr("Other notes")),
-            convStr(tr("Ignore notes")),
+            "Other notes",
+            "Ignore notes",
             this);
 
     m_pIgnoredNotesListHldr->layout()->addWidget(m_pDoubleList);
@@ -554,10 +501,10 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
 
 //lNames.sort();
 
-        m_pId3LocaleCbB->addItems(lNames);
-        int n (m_pId3LocaleCbB->findText(m_pCommonData->m_locale));
+        m_pLocaleCbB->addItems(lNames);
+        int n (m_pLocaleCbB->findText(m_pCommonData->m_locale));
         if (-1 == n) { n = 0; }
-        m_pId3LocaleCbB->setCurrentIndex(n);
+        m_pLocaleCbB->setCurrentIndex(n);
     }
 
     { // case
@@ -566,10 +513,10 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
         lNames << "Upper case: FIRST PART. SECOND PART.";
         lNames << "Title case: First Part. Second Part.";
         lNames << "Sentence case: First part. Second part.";*/ // ttt2 perhaps put this back; as of 2009.10.15, "." is no longer supported as a sentence ending
-        lNames << tr("lower case");
-        lNames << tr("UPPER CASE");
-        lNames << tr("Title Case");
-        lNames << tr("Sentence case");
+        lNames << "lower case";
+        lNames << "UPPER CASE";
+        lNames << "Title Case";
+        lNames << "Sentence case";
 
         m_pArtistsCaseCbB->addItems(lNames);
         m_pOthersCaseCbB->addItems(lNames);
@@ -612,7 +559,6 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
         m_pShowExportCkB->setChecked(m_pCommonData->m_bShowExport);
         m_pShowDebugCkB->setChecked(m_pCommonData->m_bShowDebug);
         m_pShowSessCkB->setChecked(m_pCommonData->m_bShowSessions);
-        m_pShowCustomCloseButtonsCkB->setChecked(m_pCommonData->m_bShowCustomCloseButtons);
         m_pNormalizerE->setText(convStr(m_pCommonData->m_strNormalizeCmd));
         m_pKeepNormOpenCkB->setChecked(m_pCommonData->m_bKeepNormWndOpen);
 
@@ -649,24 +595,6 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
         m_pDecrLabelFontSB->setValue(m_pCommonData->getLabelFontSizeDecr());
         m_fixedFont = m_pCommonData->getNewFixedFont();
         setFontLabels();
-
-        { // language
-            m_pFlagIconL->setMaximumSize(CELL_HEIGHT*5, CELL_HEIGHT*3);
-            int nCrt (0);
-            const vector<string>& vstrTranslations (TranslatorHandler::getGlobalTranslator().getTranslations());
-            string m_strTranslation (m_pCommonData->m_strTranslation); //ttt0 make member; ttt0 retranslate dynamically on on_m_pTranslationCbB_currentIndexChanged()
-            string strTmpTranslation (m_strTranslation); // !!! needed because on_m_pTranslationCbB_currentIndexChanged() will get triggered and change m_strTranslation
-            for (int i = 0; i < cSize(vstrTranslations); ++i)
-            {
-                m_pTranslationCbB->addItem(convStr(TranslatorHandler::getLanguageInfo(vstrTranslations[i])));
-                if (strTmpTranslation == vstrTranslations[i])
-                {
-                    nCrt = i;
-                }
-            }
-            m_strTranslation = strTmpTranslation;
-            m_pTranslationCbB->setCurrentIndex(nCrt);
-        }
     }
 
     {
@@ -677,8 +605,8 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
                 *m_pVisibleTransfPainter,
                 DoubleList::RESTORE_OPEN | DoubleList::RESTORE_DEFAULT,
                 DoubleList::SINGLE_SORTABLE,
-                convStr(tr("Invisible transformations")),
-                convStr(tr("Visible transformations")),
+                "Invisible transformations",
+                "Visible transformations",
                 this);
 
         m_pVisibleTransformsHndlr->setLayout(new QHBoxLayout());
@@ -691,34 +619,10 @@ ConfigDlgImpl::ConfigDlgImpl(TransfConfig& transfCfg, CommonData* pCommonData, Q
 
     { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("F1")); connect(p, SIGNAL(triggered()), this, SLOT(onHelp())); addAction(p); }
 
-    m_pInvalidCharsE->setToolTip(tr("Characters in this list get replaced with the string below, in \"Replace with\"\n\n"
-        "An underlined font is used to allow spaces to be seen"));
-    m_pInvalidReplacementE->setToolTip(tr("This string replaces invalid characters in the file renamer\"\n\n"
-        "An underlined font is used to allow spaces to be seen"));
-
-    if (m_bFull)
-    {
-        m_pShellTempSessCkB->setChecked(ShellIntegration::isTempSessionEnabled());
-        m_pShellVisibleSessCkB->setChecked(ShellIntegration::isVisibleSessionEnabled());
-        m_pShellHiddenSessCkB->setChecked(ShellIntegration::isHiddenSessionEnabled());
-
-        bool b (ShellIntegration::isShellIntegrationEditable());
-        m_pShellTempSessCkB->setEnabled(b);
-        m_pShellVisibleSessCkB->setEnabled(b);
-        m_pShellHiddenSessCkB->setEnabled(b);
-
-        string strShellErr (ShellIntegration::getShellIntegrationError());
-
-        m_pShellErrorL->setText(convStr(strShellErr));
-
-        QTimer::singleShot(1, this, SLOT(onResizeDelayed()));
-    }
-
-#if 0
-    installEventFilter(this);
-    //tab_8->installEventFilter(this);
-    //m_pExtToolNameE->installEventFilter(this);
-#endif
+    m_pInvalidCharsE->setToolTip("Characters in this list get replaced with the string below, in \"Replace with\"\n\n"
+        "An underlined font is used to allow spaces to be seen");
+    m_pInvalidReplacementE->setToolTip("This string replaces invalid characters in the file renamer\"\n\n"
+        "An underlined font is used to allow spaces to be seen");
 }
 
 
@@ -818,9 +722,9 @@ bool ConfigDlgImpl::run()
 }
 
 
-void ConfigDlgImpl::on_m_pId3LocaleCbB_currentIndexChanged(int)
+void ConfigDlgImpl::on_m_pLocaleCbB_currentIndexChanged(int)
 {
-    QTextCodec* pCodec (QTextCodec::codecForName(m_pId3LocaleCbB->currentText().toLatin1()));
+    QTextCodec* pCodec (QTextCodec::codecForName(m_pLocaleCbB->currentText().toLatin1()));
     CB_ASSERT (0 != pCodec);
     QString qstrTxt (pCodec->toUnicode(m_codepageTestText));
     m_pCodepageTestM->setText(qstrTxt);
@@ -938,7 +842,6 @@ ConfigDlgImpl::~ConfigDlgImpl()
     clearPtrContainer(m_vpResetAll); // doesn't matter if it was used or not, or if m_bResultInReset is true or false
     delete m_pVisibleTransfPainter;
     delete m_pCustomTransfListPainter;
-    delete m_pExternalToolsModel;
 }
 
 
@@ -947,7 +850,7 @@ void ConfigDlgImpl::refreshTransfText(int k)
     QString s;
     for (int i = 0, n = cSize(m_vvnCustomTransf[k]); i < n; ++i)
     {
-        s += m_pCommonData->getAllTransf()[m_vvnCustomTransf[k][i]]->getVisibleActionName();
+        s += m_pCommonData->getAllTransf()[m_vvnCustomTransf[k][i]]->getActionName();
         if (i < n - 1) { s += "\n"; }
     }
     m_vpTransfLabels[k]->setText(s);
@@ -965,8 +868,8 @@ void ConfigDlgImpl::selectCustomTransf(int k) // 0 <= k <= 2
             *m_pCustomTransfListPainter,
             DoubleList::RESTORE_OPEN | DoubleList::RESTORE_DEFAULT,
             DoubleList::MULTIPLE,
-            convStr(tr("All transformations")),
-            convStr(tr("Used transformations")),
+            "All transformations",
+            "Used transformations",
             this);
 
     m_pTransfListHldr->layout()->addWidget(m_pCustomTransfDoubleList);
@@ -1008,15 +911,6 @@ void ConfigDlgImpl::getTransfData()
 
 void ConfigDlgImpl::on_m_pOkB_clicked()
 {
-    if (m_bExtToolChanged)
-    {
-        int nOpt (showMessage(this, QMessageBox::Question, 1, 1, tr("Confirm"), tr("You modified the external tool information but you didn't save your changes. Discard the changes or cancel closing of the options window?"), tr("&Discard"), tr("&Cancel")));
-        if (nOpt == 1)
-        {
-            return;
-        }
-    }
-
     {
         string strInv (convStr(m_pInvalidCharsE->text()));
         string strRepl (convStr(m_pInvalidReplacementE->text()));
@@ -1025,7 +919,7 @@ void ConfigDlgImpl::on_m_pOkB_clicked()
             string::size_type n (strRepl.find_first_of(strInv));
             if (string::npos != n)
             {
-                showCritical(this, tr("Error"), tr("You can't have '%1' in both the list of invalid characters and the string that invalid characters are replaced with.").arg(strRepl[n]));
+                QMessageBox::critical(this, "Error", QString("You can't have '") + strRepl[n] + "' in both the list of invalid characters and the string that invalid characters are replaced with.");
                 return;
             }
         }
@@ -1077,7 +971,7 @@ void ConfigDlgImpl::on_m_pOkB_clicked()
         }
 
         {
-            m_pCommonData->m_locale = m_pId3LocaleCbB->currentText().toLatin1();
+            m_pCommonData->m_locale = m_pLocaleCbB->currentText().toLatin1();
             m_pCommonData->m_pCodec = QTextCodec::codecForName(m_pCommonData->m_locale);
             CB_ASSERT (0 != m_pCommonData->m_pCodec);
         }
@@ -1102,7 +996,6 @@ void ConfigDlgImpl::on_m_pOkB_clicked()
             m_pCommonData->m_bShowExport = m_pShowExportCkB->isChecked();
             m_pCommonData->m_bShowDebug = m_pShowDebugCkB->isChecked();
             m_pCommonData->m_bShowSessions = m_pShowSessCkB->isChecked();
-            m_pCommonData->m_bShowCustomCloseButtons = m_pShowCustomCloseButtonsCkB->isChecked();
             m_pCommonData->m_strNormalizeCmd = convStr(m_pNormalizerE->text());
             m_pCommonData->m_bKeepNormWndOpen = m_pKeepNormOpenCkB->isChecked();
 
@@ -1123,28 +1016,13 @@ void ConfigDlgImpl::on_m_pOkB_clicked()
             m_pCommonData->m_strRenamerReplacementString = convStr(m_pInvalidReplacementE->text());
 
             m_pCommonData->m_strCheckForNewVersions = m_pCheckForUpdatesCkB->isChecked() ? "yes" : "no";
-
-            string strTranslation (TranslatorHandler::getGlobalTranslator().getTranslations()[m_pTranslationCbB->currentIndex()]);
-            if (m_pCommonData->m_strTranslation != strTranslation) {
-                showWarning(this, tr("Info"), tr("You need to restart the program to use the new language."));
-                m_pCommonData->m_strTranslation = strTranslation;
-            }
         }
-
-        if (m_bFull)
-        { // shell integration
-            ShellIntegration::enableHiddenSession(m_pShellHiddenSessCkB->isChecked());
-            ShellIntegration::enableVisibleSession(m_pShellVisibleSessCkB->isChecked());
-            ShellIntegration::enableTempSession(m_pShellTempSessCkB->isChecked());
-        }
-
-        m_pCommonData->m_vExternalToolInfos = m_vExternalToolInfos;
 
         accept();
     }
     catch (const IncorrectDirName&)
     {
-        showCritical(this, tr("Invalid folder name"), tr("A folder name is incorrect.")); //ttt2 say which name
+        QMessageBox::critical(this, "Invalid folder name", "A folder name is incorrect."); //ttt2 say which name
     }
 }
 
@@ -1210,12 +1088,12 @@ void ConfigDlgImpl::logState(const char* /*szPlace*/) const
     {
     case SELECTED_G: return "";//"Notes to be included";
     case AVAILABLE_G: return "";//"Available notes";
-    case ADD_B: return convStr(tr("Add selected note(s)"));
-    case DELETE_B: return convStr(tr("Remove selected note(s)"));
-    case ADD_ALL_B: return convStr(tr("Add all notes"));
-    case DELETE_ALL_B: return convStr(tr("Remove all notes"));
-    case RESTORE_DEFAULT_B: return convStr(tr("Restore lists to their default value"));
-    case RESTORE_OPEN_B: return convStr(tr("Restore lists to the configuration they had when the window was open"));
+    case ADD_B: return "Add selected note(s)";
+    case DELETE_B: return "Remove selected note(s)";
+    case ADD_ALL_B: return "Add all notes";
+    case DELETE_ALL_B: return "Remove all notes";
+    case RESTORE_DEFAULT_B: return "Restore lists to their default value";
+    case RESTORE_OPEN_B: return "Restore lists to the configuration they had when the window was open";
     default: CB_ASSERT(false);
     }
 }
@@ -1242,8 +1120,7 @@ void ConfigDlgImpl::selectDir(QLineEdit* pEdt)
     QString qstrStart (fromNativeSeparators(pEdt->text()));
     qstrStart = convStr(getExistingDir(convStr(qstrStart)));
     if (qstrStart.isEmpty()) { qstrStart = getTempDir(); }
-    QFileDialog dlg (this, tr("Select folder"), qstrStart, tr("All files") + " (*)"/*, 0, QFileDialog::DontUseNativeDialog*/);
-    //ttt0 test on Qt 4.8, for implications of "native" standard dialogs (file, color, ...) probably best is to force non-native on Qt 4.8. The thing is the native dialogs, which seem to be introduced in 4.8, are not translatable; OTOH from http://stackoverflow.com/questions/6405234/qfiledialogdontusenativedialog-is-not-working and http://stackoverflow.com/questions/4259994/qfiledialog-alternative-that-uses-default-file-dialog-defined-by-os it seems that only the static methods of QFileDialog create native dialogs; see also TranslatorHandler::TranslatorHandler() for translations and perhaps do an ifdef for 4.8 & later
+    QFileDialog dlg (this, "Select folder", qstrStart, "All files (*)");
 
     dlg.setFileMode(QFileDialog::Directory);
     if (QDialog::Accepted != dlg.exec()) { return; }
@@ -1279,9 +1156,7 @@ void ConfigDlgImpl::onHelp()
     case 4: openHelp("292_config_visible_transf.html"); break;
     case 5: openHelp("295_config_quality.html"); break;
     case 6: openHelp("297_config_colors.html"); break;
-    case 7: openHelp("298_config_shell.html"); break;
-    case 8: openHelp("299_ext_tools.html"); break;
-    case 9: openHelp("300_config_others.html"); break;
+    case 7: openHelp("300_config_others.html"); break;
     //tttr revise as needed
 
     default: /*openHelp("index.html");*/ break;
@@ -1470,244 +1345,6 @@ void ConfigDlgImpl::on_m_pFullViewB_clicked()
     m_pSimpleViewB->setChecked(false);
     m_pPODestE->setText(m_pPODest2E->text());
     setFullViewOpt(getSimpleViewOpt());
-}
-
-
-
-//=====================================================================================================================
-//=====================================================================================================================
-//=====================================================================================================================
-
-
-void ConfigDlgImpl::resizeWidgets()
-{
-    SimpleQTableViewWidthInterface intf1 (*m_pExternalToolsG);
-    ColumnResizer rsz1 (intf1, 100, ColumnResizer::FILL, ColumnResizer::CONSISTENT_RESULTS);
-    for (int i = 0; i < cSize(m_vExternalToolInfos); ++i) // needed on Qt 4.3.1, not needed on 4.7.1
-    {
-        m_pExternalToolsG->verticalHeader()->resizeSection(i, CELL_HEIGHT);
-    }
-}
-
-/*override*/ void ConfigDlgImpl::resizeEvent(QResizeEvent* pEvent)
-{
-    resizeWidgets();
-    QDialog::resizeEvent(pEvent);
-}
-
-#if 0
-
-/*override*/ void ConfigDlgImpl::closeEvent(QCloseEvent* pEvent)
-{
-    pEvent->ignore();
-    QCoreApplication::postEvent(this, new QKeyEvent(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier)); // ttt2 not sure if a KeyRelease pair is expected
-}
-
-
-/*override*/ bool ConfigDlgImpl::eventFilter(QObject* pObj, QEvent* pEvent)
-{
-    //throw 1;
-    //qDebug("pppp");
-    QKeyEvent* pKeyEvent (dynamic_cast<QKeyEvent*>(pEvent));
-    int nKey (0 == pKeyEvent ? 0 : pKeyEvent->key());
-
-/*static int s_nCnt (0);
-    if (0 != pKeyEvent
-        //&& Qt::Key_Escape == nKey
-        )
-    {
-        qDebug("%d. %s %d", s_nCnt++, pObj->objectName().toUtf8().constData(), (int)pEvent->type()); //return QDialog::eventFilter(pObj, pEvent);
-    }//*/
-
-    if (0 != pKeyEvent && Qt::Key_Escape == nKey && this == pObj && QEvent::KeyPress == pEvent->type())
-    {
-        bool bMayClose (true);
-        if (m_bExtToolChanged)
-        {
-            int nOpt (showMessage(this, QMessageBox::Question, 1, 1, "Confirm", "You modified the external tool information but you didn't save your changes. Discard the changes or cancel the closing?", "&Discard", "&Cancel"));
-            if (nOpt == 1)
-            {
-                bMayClose = false;
-            }
-        }
-        if (!bMayClose)
-        {
-            return true;
-        }
-    }
-
-    return QDialog::eventFilter(pObj, pEvent);
-}
-
-#endif
-
-void ConfigDlgImpl::tableToEdit()
-{
-    QModelIndex ndx (m_pExternalToolsG->currentIndex()); //ttt2 perhaps don't allow the current element to be changed as long as m_bExtToolChanged==true; or better: get rid of the other controls and just use edits and combo boxes in the table, then allow dragging of the cells in the vertical header to rearrange the tools
-    int i (ndx.row());
-    if (ndx.isValid() && i < cSize(m_vExternalToolInfos))
-    {
-        m_pExtToolNameE->setText(convStr(m_vExternalToolInfos[i].m_strName));
-        m_pExtToolCmdE->setText(convStr(m_vExternalToolInfos[i].m_strCommand));
-        switch (m_vExternalToolInfos[i].m_eLaunchOption)
-        {
-        case ExternalToolInfo::DONT_WAIT: m_pExtToolDontWaitRB->click(); break;
-        case ExternalToolInfo::WAIT_AND_KEEP_WINDOW_OPEN: m_pExtToolWaitKeepOpenRB->click(); break;
-        case ExternalToolInfo::WAIT_THEN_CLOSE_WINDOW: m_pExtToolWaitCloseRB->click(); break;
-        default: CB_ASSERT (false);
-        }
-        m_pExtToolConfirmLaunchCkB->setChecked(m_vExternalToolInfos[i].m_bConfirmLaunch);
-    }
-    else
-    {
-        m_pExtToolNameE->setText("");
-        m_pExtToolCmdE->setText("");
-        m_pExtToolConfirmLaunchCkB->setChecked(true);
-        m_pExtToolDontWaitRB->setChecked(true);
-    }
-    m_bExtToolChanged = false;
-}
-
-
-
-void ConfigDlgImpl::editToTable()
-{
-    QModelIndex ndx (m_pExternalToolsG->currentIndex());
-    if (!ndx.isValid()) { return; }
-
-    int i (ndx.row());
-    if (i >= cSize(m_vExternalToolInfos)) { return; }
-    m_vExternalToolInfos[i] = externalToolInfoFromEdit();
-
-    m_bExtToolChanged = false;
-    m_pExternalToolsModel->emitLayoutChanged();
-    resizeWidgets();
-}
-
-ExternalToolInfo ConfigDlgImpl::externalToolInfoFromEdit()
-{
-    return ExternalToolInfo(
-            convStr(m_pExtToolNameE->text()),
-            convStr(m_pExtToolCmdE->text()),
-            m_pExtToolDontWaitRB->isChecked() ? ExternalToolInfo::DONT_WAIT : m_pExtToolWaitKeepOpenRB->isChecked() ? ExternalToolInfo::WAIT_AND_KEEP_WINDOW_OPEN : ExternalToolInfo::WAIT_THEN_CLOSE_WINDOW,
-            m_pExtToolConfirmLaunchCkB->isChecked());
-}
-
-
-void ConfigDlgImpl::on_m_pExtToolAddB_clicked()
-{
-    m_vExternalToolInfos.push_back(externalToolInfoFromEdit());
-    m_pExternalToolsModel->emitLayoutChanged();
-    m_pExternalToolsG->setCurrentIndex(m_pExternalToolsModel->index(cSize(m_vExternalToolInfos) - 1, 0));
-    resizeWidgets();
-    //editToTable();
-    //m_pExternalToolsG->re
-}
-
-void ConfigDlgImpl::on_m_pExtToolUpdateB_clicked()
-{
-    editToTable();
-}
-
-void ConfigDlgImpl::on_m_pExtToolDeleteB_clicked()
-{
-    QModelIndex ndx (m_pExternalToolsG->currentIndex());
-    int i (ndx.row());
-    if (!ndx.isValid() || i >= cSize(m_vExternalToolInfos)) { return; }
-
-    m_vExternalToolInfos.erase(m_vExternalToolInfos.begin() + i);
-    m_pExternalToolsModel->emitLayoutChanged();
-    if (!m_vExternalToolInfos.empty())
-    {
-        m_pExternalToolsG->setCurrentIndex(m_pExternalToolsModel->index(i < cSize(m_vExternalToolInfos) ? i : i - 1, 0));
-    }
-    tableToEdit();
-}
-
-void ConfigDlgImpl::on_m_pExtToolDiscardB_clicked()
-{
-    tableToEdit();
-}
-
-void ConfigDlgImpl::on_m_pMainTabWidget_currentChanged(int /*nIndex*/)
-{
-    resizeWidgets(); // !!! really needed only the first time the external tools tab is shown
-    QModelIndex ndx (m_pExternalToolsG->currentIndex());
-    int i (ndx.row());
-    if (!ndx.isValid() || i >= cSize(m_vExternalToolInfos))
-    {
-        if (!m_vExternalToolInfos.empty())
-        {
-            m_pExternalToolsG->setCurrentIndex(m_pExternalToolsModel->index(0, 0)); // this will trigger tableToEdit();
-        }
-        else
-        {
-            tableToEdit();
-        }
-    }
-}
-
-//=====================================================================================================================
-//=====================================================================================================================
-
-ExternalToolsModel::ExternalToolsModel(const ConfigDlgImpl* pConfigDlgImpl) : m_pConfigDlgImpl(pConfigDlgImpl)//, m_pCommonData(pConfigDlgImpl->getCommonData())
-{
-}
-
-
-/*override*/ int ExternalToolsModel::rowCount(const QModelIndex&) const
-{
-    return cSize(m_pConfigDlgImpl->m_vExternalToolInfos);
-}
-
-
-/*override*/ int ExternalToolsModel::columnCount(const QModelIndex&) const
-{
-    return 4;
-}
-
-
-/*override*/ QVariant ExternalToolsModel::data(const QModelIndex& index, int nRole) const
-{
-LAST_STEP("ExternalToolsModel::data()");
-    if (!index.isValid()) { return QVariant(); }
-    int i (index.row());
-    int j (index.column());
-//qDebug("ndx %d %d", i, j);
-
-    if (Qt::DisplayRole != nRole && Qt::ToolTipRole != nRole && Qt::EditRole != nRole) { return QVariant(); }
-    QString s;
-
-    const ExternalToolInfo& info (m_pConfigDlgImpl->m_vExternalToolInfos[i]);
-    switch (j)
-    {
-    case 0: return convStr(info.m_strName);
-    case 1: return convStr(info.m_strCommand);
-    case 2: return ExternalToolInfo::launchOptionAsTranslatedString(info.m_eLaunchOption);
-    case 3: return GlobalTranslHlp::tr(boolAsYesNo(info.m_bConfirmLaunch));
-    default: CB_ASSERT (false);
-    }
-}
-
-
-/*override*/ QVariant ExternalToolsModel::headerData(int nSection, Qt::Orientation eOrientation, int nRole /* = Qt::DisplayRole*/) const
-{
-LAST_STEP("ExternalToolsModel::headerData");
-    if (nRole != Qt::DisplayRole) { return QVariant(); }
-
-    if (Qt::Horizontal == eOrientation)
-    {
-        switch (nSection)
-        {
-        case 0: return tr("Name");
-        case 1: return tr("Command");
-        case 2: return tr("Wait");
-        case 3: return tr("Confirm launch");
-        default: CB_ASSERT (false);
-        }
-    }
-
-    return nSection + 1;
 }
 
 

@@ -66,7 +66,6 @@ struct QualThresholds
     int m_nDoubleChannelVbr;    // below this bitrate for dual channel VBR a warning is generated; half of this value is used for mono streams
 
     // ttt2 add Lame header info analysis, which might give a better idea about quality than simple bitrate
-    static const QualThresholds& getDefaultQualThresholds();
 };
 
 

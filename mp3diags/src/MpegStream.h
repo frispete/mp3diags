@@ -88,7 +88,7 @@ class MpegStream : public MpegStreamBase
 public:
     MpegStream(int nIndex, NoteColl& notes, std::istream& in);
     /*override*/ void copy(std::istream& in, std::ostream& out);
-    DECL_NAME(QT_TRANSLATE_NOOP("DataStream", "MPEG Audio"))
+    DECL_NAME("MPEG Audio");
     /*override*/ std::string getInfo() const;
 
     /*override*/ std::streampos getPos() const { return m_pos; }
@@ -160,7 +160,7 @@ protected:
 public:
     XingStreamBase(int nIndex, NoteColl& notes, std::istream& in);
     // /*override*/ void copy(std::istream& in, std::ostream& out);
-    DECL_NAME(QT_TRANSLATE_NOOP("DataStream", "Xing Header"))
+    DECL_NAME("Xing Header");
     /*override*/ std::string getInfo() const;
     std::string getInfoForXml() const;
 
@@ -219,7 +219,7 @@ class LameStream : public XingStreamBase //ttt2 read & interpret data from Lame 
 public:
     LameStream(int nIndex, NoteColl& notes, std::istream& in);
     // /*override*/ void copy(std::istream& in, std::ostream& out);
-    DECL_NAME(QT_TRANSLATE_NOOP("DataStream", "Lame Header"))
+    DECL_NAME("Lame Header");
     /*override*/ std::string getInfo() const;
 
     struct NotLameStream {};
@@ -243,7 +243,7 @@ class VbriStream : public MpegStreamBase // Amarok doesn't seem to care about th
 public:
     VbriStream(int nIndex, NoteColl& notes, std::istream& in);
     // /*override*/ void copy(std::istream& in, std::ostream& out);
-    DECL_NAME(QT_TRANSLATE_NOOP("DataStream", "VBRI Header"))
+    DECL_NAME("VBRI Header");
     /*override*/ std::string getInfo() const;
 
     const MpegFrame& getFrame() const { return m_firstFrame; }
@@ -282,7 +282,7 @@ public:
     Id3V1Stream(int nIndex, NoteColl& notes, std::istream& in);
 
     /*override*/ void copy(std::istream& in, std::ostream& out);
-    DECL_RD_NAME("ID3V1")
+    DECL_RD_NAME("ID3V1");
     /*override*/ std::string getInfo() const;
 
     /*override*/ std::streampos getPos() const { return m_pos; }

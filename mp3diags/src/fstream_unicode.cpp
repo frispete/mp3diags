@@ -107,7 +107,27 @@ int unicodeOpenHlp(const QString& s, std::ios_base::openmode __mode)
 }
 */
 
-#if defined(WIN32)
+#ifndef WIN32
+
+    template<>
+    int unicodeOpenHlp(const char* const& szUtf8Name, std::ios_base::openmode __mode)
+    {
+        int nAcc (getOpenFlags(__mode));
+        int nFd (open(szUtf8Name, nAcc, S_IREAD | S_IWRITE));
+        //qDebug("fd %d %s acc=%d", nFd, szUtf8Name, nAcc);
+        return nFd;
+    }
+
+#if 0
+    template<>
+    int unicodeOpenHlp(const wchar_t* const& /*wszUtf16Name*/, std::ios_base::openmode /*__mode*/)
+    {
+        throw 1; //ttt2 add if needed
+    }
+#endif
+
+#else // #ifndef WIN32
+
 
     #include  <windows.h>
 
@@ -143,49 +163,7 @@ int unicodeOpenHlp(const QString& s, std::ios_base::openmode __mode)
         return unicodeOpenHlp(wstrFromUtf8(szUtf8Name).c_str(), __mode);
     }
 
-#elif defined(__OS2__) // "#if defined(WIN32)"
-
-    #include <QString>
-
-    template<>
-    int unicodeOpenHlp(const char* const& szUtf8Name, std::ios_base::openmode __mode)
-    {
-        //return unicodeOpenHlp(wstrFromUtf8(szUtf8Name).c_str(), __mode);
-        QString s (QString::fromUtf8(szUtf8Name));
-        QByteArray ba (s.toLocal8Bit());
-        int nAcc (getOpenFlags(__mode));
-        int nFd (open(ba.data(), nAcc, S_IREAD | S_IWRITE));
-
-        return nFd;
-    }//*/
-
-    template<>
-    int unicodeOpenHlp(char* const& szUtf8Name, std::ios_base::openmode __mode) //ttt0 see why is this needed
-    {
-        return unicodeOpenHlp((const char*)szUtf8Name, __mode);
-    }//*/
-
-#else // "#if defined(WIN32)" / "#elif defined(__OS2__)"
-
-
-    template<>
-    int unicodeOpenHlp(const char* const& szUtf8Name, std::ios_base::openmode __mode)
-    {
-        int nAcc (getOpenFlags(__mode));
-        int nFd (open(szUtf8Name, nAcc, S_IREAD | S_IWRITE));
-        //qDebug("fd %d %s acc=%d", nFd, szUtf8Name, nAcc);
-        return nFd;
-    }
-
-    #if 0
-        template<>
-        int unicodeOpenHlp(const wchar_t* const& /*wszUtf16Name*/, std::ios_base::openmode /*__mode*/)
-        {
-            throw 1; //ttt2 add if needed
-        }
-    #endif
-
-#endif // "#if defined(WIN32)" / "#elif defined(__OS2__)" / "#else"
+#endif // #ifndef WIN32 / #else
 
 
 
@@ -205,4 +183,5 @@ int unicodeOpenHlp(const int& fd, std::ios_base::openmode /*__mode*/)
 // nothing to do for now; the MSVC version is fully inline and no ports to other compilers exist
 
 #endif // #if defined(__GNUC__) && !defined(__llvm__)
+
 

@@ -205,7 +205,6 @@ void SessionSettings::saveMiscConfigSettings(const CommonData* p)
         m_pSettings->setValue("main/showExport", p->m_bShowExport);
         m_pSettings->setValue("main/showDebug", p->m_bShowDebug);
         m_pSettings->setValue("main/showSessions", p->m_bShowSessions);
-        m_pSettings->setValue("main/showCustomCloseButtons", p->m_bShowCustomCloseButtons);
         m_pSettings->setValue("normalizer/command", convStr(p->m_strNormalizeCmd));
         m_pSettings->setValue("main/keepNormWndOpen", p->m_bKeepNormWndOpen);
 
@@ -239,8 +238,6 @@ void SessionSettings::saveMiscConfigSettings(const CommonData* p)
         m_pSettings->setValue("main/checkForNewVersions", convStr(p->m_strCheckForNewVersions));
         m_pSettings->setValue("main/timeLastNewVerCheck", p->m_timeLastNewVerCheck);
         m_pSettings->setValue("main/dontTellAboutVer", convStr(p->m_strDontTellAboutVer));
-
-        m_pSettings->setValue("main/translation", convStr(p->m_strTranslation));
     }
 
     { // note categ colors
@@ -276,17 +273,17 @@ static bool isWhite(const QColor& c)
 }
 
 
-void SessionSettings::loadMiscConfigSettings(CommonData* p, bool bInitGui) const
+void SessionSettings::loadMiscConfigSettings(CommonData* p) const
 {
     { // quality
-        QualThresholds q (QualThresholds::getDefaultQualThresholds());
-        q.m_nStereoCbr = m_pSettings->value("quality/stereoCbrMinBitrate", q.m_nStereoCbr).toInt();
-        q.m_nJointStereoCbr = m_pSettings->value("quality/jntStereoCbrMinBitrate", q.m_nJointStereoCbr).toInt();
-        q.m_nDoubleChannelCbr = m_pSettings->value("quality/dualChnlCbrMinBitrate", q.m_nDoubleChannelCbr).toInt();
+        QualThresholds q;
+        q.m_nStereoCbr = m_pSettings->value("quality/stereoCbrMinBitrate", 192000).toInt();
+        q.m_nJointStereoCbr = m_pSettings->value("quality/jntStereoCbrMinBitrate", 192000).toInt();
+        q.m_nDoubleChannelCbr = m_pSettings->value("quality/dualChnlCbrMinBitrate", 192000).toInt();
 
-        q.m_nStereoVbr = m_pSettings->value("quality/stereoVbrMinBitrate", q.m_nStereoVbr).toInt();
-        q.m_nJointStereoVbr = m_pSettings->value("quality/jntStereoVbrMinBitrate", q.m_nJointStereoVbr).toInt();
-        q.m_nDoubleChannelVbr = m_pSettings->value("quality/dualChnlVbrMinBitrate", q.m_nDoubleChannelVbr).toInt();
+        q.m_nStereoVbr = m_pSettings->value("quality/stereoVbrMinBitrate", 170000).toInt();
+        q.m_nJointStereoVbr = m_pSettings->value("quality/jntStereoVbrMinBitrate", 160000).toInt();
+        q.m_nDoubleChannelVbr = m_pSettings->value("quality/dualChnlVbrMinBitrate", 180000).toInt();
 
         p->setQualThresholds(q);
     }
@@ -324,8 +321,7 @@ void SessionSettings::loadMiscConfigSettings(CommonData* p, bool bInitGui) const
     { // misc
         p->m_bShowExport = m_pSettings->value("main/showExport", false).toBool();
         p->m_bShowDebug = m_pSettings->value("main/showDebug", false).toBool();
-        p->m_bShowSessions = m_pSettings->value("main/showSessions", p->getDefaultForVisibleSessBtn()).toBool();
-        p->m_bShowCustomCloseButtons = m_pSettings->value("main/showCustomCloseButtons", ::getDefaultForShowCustomCloseButtons()).toBool();
+        p->m_bShowSessions = m_pSettings->value("main/showSessions", !p->isUniqueSession()).toBool();
         p->m_strNormalizeCmd = convStr(m_pSettings->value("normalizer/command", "mp3gain -a -k -p -t").toString());
         p->m_bKeepNormWndOpen = m_pSettings->value("main/keepNormWndOpen", false).toBool();
 
@@ -342,12 +338,9 @@ void SessionSettings::loadMiscConfigSettings(CommonData* p, bool bInitGui) const
 
         QFont fnt;
         //qDebug("%d ==========================", fnt.pointSize());
-        if (bInitGui)
-        {
-            QFontInfo inf1 (QFont(m_pSettings->value("main/generalFontName", "SansSerif").toString(), m_pSettings->value("main/generalFontSize", fnt.pointSize()).toInt())); // ttt2 try and get the system defaults
-            QFontInfo inf2 (QFont(m_pSettings->value("main/fixedFontName", "Courier").toString(), m_pSettings->value("main/fixedFontSize", fnt.pointSize()).toInt()));
-            p->setFontInfo(convStr(inf1.family()), inf1.pointSize(), m_pSettings->value("main/labelFontSizeDecr", 0).toInt(), convStr(inf2.family()), inf2.pointSize());
-        }
+        QFontInfo inf1 (QFont(m_pSettings->value("main/generalFontName", "SansSerif").toString(), m_pSettings->value("main/generalFontSize", fnt.pointSize()).toInt())); // ttt2 try and get the system defaults
+        QFontInfo inf2 (QFont(m_pSettings->value("main/fixedFontName", "Courier").toString(), m_pSettings->value("main/fixedFontSize", fnt.pointSize()).toInt()));
+        p->setFontInfo(convStr(inf1.family()), inf1.pointSize(), m_pSettings->value("main/labelFontSizeDecr", 0).toInt(), convStr(inf2.family()), inf2.pointSize());
 
         p->m_bWarnedAboutSel = m_pSettings->value("main/warnedAboutSel", false).toBool();
         p->m_bWarnedAboutBackup = m_pSettings->value("main/warnedAboutBackup", false).toBool();
@@ -370,8 +363,6 @@ void SessionSettings::loadMiscConfigSettings(CommonData* p, bool bInitGui) const
             p->m_timeLastNewVerCheck = t1.addYears(-1);
         }
         p->m_strDontTellAboutVer = convStr(m_pSettings->value("main/dontTellAboutVer", "").toString());
-
-        p->m_strTranslation = convStr(m_pSettings->value("main/translation", "mp3diags_en_US.qm").toString()); //ttt0 get default language from GlobalSettings (or maybe not; a new session gets a language when it is created, and the old ones were in en_US anyway)
     }
 
     { // note categ colors
@@ -482,7 +473,7 @@ void CommonData::setFontInfo(const std::string& strGenName, int nGenSize, int nL
 
     if (!bFirstTime)
     {
-        showWarning(m_pFilesG, tr("Info"), tr("The font changes will only be used after restarting the application.")); //ttt2 try to get this work, probably needs to call QHeaderView::resizeSection(), as well as review all setMinimumSectionSize() and setDefaultSectionSize() calls;
+        QMessageBox::warning(m_pFilesG, "Info", "The font changes will only be used after restarting the application."); //ttt2 try to get this work, probably needs to call QHeaderView::resizeSection(), as well as review all setMinimumSectionSize() and setDefaultSectionSize() calls;
         return;
     }
 
@@ -596,7 +587,7 @@ CommonData::CommonData(
         QToolButton* pModeAlbumB,
         QToolButton* pModeSongB,
 
-        bool bDefaultForVisibleSessBtn) :
+        bool bUniqueSession) :
 
         m_pFilesModel(0),
         m_pNotesModel(0),
@@ -626,7 +617,7 @@ CommonData::CommonData(
         //m_bDirty(false),
 
         m_nLabelFontSizeDecr(0),
-        m_bDefaultForVisibleSessBtn(bDefaultForVisibleSessBtn),
+        m_bUniqueSession(bUniqueSession),
         m_bFastSave(false),
 
         m_eViewMode(ALL),
@@ -674,9 +665,6 @@ CommonData::CommonData(
     m_vpAllTransf.push_back(new Id3V1ToId3V2Copier(this));
     m_vpAllTransf.push_back(new Id3V1Remover());
 
-    m_vpAllTransf.push_back(new ApeRemover());
-    m_vpAllTransf.push_back(new NonAudioRemover());
-
     m_vpAllTransf.push_back(new Id3V2Expander(this));
     m_vpAllTransf.push_back(new Id3V2Compactor(this));
 
@@ -688,7 +676,7 @@ CommonData::CommonData(
     }
     catch (const DirTreeEnumerator::InvalidDirs&)
     {
-        showCritical(m_pFilesG, tr("Error"), tr("There was an error setting up the directories containing MP3 files. You will have to define them again."));
+        QMessageBox::critical(m_pFilesG, "Error", "There was an error setting up the directories containing MP3 files. You will have to define them again.");
         m_vstrIncludeDirs.clear();
         m_vstrExcludeDirs.clear();
     }
@@ -781,7 +769,7 @@ void CommonData::getUniqueNotes(const std::deque<const Mp3Handler*>& vpHandlers,
 
 
 // although the current elem can be identified (so it "shouldn't" be passed) and most of the time pMp3Handler will be just that, sometimes it will deliberately be 0, so a param is actually needed;
-void CommonData::setViewMode(ViewMode eViewMode, const Mp3Handler* pMp3Handler /* = 0*/)
+void CommonData::setViewMode(ViewMode eViewMode, const Mp3Handler* pMp3Handler /*= 0*/)
 {
     int nRes (setViewModeHlp(eViewMode, pMp3Handler));
     m_pFilesModel->selectRow(nRes);
@@ -1113,7 +1101,7 @@ void opppo()
 
 // if bExactMatch is false, it finds the nearest position in m_vpViewHandlers (so even if a file was deleted, it still finds something close);
 // returns -1 only if not found (either m_vpViewHandlers is empty or bExactMatch is true and the file is missing);
-int CommonData::getPosInView(const std::string& strName/*, bool bUsePrevIfNotFound = true*/, bool bExactMatch /* = false*/) const
+int CommonData::getPosInView(const std::string& strName/*, bool bUsePrevIfNotFound = true*/, bool bExactMatch /*= false*/) const
 {
 /*    if (strName.empty()) { return -1; }
     deque<Mp3Handler*>::const_iterator it (lower_bound(m_vpViewHandlers.begin(), m_vpViewHandlers.end(), strName, CmpMp3HandlerPtrByName()));
@@ -1715,7 +1703,7 @@ void Filter::restoreAll() // loads m_bNoteFilter from m_bSavedNoteFilter and m_b
 
 // called after config change or filter change or mergeHandlerChanges(), mainly to update unique notes (which is reflected in columns in the file grid and in lines in the unique notes list); also makes sure that something is displayed if there are any files in m_vpFltHandlers (e.g. if a transform was applied that removed all the files in an album, the next album gets loaded);
 // this is needed after transforms/normalization/tag editing, but there's no need for an explicit call, because all these call mergeHandlerChanges() (directly or through MainFormDlgImpl::scan())
-void CommonData::updateWidgets(const std::string& strCrtName /* = ""*/, const std::vector<std::string>& vstrSel /* = std::vector<std::string>()*/)
+void CommonData::updateWidgets(const std::string& strCrtName /*= ""*/, const std::vector<std::string>& vstrSel /*= std::vector<std::string>()*/)
 {
     CursorOverrider crs;
 
@@ -1744,7 +1732,7 @@ void CommonData::updateWidgets(const std::string& strCrtName /* = ""*/, const st
 
     updateUniqueNotes();
 
-    m_pFilesModel->selectRow(nRow, v); //???
+    m_pFilesModel->selectRow(nRow, v);
     m_pUniqueNotesModel->selectTopLeft();
 
     resizeFilesGCols();

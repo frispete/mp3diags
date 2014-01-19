@@ -555,132 +555,132 @@ public:
 
 
 
-    #if defined(WIN32) || defined(__OS2__)
+#ifndef WIN32
 
-        typedef basic_ifstream_unicode<char> ifstream_utf8;
-        typedef basic_ofstream_unicode<char> ofstream_utf8;
-        typedef basic_fstream_unicode<char> fstream_utf8;
+    //inline const char* unicodeOpenHlp(const char* szUtf8Name) { return szUtf8Name; }
+    //int unicodeOpenHlp(const char* szUtf8Name, std::ios_base::openmode __mode);
+    #include <fstream>
+    typedef std::basic_ifstream<char> ifstream_utf8;
+    typedef std::basic_ofstream<char> ofstream_utf8;
+    typedef std::basic_fstream<char> fstream_utf8;
 
-    #else
+#else
 
-        //inline const char* unicodeOpenHlp(const char* szUtf8Name) { return szUtf8Name; }
-        //int unicodeOpenHlp(const char* szUtf8Name, std::ios_base::openmode __mode);
-        #include <fstream>
-        typedef std::basic_ifstream<char> ifstream_utf8;
-        typedef std::basic_ofstream<char> ofstream_utf8;
-        typedef std::basic_fstream<char> fstream_utf8;
+    typedef basic_ifstream_unicode<char> ifstream_utf8;
+    typedef basic_ofstream_unicode<char> ofstream_utf8;
+    typedef basic_fstream_unicode<char> fstream_utf8;
 
-    #endif // #ifndef WIN32 / else
+#endif // #ifndef WIN32 / else
 
 
-    typedef basic_ifstream_unicode<char> ifstream_unicode;
-    typedef basic_ofstream_unicode<char> ofstream_unicode;
-    typedef basic_fstream_unicode<char> fstream_unicode;
+typedef basic_ifstream_unicode<char> ifstream_unicode;
+typedef basic_ofstream_unicode<char> ofstream_unicode;
+typedef basic_fstream_unicode<char> fstream_unicode;
 
 
 #elif defined(_MSC_VER) && _MSC_VER>=1400 // #if defined(__GNUC__) && !defined(__llvm__)
 
-    // Visual Studio port by Sebastian Schuberth
+// Visual Studio port by Sebastian Schuberth
 
-    // As of Visual Studio 2005 (aka version 8.0), the supplied STL has extensions
-    // that accept filenames of type wchar_t.
+// As of Visual Studio 2005 (aka version 8.0), the supplied STL has extensions
+// that accept filenames of type wchar_t.
 
-    #include <fstream>
+#include <fstream>
 
-    #define NOMINMAX 1
-    #define WIN32_LEAN_AND_MEAN 1
-    #include <windows.h>
+#define NOMINMAX 1
+#define WIN32_LEAN_AND_MEAN 1
+#include <windows.h>
 
-    typedef std::ifstream ifstream_unicode;
-    typedef std::ofstream ofstream_unicode;
-    typedef std::fstream fstream_unicode;
+typedef std::ifstream ifstream_unicode;
+typedef std::ofstream ofstream_unicode;
+typedef std::fstream fstream_unicode;
 
-    class ifstream_utf8:public std::ifstream
+class ifstream_utf8:public std::ifstream
+{
+  public:
+
+    explicit ifstream_utf8(char const* _Filename,ios_base::openmode _Mode=ios_base::in,int _Prot=(int)ios_base::_Openprot)
     {
-      public:
+        open(_Filename,_Mode,_Prot);
+    }
 
-        explicit ifstream_utf8(char const* _Filename,ios_base::openmode _Mode=ios_base::in,int _Prot=(int)ios_base::_Openprot)
-        {
-            open(_Filename,_Mode,_Prot);
-        }
-
-        void open(char const* _Filename,ios_base::openmode _Mode=ios_base::in,int _Prot=(int)ios_base::_Openprot)
-        {
-            int length=MultiByteToWideChar(CP_UTF8,0,_Filename,-1,NULL,0);
-            if (length>0) {
-                wchar_t* buffer=new wchar_t[length+1];
-                MultiByteToWideChar(CP_UTF8,0,_Filename,-1,buffer,length);
-                std::ifstream::open(buffer,_Mode,_Prot);
-                delete [] buffer;
-            }
-            else {
-                setstate(ios_base::failbit);
-            }
-        }
-
-        void open(char const* _Filename,ios_base::open_mode _Mode)
-        {
-            open(_Filename,_Mode);
-        }
-    };
-
-    class ofstream_utf8:public std::ofstream
+    void open(char const* _Filename,ios_base::openmode _Mode=ios_base::in,int _Prot=(int)ios_base::_Openprot)
     {
-      public:
-
-        explicit ofstream_utf8(char const* _Filename,ios_base::openmode _Mode=ios_base::out,int _Prot=(int)ios_base::_Openprot)
-        {
-            open(_Filename,_Mode,_Prot);
+        int length=MultiByteToWideChar(CP_UTF8,0,_Filename,-1,NULL,0);
+        if (length>0) {
+            wchar_t* buffer=new wchar_t[length+1];
+            MultiByteToWideChar(CP_UTF8,0,_Filename,-1,buffer,length);
+            std::ifstream::open(buffer,_Mode,_Prot);
+            delete [] buffer;
         }
-
-        void open(char const* _Filename,ios_base::openmode _Mode=ios_base::out,int _Prot=(int)ios_base::_Openprot)
-        {
-            int length=MultiByteToWideChar(CP_UTF8,0,_Filename,-1,NULL,0);
-            if (length>0) {
-                wchar_t* buffer=new wchar_t[length+1];
-                MultiByteToWideChar(CP_UTF8,0,_Filename,-1,buffer,length);
-                std::ofstream::open(buffer,_Mode,_Prot);
-                delete [] buffer;
-            }
-            else {
-                setstate(ios_base::failbit);
-            }
+        else {
+            setstate(ios_base::failbit);
         }
+    }
 
-        void open(char const* _Filename,ios_base::open_mode _Mode)
-        {
-            open(_Filename,_Mode);
-        }
-    };
-
-    class fstream_utf8:public std::fstream
+    void open(char const* _Filename,ios_base::open_mode _Mode)
     {
-      public:
+        open(_Filename,_Mode);
+    }
+};
 
-        explicit fstream_utf8(char const* _Filename,ios_base::openmode _Mode=ios_base::in|ios_base::out,int _Prot=(int)ios_base::_Openprot)
-        {
-            open(_Filename,_Mode,_Prot);
-        }
+class ofstream_utf8:public std::ofstream
+{
+  public:
 
-        void open(char const* _Filename,ios_base::openmode _Mode=ios_base::in|ios_base::out,int _Prot=(int)ios_base::_Openprot)
-        {
-            int length=MultiByteToWideChar(CP_UTF8,0,_Filename,-1,NULL,0);
-            if (length>0) {
-                wchar_t* buffer=new wchar_t[length+1];
-                MultiByteToWideChar(CP_UTF8,0,_Filename,-1,buffer,length);
-                std::fstream::open(buffer,_Mode,_Prot);
-                delete [] buffer;
-            }
-            else {
-                setstate(ios_base::failbit);
-            }
-        }
+    explicit ofstream_utf8(char const* _Filename,ios_base::openmode _Mode=ios_base::out,int _Prot=(int)ios_base::_Openprot)
+    {
+        open(_Filename,_Mode,_Prot);
+    }
 
-        void open(char const* _Filename,ios_base::open_mode _Mode)
-        {
-            open(_Filename,_Mode);
+    void open(char const* _Filename,ios_base::openmode _Mode=ios_base::out,int _Prot=(int)ios_base::_Openprot)
+    {
+        int length=MultiByteToWideChar(CP_UTF8,0,_Filename,-1,NULL,0);
+        if (length>0) {
+            wchar_t* buffer=new wchar_t[length+1];
+            MultiByteToWideChar(CP_UTF8,0,_Filename,-1,buffer,length);
+            std::ofstream::open(buffer,_Mode,_Prot);
+            delete [] buffer;
         }
-    };
+        else {
+            setstate(ios_base::failbit);
+        }
+    }
+
+    void open(char const* _Filename,ios_base::open_mode _Mode)
+    {
+        open(_Filename,_Mode);
+    }
+};
+
+class fstream_utf8:public std::fstream
+{
+  public:
+
+    explicit fstream_utf8(char const* _Filename,ios_base::openmode _Mode=ios_base::in|ios_base::out,int _Prot=(int)ios_base::_Openprot)
+    {
+        open(_Filename,_Mode,_Prot);
+    }
+
+    void open(char const* _Filename,ios_base::openmode _Mode=ios_base::in|ios_base::out,int _Prot=(int)ios_base::_Openprot)
+    {
+        int length=MultiByteToWideChar(CP_UTF8,0,_Filename,-1,NULL,0);
+        if (length>0) {
+            wchar_t* buffer=new wchar_t[length+1];
+            MultiByteToWideChar(CP_UTF8,0,_Filename,-1,buffer,length);
+            std::fstream::open(buffer,_Mode,_Prot);
+            delete [] buffer;
+        }
+        else {
+            setstate(ios_base::failbit);
+        }
+    }
+
+    void open(char const* _Filename,ios_base::open_mode _Mode)
+    {
+        open(_Filename,_Mode);
+    }
+};
 
 #elif defined(__llvm__)
 

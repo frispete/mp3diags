@@ -35,7 +35,6 @@
 #include  "SessionEditorDlgImpl.h"
 #include  "OsFile.h"
 #include  "Widgets.h"
-#include  "Translation.h"
 
 using namespace std;
 
@@ -51,7 +50,7 @@ SessionsModel::SessionsModel(std::vector<std::string>& vstrSessions) : m_vstrSes
 
 /*override*/ int SessionsModel::rowCount(const QModelIndex&) const { return cSize(m_vstrSessions); }
 
-/*override*/ QVariant SessionsModel::data(const QModelIndex& index, int nRole /* = Qt::DisplayRole*/) const
+/*override*/ QVariant SessionsModel::data(const QModelIndex& index, int nRole /*= Qt::DisplayRole*/) const
 {
 LAST_STEP("SessionsModel::data()");
     if (!index.isValid()) { return QVariant(); }
@@ -64,13 +63,13 @@ LAST_STEP("SessionsModel::data()");
 }
 
 
-/*override*/ QVariant SessionsModel::headerData(int nSection, Qt::Orientation eOrientation, int nRole /* = Qt::DisplayRole*/) const
+/*override*/ QVariant SessionsModel::headerData(int nSection, Qt::Orientation eOrientation, int nRole /*= Qt::DisplayRole*/) const
 {
     if (nRole != Qt::DisplayRole) { return QVariant(); }
 
     if (Qt::Horizontal == eOrientation)
     {
-        return tr("File name");
+        return "File name";
     }
 
     return nSection + 1;
@@ -95,18 +94,17 @@ SessionsDlgImpl::SessionsDlgImpl(QWidget* pParent) : QDialog(pParent, getMainWnd
 
     setupUi(this);
 
-    //vector<string> vstrSess;
+    vector<string> vstrSess;
     string strLast;
 
     //m_pSettings = SessionSettings::getGlobalSettings();
     GlobalSettings st;
     bool bOpenLast;
-
-    st.loadSessions(m_vstrSessions, strLast, bOpenLast, m_strTempSessTempl, m_strDirSessTempl, m_strTranslation);
+    st.loadSessions(m_vstrSessions, strLast, bOpenLast);
     m_pOpenLastCkB->setChecked(bOpenLast);
 
     m_pSessionsG->verticalHeader()->setResizeMode(QHeaderView::Interactive);
-    m_pSessionsG->verticalHeader()->setMinimumSectionSize(CELL_HEIGHT + 1); // ttt0 is this initialized before creating sessions? should it be?
+    m_pSessionsG->verticalHeader()->setMinimumSectionSize(CELL_HEIGHT + 1);
     m_pSessionsG->verticalHeader()->setDefaultSectionSize(CELL_HEIGHT + 1);//*/
     m_pSessionsG->setModel(&m_sessionsModel);
     m_pSessionsG->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
@@ -123,8 +121,6 @@ SessionsDlgImpl::SessionsDlgImpl(QWidget* pParent) : QDialog(pParent, getMainWnd
     QPalette grayPalette (m_pDirectoriesT->palette());
     grayPalette.setColor(QPalette::Base, grayPalette.color(QPalette::Disabled, QPalette::Window));
     m_pDirectoriesT->setPalette(grayPalette);
-
-    loadTemplates();
 
     //m_sessionsModel.emitLayoutChanged();
 
@@ -147,24 +143,6 @@ SessionsDlgImpl::SessionsDlgImpl(QWidget* pParent) : QDialog(pParent, getMainWnd
         if (nWidth > 400 && nHeight > 400) { resize(nWidth, nHeight); }
     }
 
-
-    { // language
-        int nCrt (0);
-        const vector<string>& vstrTranslations (TranslatorHandler::getGlobalTranslator().getTranslations());
-        string strTmpTranslation (m_strTranslation); // !!! needed because on_m_pTranslationCbB_currentIndexChanged() will get triggered and change m_strTranslation
-        for (int i = 0; i < cSize(vstrTranslations); ++i)
-        {
-            m_pTranslationCbB->addItem(convStr(TranslatorHandler::getLanguageInfo(vstrTranslations[i])));
-            if (strTmpTranslation == vstrTranslations[i])
-            {
-                nCrt = i;
-            }
-        }
-        m_strTranslation = strTmpTranslation;
-        m_pTranslationCbB->setCurrentIndex(nCrt);
-    }
-
-
     { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("F1")); connect(p, SIGNAL(triggered()), this, SLOT(onHelp())); addAction(p); }
 
     QTimer::singleShot(1, this, SLOT(onShow()));
@@ -176,63 +154,19 @@ SessionsDlgImpl::~SessionsDlgImpl()
     st.saveSessionsDlgSize(width(), height());
 
     {
-        /*string strLast;
+        vector<string> vstrSess;
+        string strLast;
 
         //m_pSettings = SessionSettings::getGlobalSettings();
         //GlobalSettings st;
         vector<string> v;
         bool bOpenLast;
-
-        string strTempSessTempl;
-        string strDirSessTempl;
-        string strTranslation;
-        st.loadSessions(v, strLast, bOpenLast, strTempSessTempl, strDirSessTempl, strTranslation); //ttt0 what's the point of this? no vars are used*/
-        saveTemplates();
-        st.saveSessions(m_vstrSessions, getCrtSession(), m_pOpenLastCkB->isChecked(), m_strTempSessTempl, m_strDirSessTempl, m_strTranslation, GlobalSettings::LOAD_EXTERNAL_CHANGES);
+        st.loadSessions(v, strLast, bOpenLast);
+        st.saveSessions(m_vstrSessions, getCrtSession(), m_pOpenLastCkB->isChecked());
     }
 }
 
 // ttt2 generic inconsistency in what is saved depending on the user clicking the "x" button, pressing ESC, clicking other button ...
-
-
-// sets up the combo boxes with temp/folder session templates based on m_vstrSessions, m_strTempSessTempl, and m_strDirSessTempl
-void SessionsDlgImpl::loadTemplates()
-{
-    m_pTempSessionCbB->clear(); m_pTempSessionCbB->addItem(tr("<last session>"));
-    m_pDirSessionCbB->clear(); m_pDirSessionCbB->addItem(tr("<last session>"));
-
-    for (int i = 0; i < cSize(m_vstrSessions); ++i)
-    {
-        m_pTempSessionCbB->addItem(toNativeSeparators(convStr(m_vstrSessions[i])));
-        if (m_strTempSessTempl == m_vstrSessions[i])
-        {
-            m_pTempSessionCbB->setCurrentIndex(m_pTempSessionCbB->count() - 1);
-        }
-
-        m_pDirSessionCbB->addItem(toNativeSeparators(convStr(m_vstrSessions[i])));
-        if (m_strDirSessTempl == m_vstrSessions[i])
-        {
-            m_pDirSessionCbB->setCurrentIndex(m_pDirSessionCbB->count() - 1);
-        }
-    }
-}
-
-
-// sets c and m_strDirSessTempl based on the current items in the combo boxes
-void SessionsDlgImpl::saveTemplates()
-{
-    m_strTempSessTempl.clear();
-    if (m_pTempSessionCbB->currentIndex() > 0)
-    {
-        m_strTempSessTempl = fromNativeSeparators(convStr(m_pTempSessionCbB->currentText()));
-    }
-
-    m_strDirSessTempl.clear();
-    if (m_pDirSessionCbB->currentIndex() > 0)
-    {
-        m_strDirSessTempl = fromNativeSeparators(convStr(m_pDirSessionCbB->currentText()));
-    }
-}
 
 
 void SessionsDlgImpl::onShow()
@@ -345,9 +279,7 @@ void SessionsDlgImpl::addSession(const std::string& strSession)
     selectSession(strSession);
 
     GlobalSettings st;
-    loadTemplates();
-    saveTemplates();
-    st.saveSessions(m_vstrSessions, strSession, m_pOpenLastCkB->isChecked(), m_strTempSessTempl, m_strDirSessTempl, m_strTranslation, GlobalSettings::LOAD_EXTERNAL_CHANGES);
+    st.saveSessions(m_vstrSessions, strSession, m_pOpenLastCkB->isChecked());
 }
 
 
@@ -355,7 +287,7 @@ void SessionsDlgImpl::on_m_pNewB_clicked()
 {
     string strSession;
     {
-        SessionEditorDlgImpl dlg (this, getCrtSessionDir(), SessionEditorDlgImpl::NOT_FIRST_TIME, m_strTranslation);
+        SessionEditorDlgImpl dlg (this, getCrtSessionDir(), SessionEditorDlgImpl::NOT_FIRST_TIME);
         strSession = dlg.run();
         if (strSession.empty())
         {
@@ -410,22 +342,19 @@ void SessionsDlgImpl::removeCrtSession()
     }
 
     GlobalSettings st;
-    loadTemplates();
-    saveTemplates();
-    st.saveSessions(m_vstrSessions, strCrtSess, m_pOpenLastCkB->isChecked(), m_strTempSessTempl, m_strDirSessTempl, m_strTranslation, GlobalSettings::IGNORE_EXTERNAL_CHANGES);
+    st.saveSessions(m_vstrSessions, strCrtSess, m_pOpenLastCkB->isChecked());
 }
 
 
 void SessionsDlgImpl::on_m_pEraseB_clicked()
 {
     if (m_vstrSessions.empty()) { return; }
-    if (0 != showMessage(this, QMessageBox::Question, 1, 1, tr("Confirm"), tr("Do you really want to erase the current session?"), tr("Erase"), tr("Cancel"))) { return; }
+    if (0 != showMessage(this, QMessageBox::Question, 1, 1, "Confirm", "Do you really want to erase the current session?", "Erase", "Cancel")) { return; }
     string s (getCrtSession());
     removeCrtSession();
 
     try
     {
-        //ttt0 use eraseFiles()
         deleteFile(s);
         deleteFile(SessionEditorDlgImpl::getDataFileName(s));
         if (fileExists(SessionEditorDlgImpl::getLogFileName(s)))
@@ -436,7 +365,7 @@ void SessionsDlgImpl::on_m_pEraseB_clicked()
     catch (const std::bad_alloc&) { throw; }
     catch (...) //ttt2 use specific exceptions
     {
-        showCritical(this, tr("Error"), tr("Failed to remove the data files associated with this session")); // maybe the files were already deleted ...
+        QMessageBox::critical(this, "Error", "Failed to remove the data files associated with this session"); // maybe the files were already deleted ...
         return;
     }
 }
@@ -448,7 +377,7 @@ void SessionsDlgImpl::on_m_pSaveAsB_clicked()
     if (m_vstrSessions.empty()) { return; }
     //string s (getCrtSession());
 
-    QFileDialog dlg (this, tr("Save session as ..."), convStr(getCrtSessionDir()), SessionEditorDlgImpl::tr("MP3 Diags session files (*%1)").arg(SessionEditorDlgImpl::SESS_EXT));
+    QFileDialog dlg (this, "Save session as ...", convStr(getCrtSessionDir()), "INI files (*.ini)");
     dlg.setAcceptMode(QFileDialog::AcceptSave);
 
     if (QDialog::Accepted != dlg.exec()) { return; }
@@ -457,7 +386,7 @@ void SessionsDlgImpl::on_m_pSaveAsB_clicked()
     if (1 != fileNames.size()) { return; }
 
     string s (convStr(fileNames.first()));
-    if (!endsWith(s, SessionEditorDlgImpl::SESS_EXT)) { s += SessionEditorDlgImpl::SESS_EXT; }
+    if (!endsWith(s, ".ini")) { s += ".ini"; }
 
     string strCrt (getCrtSession());
     if (s == strCrt) { return; }
@@ -482,14 +411,14 @@ void SessionsDlgImpl::on_m_pSaveAsB_clicked()
 void SessionsDlgImpl::on_m_pHideB_clicked()
 {
     if (m_vstrSessions.empty()) { return; }
-    if (0 != showMessage(this, QMessageBox::Question, 1, 1, tr("Confirm"), tr("Do you really want to hide the current session?"), tr("Hide"), tr("Cancel"))) { return; }
+    if (0 != showMessage(this, QMessageBox::Question, 1, 1, "Confirm", "Do you really want to hide the current session?", "Hide", "Cancel")) { return; }
     removeCrtSession();
 }
 
 
 void SessionsDlgImpl::on_m_pLoadB_clicked()
 {
-    QFileDialog dlg (this, tr("Choose a session file"), convStr(getCrtSessionDir()), SessionEditorDlgImpl::tr("MP3 Diags session files (*%1)").arg(SessionEditorDlgImpl::SESS_EXT)); //ttt0 add ".ini", for import from older versions
+    QFileDialog dlg (this, "Choose a session file", convStr(getCrtSessionDir()), "INI files (*.ini)");
     dlg.setAcceptMode(QFileDialog::AcceptOpen);
 
     if (QDialog::Accepted != dlg.exec()) { return; }
@@ -498,13 +427,13 @@ void SessionsDlgImpl::on_m_pLoadB_clicked()
     if (1 != fileNames.size()) { return; }
 
     string s (convStr(fileNames.first()));
-    CB_ASSERT (endsWith(s, SessionEditorDlgImpl::SESS_EXT));
+    CB_ASSERT (endsWith(s, ".ini"));
 
     for (int i = 0, n = cSize(m_vstrSessions); i < n; ++i)
     {
         if (m_vstrSessions[i] == s)
         {
-            showCritical(this, tr("Error"), tr("The session named \"%1\" is already part of the session list").arg(toNativeSeparators(convStr(s))));
+            QMessageBox::critical(this, "Error", "The session named \"" + toNativeSeparators(convStr(s)) + "\" is already part of the session list");
             return;
         }
     }
@@ -517,28 +446,18 @@ void SessionsDlgImpl::on_m_pOpenB_clicked()
 {
     if (getCrtSession().empty())
     {
-        showCritical(this, tr("Error"), tr("The session list is empty. You must create a new session or load an existing one."));
+        QMessageBox::critical(this, "Error", "The session list is empty. You must create a new session or load an existing one.");
         return;
     }
     accept();
 }
 
 
-void SessionsDlgImpl::on_m_pCloseB_clicked() // ttt0 redo screenshots Cancel->Close
+void SessionsDlgImpl::on_m_pCancelB_clicked()
 {
     reject();
 }
 
-
-void SessionsDlgImpl::on_m_pTranslationCbB_currentIndexChanged(int)
-{
-    const vector<string>& vstrTranslations (TranslatorHandler::getGlobalTranslator().getTranslations());
-    m_strTranslation = vstrTranslations[m_pTranslationCbB->currentIndex()];
-
-    TranslatorHandler::getGlobalTranslator().setTranslation(m_strTranslation);
-    retranslateUi(this);
-    loadTemplates(); // !!! to retranslate "<last session>"
-}
 
 void SessionsDlgImpl::onSessDoubleClicked(const QModelIndex& index)
 {

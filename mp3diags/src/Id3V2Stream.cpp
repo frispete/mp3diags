@@ -28,7 +28,6 @@
 #include  "MpegStream.h"
 #include  "Helpers.h"
 #include  "CommonData.h"
-#include  "Widgets.h"  // for GlobalTranslHlp
 
 
 using namespace std;
@@ -284,12 +283,12 @@ void Id3V2Frame::print(ostream& out, bool bFullInfo) const
             }
             catch (const NotId3V2Frame&)
             {
-                qs = tr("<< error decoding string >>");
+                qs = "<< error decoding string >>";
             }
             break;
 
         case 2:
-            qs = tr("<< unsupported encoding >>");
+            qs = "<< unsupported encoding >>";
             break;
 
         case 3:
@@ -304,7 +303,7 @@ void Id3V2Frame::print(ostream& out, bool bFullInfo) const
     }
     else
     {
-        out << " " << convStr(tr("size=")) << m_nMemDataSize;
+        out << " size=" << m_nMemDataSize;
     }
 
 
@@ -323,11 +322,11 @@ void Id3V2Frame::print(ostream& out, bool bFullInfo) const
 
         if (cEnc > 3)
         {
-            out << " " << convStr(tr("invalid text encoding"));
+            out << " invalid text encoding";
         }
         else if (2 == cEnc)
         {
-            out << " " << convStr(tr("unsupported text encoding"));
+            out << " unsupported text encoding";
         }
         else
         {
@@ -356,7 +355,7 @@ void Id3V2Frame::print(ostream& out, bool bFullInfo) const
                     }
                     catch (const NotId3V2Frame&)
                     { // invalid encoding
-                        qstrFile = tr("<encoding error>");
+                        qstrFile = "<encoding error>";
                     }
 
                     try
@@ -365,12 +364,12 @@ void Id3V2Frame::print(ostream& out, bool bFullInfo) const
                     }
                     catch (const NotId3V2Frame&)
                     { // invalid encoding
-                        qstrDescr = tr("<encoding error>");
+                        qstrDescr = "<encoding error>";
                     }
                     break;
 
                 /*case 2:
-                    qs = tr("<< unsupported encoding >>");
+                    qs = "<< unsupported encoding >>";
                     break;*/
 
                 case 3:  // ttt3 not quite OK for ID3V2.3.0, but it's probably better this way
@@ -384,15 +383,13 @@ void Id3V2Frame::print(ostream& out, bool bFullInfo) const
 
             if (0 == pBinData)
             {
-                out << " " << convStr(tr("invalid data"));
+                out << " invalid data";
             }
             else
             {
                 int nBinSize (pLast - pBinData);
                 int nPrintedBinSize (min(1024, nBinSize));
-                //out << " MIME=\"" << convStr(qstrMime) << "\" File=\"" << convStr(qstrFile) << "\" Descr=\"" << convStr(qstrDescr) << "\" Binary data size=" << pLast - pBinData << (nPrintedBinSize != nBinSize ? " Begins with: " : " Content: ") << asHex(pBinData, nPrintedBinSize);
-                out << " " << convStr(tr("MIME=\"%1\" File=\"%2\" Descr=\"%3\" Binary data size=%4").arg(qstrMime).arg(qstrFile).arg(qstrDescr).arg(pLast - pBinData));
-                out << " " << convStr((nPrintedBinSize != nBinSize ? tr("Begins with: %1") : tr("Content: %1")).arg(convStr(asHex(pBinData, nPrintedBinSize))));
+                out << " MIME=\"" << convStr(qstrMime) << "\" File=\"" << convStr(qstrFile) << "\" Descr=\"" << convStr(qstrDescr) << "\" Binary data size=" << pLast - pBinData << (nPrintedBinSize != nBinSize ? " Begins with: " : " Content: ") << asHex(pBinData, nPrintedBinSize);
             }
         }
     }
@@ -400,7 +397,7 @@ void Id3V2Frame::print(ostream& out, bool bFullInfo) const
 
     if (Id3V2Frame::NO_APIC != m_eApicStatus)
     {
-        out << " " << convStr(tr("status=%1").arg(tr(getImageStatus())));
+        out << " status=" << getImageStatus();
     }
 
 }
@@ -416,10 +413,10 @@ const char* Id3V2Frame::getImageStatus() const
 {
     switch(m_eApicStatus)
     {
-    case USES_LINK: return QT_TR_NOOP("link");
-    case NON_COVER: return QT_TR_NOOP("non-cover");
-    case ERR: return QT_TR_NOOP("error");
-    case COVER: return QT_TR_NOOP("cover");
+    case USES_LINK: return "link";
+    case NON_COVER: return "non-cover";
+    case ERR: return "error";
+    case COVER: return "cover";
     default: CB_ASSERT1 (false, m_pFileName->s);
     }
 }
@@ -508,11 +505,11 @@ string Id3V2Frame::getUtf8String() const
     }
     catch (const Id3V2FrameDataLoader::LoadFailure&)
     {
-        return convStr(TagReader::tr("<error loading frame>")); //ttt2 not sure if this is the best thing to do, but at least avoids crashes;
+        return "<error loading frame>"; //ttt2 not sure if this is the best thing to do, but at least avoids crashes;
     }
     catch (const Id3V2Frame::NotId3V2Frame&)
     {
-        return convStr(TagReader::tr("<error decoding frame>")); //ttt2 not sure if this is the best thing to do, but at least avoids crashes;
+        return "<error decoding frame>"; //ttt2 not sure if this is the best thing to do, but at least avoids crashes;
     }
 }
 
@@ -545,11 +542,11 @@ string Id3V2Frame::getRawUtf8String() const
     }
     catch (const Id3V2FrameDataLoader::LoadFailure&)
     {
-        return convStr(TagReader::tr("<error loading frame>")); //ttt2 not sure if this is the best thing to do, but at least avoids crashes;
+        return "<error loading frame>"; //ttt2 not sure if this is the best thing to do, but at least avoids crashes;
     }
     catch (const Id3V2Frame::NotId3V2Frame&)
     {
-        return convStr(TagReader::tr("<error decoding frame>")); //ttt2 not sure if this is the best thing to do, but at least avoids crashes;
+        return "<error decoding frame>"; //ttt2 not sure if this is the best thing to do, but at least avoids crashes;
     }
 }
 
@@ -697,7 +694,7 @@ void Id3V2StreamBase::printFrames(ostream& out) const
 /*override*/ std::string Id3V2StreamBase::getInfo() const
 {
     ostringstream out;
-    out << convStr(DataStream::tr("padding=")) << m_nPaddingSize << ", " << convStr(DataStream::tr("unsynch=")) << convStr(GlobalTranslHlp::tr(boolAsYesNo(hasUnsynch()))) << "; " << convStr(DataStream::tr("frames")) << ": ";
+    out << "padding=" << m_nPaddingSize << ", unsynch=" << (hasUnsynch() ? "YES" : "NO") << "; frames: ";
     bool bFirst (true);
     for (vector<Id3V2Frame*>::const_iterator it = m_vpFrames.begin(), end = m_vpFrames.end(); it != end; ++it)
     {
@@ -738,7 +735,7 @@ const Id3V2Frame* Id3V2StreamBase::findFrame(const char* szFrameName) const //tt
 
 
 
-/*override*/ std::string Id3V2StreamBase::getTitle(bool* pbFrameExists /* = 0*/) const
+/*override*/ std::string Id3V2StreamBase::getTitle(bool* pbFrameExists /*= 0*/) const
 {
     const Id3V2Frame* p (findFrame(KnownFrames::LBL_TITLE()));
     if (0 != pbFrameExists) { *pbFrameExists = 0 != p; }
@@ -748,7 +745,7 @@ const Id3V2Frame* Id3V2StreamBase::findFrame(const char* szFrameName) const //tt
 
 
 
-/*override*/ std::string Id3V2StreamBase::getArtist(bool* pbFrameExists /* = 0*/) const
+/*override*/ std::string Id3V2StreamBase::getArtist(bool* pbFrameExists /*= 0*/) const
 {
     const Id3V2Frame* p (findFrame(KnownFrames::LBL_ARTIST()));
     if (0 != pbFrameExists) { *pbFrameExists = 0 != p; }
@@ -757,7 +754,7 @@ const Id3V2Frame* Id3V2StreamBase::findFrame(const char* szFrameName) const //tt
 }
 
 
-/*override*/ std::string Id3V2StreamBase::getTrackNumber(bool* pbFrameExists /* = 0*/) const
+/*override*/ std::string Id3V2StreamBase::getTrackNumber(bool* pbFrameExists /*= 0*/) const
 {
     const Id3V2Frame* p (findFrame(KnownFrames::LBL_TRACK_NUMBER()));
     if (0 != pbFrameExists) { *pbFrameExists = 0 != p; }
@@ -802,7 +799,7 @@ static string decodeGenre(const string& s)
 }
 
 
-/*override*/ std::string Id3V2StreamBase::getGenre(bool* pbFrameExists /* = 0*/) const
+/*override*/ std::string Id3V2StreamBase::getGenre(bool* pbFrameExists /*= 0*/) const
 {
     const Id3V2Frame* p (findFrame(KnownFrames::LBL_GENRE())); // for valid formats see tstGenre() and http://www.id3.org/id3v2.3.0#head-42b02d20fb8bf48e38ec5415e34909945dd849dc
     if (0 != pbFrameExists) { *pbFrameExists = 0 != p; }
@@ -863,7 +860,7 @@ void Id3V2StreamBase::checkFrames(NoteColl& notes) // various checks to be calle
 //ttt2 perhaps use links to pictures in crt dir
 
 
-/*override*/ ImageInfo Id3V2StreamBase::getImage(bool* pbFrameExists /* = 0*/) const
+/*override*/ ImageInfo Id3V2StreamBase::getImage(bool* pbFrameExists /*= 0*/) const
 {
 //if (0 != pbFrameExists) { *pbFrameExists = false; } return ImageInfo(ImageInfo::NO_PICTURE_FOUND);
 
@@ -917,7 +914,7 @@ void Id3V2StreamBase::checkFrames(NoteColl& notes) // various checks to be calle
         //eImageStatus = ImageInfo::ERROR_LOADING;
     }
 e1:
-    trace("The picture could be loaded before but now this is no longer possible. The most likely reason is that the file was moved or changed by an external application."); //ttt0 is there a macro?
+    trace("The picture could be loaded before but now this is no longer possible. The most likely reason is that the file was moved or changed by an external application.");
 
     return ImageInfo(-1, ImageInfo::ERROR_LOADING);
 }
@@ -979,7 +976,7 @@ e1:
 }
 
 
-/*override*/ std::string Id3V2StreamBase::getImageData(bool* pbFrameExists /* = 0*/) const
+/*override*/ std::string Id3V2StreamBase::getImageData(bool* pbFrameExists /*= 0*/) const
 {
     if (0 != pbFrameExists)
     {
@@ -988,7 +985,7 @@ e1:
 
     if (0 == m_pPicFrame) { return ""; }
 
-    ostringstream out; // !!! don't translate, as this is used by XML export only //ttt1 review exporting as XML
+    ostringstream out;
     out << "type:" << m_pPicFrame->getImageType() << ", status:" << m_pPicFrame->getImageStatus() << ", size:" << m_pPicFrame->m_nWidth << "x" << m_pPicFrame->m_nHeight << ", compr:" << ImageInfo::getComprStr(m_pPicFrame->m_eCompr);
 
     return out.str();
@@ -1165,7 +1162,7 @@ void Id3V2StreamBase::preparePicture(NoteColl& notes) // initializes fields used
 
 
 
-/*override*/ std::string Id3V2StreamBase::getAlbumName(bool* pbFrameExists /* = 0*/) const
+/*override*/ std::string Id3V2StreamBase::getAlbumName(bool* pbFrameExists /*= 0*/) const
 {
     const Id3V2Frame* p (findFrame(KnownFrames::LBL_ALBUM()));
     if (0 != pbFrameExists) { *pbFrameExists = 0 != p; }
@@ -1174,7 +1171,7 @@ void Id3V2StreamBase::preparePicture(NoteColl& notes) // initializes fields used
 }
 
 
-/*override*/ std::string Id3V2StreamBase::getComposer(bool* pbFrameExists /* = 0*/) const
+/*override*/ std::string Id3V2StreamBase::getComposer(bool* pbFrameExists /*= 0*/) const
 {
     const Id3V2Frame* p (findFrame(KnownFrames::LBL_COMPOSER()));
     if (0 != pbFrameExists) { *pbFrameExists = 0 != p; }
@@ -1184,7 +1181,7 @@ void Id3V2StreamBase::preparePicture(NoteColl& notes) // initializes fields used
 
 
 // *pbFrameExists gets set if at least one frame exists
-/*override*/ int Id3V2StreamBase::getVariousArtists(bool* pbFrameExists /* = 0*/) const
+/*override*/ int Id3V2StreamBase::getVariousArtists(bool* pbFrameExists /*= 0*/) const
 {
     int nRes (0);
     if (0 != pbFrameExists) { *pbFrameExists = false; }
@@ -1232,7 +1229,7 @@ void Id3V2StreamBase::preparePicture(NoteColl& notes) // initializes fields used
 }
 
 
-/*override*/ double Id3V2StreamBase::getRating(bool* pbFrameExists /* = 0*/) const
+/*override*/ double Id3V2StreamBase::getRating(bool* pbFrameExists /*= 0*/) const
 {
     const Id3V2Frame* p (findFrame(KnownFrames::LBL_RATING()));
     if (0 != pbFrameExists) { *pbFrameExists = 0 != p; }
@@ -1245,7 +1242,7 @@ void Id3V2StreamBase::preparePicture(NoteColl& notes) // initializes fields used
 static const char* REPLAY_GAIN_ROOT ("replaygain");
 
 
-//ttt1 mp3gain 1.5.1 can use ID3V2 instead of APE, so that should be tested as well; see TXXX="MP3GAIN_MINMAX[...]" in "Arctic Monkeys - 01 - My Propeller.mp3" (which also has TXXX="replaygain_track_gain[...]") - also review Id3V2Cleaner::processId3V2Stream
+//ttt1 mp3gain 1.5.1 can use ID3V2 instead of APE, so that should be tested as well; see TXXX="MP3GAIN_MINMAX[...]" in "Arctic Monkeys - 01 - My Propeller.mp3" (which also has TXXX="replaygain_track_gain[...]")
 bool Id3V2StreamBase::hasReplayGain() const
 {
     for (int i = 0; i < cSize(m_vpFrames); ++i)
@@ -1405,7 +1402,7 @@ void Id3V2StreamBase::checkDuplicates(NoteColl& notes) const
                 }
                 else
                 {
-                    MP3_NOTE_D (p->m_pos, id3v2MultipleFramesWithSameName, tr("%1 (Frame: %2)").arg(noteTr(id3v2MultipleFramesWithSameName)).arg(p->m_szName)); //ttt2 m_pos should be replaced with the position of the second frame with this ID
+                    MP3_NOTE_D (p->m_pos, id3v2MultipleFramesWithSameName, Notes::id3v2MultipleFramesWithSameName().getDescription() + string(" (Frame:") + p->m_szName + ")"); //ttt2 m_pos should be replaced with the position of the second frame with this ID
                 }
             }
         }
