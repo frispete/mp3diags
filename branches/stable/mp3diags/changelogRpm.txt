@@ -1,19 +1,93 @@
-* Sat Oct 20 2012 Marian Ciobanu <ciobi@inbox.com> 1.0.12.079
+* Fri Jan 17 2014 Marian Ciobanu <ciobi@inbox.com> 1.2.01
+
+- 1.2 as the new stable branch
+- build fix for clang and for Solaris
+- fixed broken links in documentation and moved alternate downloads from Dropbox to my ISP
+
+* Sun Mar 31 2013 Marian Ciobanu <ciobi@inbox.com> 1.2.00
+
+- new version number to support the new "stable" branch
+
+* Sat Dec 01 2012 Marian Ciobanu <ciobi@inbox.com> 1.1.21.080
+
+- fixed bug that caused a "%s" to be shown instead of the list of files about to be changed
+
+* Sat Oct 20 2012 Marian Ciobanu <ciobi@inbox.com> 1.1.20.077
 
 - Discogs fix
 
-* Fri May 11 2012 Marian Ciobanu <ciobi@inbox.com> 1.0.11.076
+* Sun Apr 29 2012 Marian Ciobanu <ciobi@inbox.com> 1.1.19.075
 
-- made program compilable with GCC 4.7
+- French translation
 
-* Sat Dec 31 2011 Marian Ciobanu <ciobi@inbox.com> 1.0.10.065
+* Sat Apr 06 2012 Marian Ciobanu <ciobi@inbox.com> 1.1.18.074
 
-- updated Discogs API calls to current version
+- German translation
+- made code compilable on GCC 4.7
+- several translation fixes
 
-* Sat Sep 10 2011 Marian Ciobanu <ciobi@inbox.com> 1.0.09.063
+* Sat Mar 17 2012 Marian Ciobanu <ciobi@inbox.com> 1.1.17.073
 
-- made Discogs queries work again, after a Discogs API change
-- added close button for windows on Gnome 3
+- fixed crash introduced in 1.1.16 with translation changes
+
+* Sun Mar 11 2012 Marian Ciobanu <ciobi@inbox.com> 1.1.16.072
+
+- made program translatable
+- added Czech translation
+
+* Wed Feb 02 2012 Marian Ciobanu <ciobi@inbox.com> 1.1.12.068
+
+- external tools
+- possibility of applying transformation lists in CLI mode
+- "Open containing folder" in the main window
+- delete files from the main window
+- close buttons for Gnome 3
+- APE remover
+- non-audio remover
+- CLI analyzer uses session settings to determine quality thresholds
+- fixed menu tooltips that disappeared too quickly
+
+* Sat Dec 03 2011 Marian Ciobanu <ciobi@inbox.com> 1.1.09.064
+
+- moved to Discogs API V2
+- added codepage support when copying ID3V1 to ID3V2
+- fixed crash caused by ID3V2.4 tag with invalid flags
+- fixed splitting of unsupported ID3V2 tags
+- fixed Xing generation for small bitrates
+
+* Sun Aug 28 2011 Marian Ciobanu <ciobi@inbox.com> 1.1.08.062
+
+- made Discogs queries after a Discogs API change
+- fixed track numbering when querying multi-volume albums from Discogs
+- made Linux shell integration accept file names containing spaces
+- added close button for dialogs on Gnome 3
+
+* Sat Jul 30 2011 Marian Ciobanu <ciobi@inbox.com> 1.1.07.061
+
+- shell integration for Linux
+- replaced MP3Diags with MP3Diags-unstable in places where this wasn't done
+- restructured the .spec file
+- added close button on Gnome 3
+
+* Fri Jul 22 2011 Marian Ciobanu <ciobi@inbox.com> 1.1.06.059
+
+- shell integration fixes
+
+* Thu Jul 21 2011 Marian Ciobanu <ciobi@inbox.com> 1.1.05.058
+
+- shell integration (Windows only)
+
+* Sun Jul 17 2011 Marian Ciobanu <ciobi@inbox.com> 1.1.04.057
+
+- folder-based sessions based on command-line parameters
+
+* Wed Jun 15 2011 Marian Ciobanu <ciobi@inbox.com> 1.1.03.056
+
+- integrated command-line mode by Michael Elsdörfer
+
+* Mon May 30 2011 Marian Ciobanu <ciobi@inbox.com> 1.1.01.054
+
+- created unstable branch
 
 * Sat May 28 2011 Marian Ciobanu <ciobi@inbox.com> 1.0.08.053
 

@@ -5,6 +5,8 @@
 function fixVersion
 {
     cat $1 | sed -e "s%QQQVERQQQ%$Ver%g" -e "s%QQQBRANCH_SLQQQ%$BranchSlash%g" -e "s%QQQBRANCH_DQQQ%$BranchDash%g" > QQTmpQQ
+    origDate=`stat --printf '%Y' $1`
+    touch -d @"$origDate" QQTmpQQ
     rm $1
     mv QQTmpQQ $1
 }
@@ -16,6 +18,8 @@ function initialize
     Ver=`cat Release.txt`
     BranchSlash=`cat branch.txt`
     BranchDash=`echo "$BranchSlash" | sed 's#/#-#'`
+    BranchSpace=`echo "$BranchSlash" | sed -e 's#/# #' -e 's# u# U#'`
+    BranchComma=`echo "$BranchSlash" | sed -e 's#/#,#' -e 's#,#, #'`
 
     echo Version: $Ver
 
@@ -40,7 +44,7 @@ function initialize
 
     cat changelogDeb.txt | sed "s#^mp3diags#mp3diags$BranchDash#" > package/out/deb/debian.changelog
     cat package/deb/debian.control | sed "s#mp3diags#mp3diags$BranchDash#" > package/out/deb/debian.control
-    cat package/deb/debian.rules | sed -e "s#bin/MP3Diags#bin/MP3Diags$BranchDash#" -e "s#MP3Diags.desktop#MP3Diags$BranchDash.desktop#" -e "s#debian/mp3diags#debian/mp3diags$BranchDash#" -e "s%MP3Diags.png$%MP3Diags$BranchDash.png%" -e "s%MP3Diags\([0-9][0-9]\)%MP3Diags\1$BranchDash%" > package/out/deb/debian.rules
+    cat package/deb/debian.rules | sed -e "s#bin/MP3Diags#bin/MP3Diags$BranchDash#" -e "s#MP3Diags.desktop#MP3Diags$BranchDash.desktop#" -e "s#debian/mp3diags#debian/mp3diags$BranchDash#" -e "s%MP3Diags.png$%MP3Diags$BranchDash.png%" -e "s%MP3Diags\([0-9][0-9]\)%MP3Diags$BranchDash\1%" > package/out/deb/debian.rules
     cat package/deb/MP3Diags.dsc | sed -e "s%mp3diags%mp3diags$BranchDash%" -e "s%MP3Diags%MP3Diags$BranchDash%" > package/out/deb/MP3Diags$BranchDash.dsc
     fixVersion package/out/deb/MP3Diags$BranchDash.dsc
 }
@@ -67,11 +71,11 @@ function createSrc
 
     mkdir $LongDestDir/desktop
     for i in `ls desktop/*.png` ; do
-        newName=`echo $i | sed "s%\.png$%$BranchDash\.png%"`
-        cp $i $LongDestDir/$newName
+        cp -p $i $LongDestDir/$i
     done
     cat desktop/MP3Diags.desktop | sed -e "s#MP3Diags#MP3Diags$BranchDash#" -e "s#MP3 Diags#MP3 Diags$BranchSlash#" > $LongDestDir/desktop/MP3Diags$BranchDash.desktop
     cp -pr src $LongDestDir
+    rm -rf $LongDestDir/src/translations/autoTransl
     fixVersion $LongDestDir/src/Helpers.cpp
     cp -p branch.txt $LongDestDir
 
@@ -90,13 +94,12 @@ function createSrc
     cp -p AdjustMt.sh $LongDestDir
     cp -p CMakeLists.txt $LongDestDir
     cp -p CMake-VS2008-Win32.cmd $LongDestDir
-    cat BuildMp3Diags.hta | sed -e "s#MP3DiagsWindows#MP3DiagsWindows$BranchDash#" > $LongDestDir/BuildMp3Diags.hta
+    cat BuildMp3Diags.hta | sed -e "s#MP3DiagsWindows#MP3DiagsWindows$BranchDash#g" > $LongDestDir/BuildMp3Diags.hta
     cp -p README.TXT $LongDestDir
     cp package/out/pad_file.xml $LongDestDir
+    cat MP3DiagsCLI.cmd | sed -e "s#MP3DiagsWindows#MP3DiagsWindows$BranchDash#g" > $LongDestDir/MP3DiagsCLI$BranchDash.cmd
 
-    echo 'const char* APP_VER ("'$Ver'");' > $LongDestDir/src/Version.cpp
-    echo 'const char* APP_BRANCH ("'$BranchSlash'");' >> $LongDestDir/src/Version.cpp
-    echo >> $LongDestDir/src/Version.cpp
+    cat src/Version.cpp | sed -e "s#- custom build#$Ver#" > $LongDestDir/src/Version.cpp
 
     for i in $( ls src/licences | sed 's%.*/%%' ); do
         cp -p src/licences/$i $LongDestDir/license.$i
@@ -112,6 +115,7 @@ function createSrc
     fixVersion $LongDestDir/BuildBz2.sh
     chmod a+x $LongDestDir/BuildBz2.sh
 
+    cp -p MakeTranslations.sh $LongDestDir
 
     cd package/out
     tar czf $DestDir.tar.gz $DestDir
@@ -120,6 +124,11 @@ function createSrc
     #rm -f -r $LongDestDir
 }
 
+function fixTitleBranch
+{
+    cat $1 | sed -e "s#MP3, diags#MP3, diags$BranchComma#" -e "s#documentation for MP3 Diags#documentation for MP3 Diags$BranchSpace#" -e "s#<title>MP3 Diags#<title>MP3 Diags$BranchSpace#" > $1.tmp
+    mv -f $1.tmp $1
+}
 
 
 #function updateDwnldLinks
@@ -138,9 +147,12 @@ function createDoc
 
     #cp -pr doc/html/*.html $LongDestDir
     for i in $( ls doc/html/*.html | sed 's%.*/%%' ); do
+        origDate=`stat --printf '%Y' doc/html/$i`
         cat doc/html/$i | sed 's# onClick=\"javascript: pageTracker[^\"]*\"##g' > $LongDestDir/$i
+        fixTitleBranch $LongDestDir/$i
+        touch -d @"$origDate" $LongDestDir/$i
+        fixVersion $LongDestDir/$i
     done
-#    fixVersion $LongDestDir/010_getting_the_program.html
     package/AddChangeLog.py $LongDestDir
 
     cp -pr doc/html/*.css $LongDestDir
@@ -170,9 +182,12 @@ function createClicknetDoc
 
     #cp -pr doc/html/*.html $LongDestDir
     for i in $( ls doc/html/*.html | sed 's%.*/%%' ); do
+        origDate=`stat --printf '%Y' doc/html/$i`
         cat doc/html/$i | sed 's%QQQStatCounterQQQ% Start of StatCounter Code --> <script type="text/javascript"> var sc_project=4841840; var sc_invisible=1; var sc_partition=56; var sc_click_stat=1; var sc_security="644c2333"; </script> <script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script><noscript><div class="statcounter"><a title="free hit counter" href="http://www.statcounter.com/free_hit_counter.html" target="_blank"><img class="statcounter" src="http://c.statcounter.com/4841840/0/644c2333/1/" alt="free hit counter" ></a></div></noscript><!-- End of StatCounter Code %' | sed 's# onClick=\"javascript: pageTracker[^\"]*\"##g' > $LongDestDir/$i
+        fixTitleBranch $LongDestDir/$i
+        touch -d @"$origDate" $LongDestDir/$i
+        fixVersion $LongDestDir/$i
     done
-    fixVersion $LongDestDir/010_getting_the_program.html
     package/AddChangeLog.py $LongDestDir
 
     cp -pr doc/html/*.css $LongDestDir
@@ -186,7 +201,7 @@ function createClicknetDoc
 
     cd package/out
     #tar czf $DestDir.tar.gz $DestDir
-    cp MP3Diags$BranchDash-$Ver.tar.gz $DestDir
+    cp -p MP3Diags$BranchDash-$Ver.tar.gz $DestDir
     cd ../..
 
     #rm -f -r $LongDestDir
@@ -226,9 +241,14 @@ function createSfDoc
         #cat doc/html/$i | sed 's#QQQStatCounterQQQ# Start of StatCounter Code --> <script type="text/javascript"> var sc_project=4765268; var sc_invisible=1; var sc_partition=54; var sc_click_stat=1; var sc_security="b8120652"; </script> <script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script> <noscript> <div class="statcounter"> <a title="website statistics" href="http://www.statcounter.com/" target="_blank"> <img class="statcounter" src="http://c.statcounter.com/4765268/0/b8120652/1/" alt="website statistics" > </a> </div> </noscript> <!-- End of StatCounter Code -->          <!-- Piwik --><script type="text/javascript">var pkBaseURL = (("https:" == document.location.protocol) ? "https://sourceforge.net/apps/piwik/mp3diags/" : "http://sourceforge.net/apps/piwik/mp3diags/");document.write(unescape("%3Cscript src='\''" + pkBaseURL + "piwik.js'\'' type='\''text/javascript'\''%3E%3C/script%3E"));</script><script type="text/javascript">piwik_action_name = '\'''\'';piwik_idsite = 1;piwik_url = pkBaseURL + "piwik.php";piwik_log(piwik_action_name, piwik_idsite, piwik_url);</script><object><noscript><p><img src="http://sourceforge.net/apps/piwik/mp3diags/piwik.php?idsite=1" alt="piwik"/></p></noscript></object><!-- End Piwik Tag #' | sed 's#<!-- sf_hosting -->#<td border="0" class="HeaderText HeaderPadRight RightAlign"><a href="http://sourceforge.net/projects/mp3diags"><img border="0" align=middle src="http://sflogo.sourceforge.net/sflogo.php?group_id=260878\&amp;type=12" width="120" height="30" alt="Get MP3 Diags at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a></td>#' | sed 's#<!-- add_this_conf -->#<script type="text/javascript"> var addthis_config = { username: "ciobi" } </script><script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js"></script>#' | sed 's#<!-- add_this_link -->#<td border="0" class="HeaderText HeaderPadRight"><a href="http://www.addthis.com/bookmark.php?v=250" class="addthis_button" addthis:url="http://mp3diags.sourceforge.net/" addthis:title="MP3 Diags"> <img src="http://s7.addthis.com/static/btn/lg-share-en.gif" width="125" height="16" border="0" alt="Share" align="absmiddle" /> </a></td>#' > $LongDestDir/$i
 
     #<img src="http://s7.addthis.com/static/btn/lg-share-en.gif" width="125" height="16" border="0" alt="Share" align="middle" />
-        cat doc/html/$i | sed 's#QQQStatCounterQQQ# Start of StatCounter Code --> <script type="text/javascript"> var sc_project=4765268; var sc_invisible=1; var sc_partition=54; var sc_click_stat=1; var sc_security="b8120652"; </script> <script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script> <noscript> <div class="statcounter"> <a title="website statistics" href="http://www.statcounter.com/" target="_blank"> <img class="statcounter" src="http://c.statcounter.com/4765268/0/b8120652/1/" alt="website statistics" > </a> </div> </noscript> <!-- End of StatCounter Code -->          <!-- Piwik --><script type="text/javascript">var pkBaseURL = (("https:" == document.location.protocol) ? "https://sourceforge.net/apps/piwik/mp3diags/" : "http://sourceforge.net/apps/piwik/mp3diags/");document.write(unescape("%3Cscript src='\''" + pkBaseURL + "piwik.js'\'' type='\''text/javascript'\''%3E%3C/script%3E"));</script><script type="text/javascript">piwik_action_name = '\'''\'';piwik_idsite = 1;piwik_url = pkBaseURL + "piwik.php";piwik_log(piwik_action_name, piwik_idsite, piwik_url);</script><object><noscript><p><img src="http://sourceforge.net/apps/piwik/mp3diags/piwik.php?idsite=1" alt="piwik"/></p></noscript></object><!-- End Piwik Tag #' | sed 's#<!-- sf_hosting -->#<td border="0" class="HeaderText HeaderPadRight RightAlign"><a href="http://sourceforge.net/projects/mp3diags"><img border="0" align=middle src="http://sflogo.sourceforge.net/sflogo.php?group_id=260878\&amp;type=12" width="120" height="30" alt="Get MP3 Diags at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a></td>#' | sed 's#<!-- add_this_conf -->#<script type="text/javascript"> var addthis_config = { username: "ciobi", data_use_flash: false } </script><script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js"></script>        <!-- GoogleAn --> <script type="text/javascript"> var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www."); document.write(unescape("%3Cscript src='\''" + gaJsHost + "google-analytics.com/ga.js'\'' type='\''text/javascript'\''%3E%3C/script%3E")); </script> <script type="text/javascript"> try { var pageTracker = _gat._getTracker("UA-11047979-1"); pageTracker._trackPageview(); } catch(err) {}</script> <!-- GoogleAn -->#' | sed 's#<!-- add_this_link -->#<a href="http://www.addthis.com/bookmark.php?v=250" class="addthis_button" addthis:url="http://mp3diags.sourceforge.net/" addthis:title="MP3 Diags"><img src="share.gif" border="0" alt="Share" align="middle" /></a>#' > $LongDestDir/$i
+
+        origDate=`stat --printf '%Y' doc/html/$i`
+
+        cat doc/html/$i | sed 's#QQQStatCounterQQQ# Start of StatCounter Code --> <script type="text/javascript"> var sc_project=4765268; var sc_invisible=1; var sc_partition=54; var sc_click_stat=1; var sc_security="b8120652"; </script> <script type="text/javascript" src="http://www.statcounter.com/counter/counter.js"></script> <noscript> <div class="statcounter"> <a title="website statistics" href="http://www.statcounter.com/" target="_blank"> <img class="statcounter" src="http://c.statcounter.com/4765268/0/b8120652/1/" alt="website statistics" > </a> </div> </noscript> <!-- End of StatCounter Code -->          <!-- Piwik --><script type="text/javascript">var pkBaseURL = (("https:" == document.location.protocol) ? "https://sourceforge.net/apps/piwik/mp3diags/" : "http://sourceforge.net/apps/piwik/mp3diags/");document.write(unescape("%3Cscript src='\''" + pkBaseURL + "piwik.js'\'' type='\''text/javascript'\''%3E%3C/script%3E"));</script><script type="text/javascript">piwik_action_name = '\'''\'';piwik_idsite = 1;piwik_url = pkBaseURL + "piwik.php";piwik_log(piwik_action_name, piwik_idsite, piwik_url);</script><object><noscript><p><img src="http://sourceforge.net/apps/piwik/mp3diags/piwik.php?idsite=1" alt="piwik"/></p></noscript></object><!-- End Piwik Tag #' | sed 's#<!-- sf_hosting -->#<td border="0" class="HeaderText HeaderPadRight RightAlign"><a href="http://sourceforge.net/projects/mp3diags"><img border="0" align=middle src="http://sflogo.sourceforge.net/sflogo.php?group_id=260878\&amp;type=12" width="120" height="30" alt="Get MP3 Diags at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a></td>#' | sed 's#<!-- add_this_conf -->#<script type="text/javascript"> var addthis_config = { username: "ciobi", data_use_flash: false } </script><script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js"></script>        <!-- GoogleAn --> <script type="text/javascript"> var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www."); document.write(unescape("%3Cscript src='\''" + gaJsHost + "google-analytics.com/ga.js'\'' type='\''text/javascript'\''%3E%3C/script%3E")); </script> <script type="text/javascript"> try { var pageTracker = _gat._getTracker("UA-11047979-1"); pageTracker._trackPageview(); } catch(err) {}</script> <!-- GoogleAn -->#' | sed 's#<!-- add_this_link -->#<a href="http://www.addthis.com/bookmark.php?v=250" class="addthis_button" addthis:url="http://mp3diags.sourceforge.net/" addthis:title="MP3 Diags"><img src="share.gif" border="0" alt="Share" align="middle" /></a>#' | sed "s#pageTracker._trackPageview.'#pageTracker._trackPageview\\('$BranchSlash#" > $LongDestDir/$i
+        touch -d @"$origDate" $LongDestDir/$i
+        fixTitleBranch $LongDestDir/$i
+        fixVersion $LongDestDir/$i
     done
-    fixVersion $LongDestDir/010_getting_the_program.html
     package/AddChangeLog.py $LongDestDir
 
     cp -pr doc/html/*.css $LongDestDir

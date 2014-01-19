@@ -41,6 +41,8 @@
 #include  <QHttp>
 #include  <QHttpRequestHeader>
 #include  <QHttpResponseHeader>
+#include  <QDesktopServices>
+#include  <QProcess>
 
 #ifndef WIN32
     //#include <sys/utsname.h>
@@ -65,7 +67,7 @@
 #include  "AboutDlgImpl.h"
 #include  "Widgets.h"
 #include  "DataStream.h"
-#include  "NormalizeDlgImpl.h"
+#include  "ExternalToolDlgImpl.h"
 #include  "DebugDlgImpl.h"
 #include  "TagEditorDlgImpl.h"
 #include  "Mp3TransformThread.h"
@@ -74,10 +76,13 @@
 #include  "SessionEditorDlgImpl.h"
 #include  "Id3Transf.h"
 #include  "ExportDlgImpl.h"
+#include  "Version.h"
+#include  "Translation.h"
 
 
 using namespace std;
 using namespace pearl;
+using namespace Version;
 
 
 //#define LOG_ANYWAY
@@ -154,7 +159,7 @@ namespace
             strRes.resize(nSize - 2);
         }
 
-        QMessageBox::critical(0, szTitle, convStr(strRes));
+        showCritical(0, szTitle, convStr(strRes));
     }
 
 
@@ -424,33 +429,36 @@ void traceLastStep(const string& s, int nLevelChange)
 static QString s_qstrErrorMsg;
 static bool s_bMainAssertOut;
 
+static QString g_qstrCrashMail ("<a href=\"mailto:mp3diags@gmail.com?subject=000 MP3 Diags crash/\">mp3diags@gmail.com</a>");
+static QString g_qstrSupportMail ("<a href=\"mailto:mp3diags@gmail.com?subject=000 MP3 Diags support note/\">mp3diags@gmail.com</a>");
+static QString g_qstrBugReport ("<a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>");
 
 
 static void showAssertMsg(QWidget* pParent)
 {
-    HtmlMsg::msg(pParent, 0, 0, 0, HtmlMsg::SHOW_SYS_INFO, "Assertion failure",
+    HtmlMsg::msg(pParent, 0, 0, 0, HtmlMsg::SHOW_SYS_INFO, MainFormDlgImpl::tr("Assertion failure"),
         Qt::escape(s_qstrErrorMsg) +
             "<p style=\"margin-bottom:1px; margin-top:12px; \">" +
             (
                 s_fileTracer.getStepFiles().empty() ?
-                    "Plese report this problem to the project's Issue Tracker at <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>" :
-                    "Please restart the application for instructions about how to report this issue"
+                    MainFormDlgImpl::tr("Plese report this problem to the project's Issue Tracker at %1").arg(g_qstrBugReport) :
+                    MainFormDlgImpl::tr("Please restart the application for instructions about how to report this issue")
             ) +
             "</p>",
-        750, 300, "Exit");
+        750, 300, MainFormDlgImpl::tr("Exit"));
 }
 
 
 
 void MainFormDlgImpl::showRestartAfterCrashMsg(const QString& qstrText, const QString& qstrCloseBtn)
 {
-    HtmlMsg::msg(this, 0, 0, 0, HtmlMsg::SHOW_SYS_INFO, "Restarting after crash", qstrText, 750, 450, qstrCloseBtn);
+    HtmlMsg::msg(this, 0, 0, 0, HtmlMsg::SHOW_SYS_INFO, tr("Restarting after crash"), qstrText, 750, 450, qstrCloseBtn);
 }
 
 
 void logAssert(const char* szFile, int nLine, const char* szCond)
 {
-    //QMessageBox::critical(0, "Assertion failure", QString("Assertion failure in file %1, line %2: %3").arg(szFile).arg(nLine).arg(szCond), QMessageBox::Close);
+    //showCritical(0, "Assertion failure", QString("Assertion failure in file %1, line %2: %3").arg(szFile).arg(nLine).arg(szCond), QMessageBox::Close);
     /*QMessageBox dlg (QMessageBox::Critical, "Assertion failure", QString("Assertion failure in file %1, line %2: %3").arg(szFile).arg(nLine).arg(szCond), QMessageBox::Close, getThreadLocalDlgList().getDlg(), Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);*/
 
     s_qstrErrorMsg = QString("Assertion failure in file %1, line %2: %3. The program will exit.").arg(szFile).arg(nLine).arg(szCond);
@@ -458,7 +466,7 @@ void logAssert(const char* szFile, int nLine, const char* szCond)
     s_fileTracer.enable2(true);
     traceToFile(convStr(s_qstrErrorMsg), 0);
     qDebug("Assertion failure in file %s, line %d: %s", szFile, nLine, szCond);
-    s_fileTracer.enable1(false); // !!! to avoid logging irrelevant info about cells drawn after the message was shown (there is some risk of not detecting that messages aren't shown although they shoul be, but this has never been reported, while trace files full of FilesModel::headerData and the like are common)
+    s_fileTracer.enable1(false); // !!! to avoid logging irrelevant info about cells drawn after the message was shown (there is some risk of not detecting that messages aren't shown although they should be, but this has never been reported, while trace files full of FilesModel::headerData and the like are common)
 
     MainFormDlgImpl* p (getGlobalDlg());
 
@@ -534,7 +542,7 @@ void MainFormDlgImpl::showBackupWarn()
 {
     if (m_pCommonData->m_bWarnedAboutBackup) { return; }
 
-    HtmlMsg::msg(this, 0, 0, &m_pCommonData->m_bWarnedAboutBackup, HtmlMsg::CRITICAL, "Warning", "<p>Because MP3 Diags changes the content of your MP3 files if asked to, it has a significant destructive potential, especially in cases where the user doesn't read the documentation and simply expects the program to do other things than what it was designed to do.</p><p>Therefore, it is highly advisable to back up your files first.</p><p>Also, although MP3 Diags is very stable on the developer's computer, who hasn't experienced a crash in a long time and never needed to restore MP3 files from a backup, there are several crash reports that haven't been addressed, as the developer couldn't reproduce the crashes and those who reported the crashes didn't answer the developer's questions that might have helped isolate the problem.</p>", 520, 300, "O&K");
+    HtmlMsg::msg(this, 0, 0, &m_pCommonData->m_bWarnedAboutBackup, HtmlMsg::CRITICAL, tr("Warning"), "<p>" + tr("Because MP3 Diags changes the content of your MP3 files if asked to, it has a significant destructive potential, especially in cases where the user doesn't read the documentation and simply expects the program to do other things than what it was designed to do.") + "</p><p>" + tr("Therefore, it is highly advisable to back up your files first.") + "</p><p>" + tr("Also, although MP3 Diags is very stable on the developer's computer, who hasn't experienced a crash in a long time and never needed to restore MP3 files from a backup, there are several crash reports that haven't been addressed, as the developer couldn't reproduce the crashes and those who reported the crashes didn't answer the developer's questions that might have helped isolate the problem.") + "</p>", 520, 300, tr("O&K"));
 
     if (!m_pCommonData->m_bWarnedAboutBackup) { return; }
 
@@ -547,7 +555,7 @@ void MainFormDlgImpl::showSelWarn()
 {
     if (m_pCommonData->m_bWarnedAboutSel) { return; }
 
-    HtmlMsg::msg(this, 0, 0, &m_pCommonData->m_bWarnedAboutSel, HtmlMsg::DEFAULT, "Note", "If you simply left-click, all the visible files get processed. However, it is possible to process only the selected files. To do that, either keep SHIFT pressed down while clicking or use the right button, as described at <a href=\"http://mp3diags.sourceforge.net/140_main_window_tools.html\">http://mp3diags.sourceforge.net/140_main_window_tools.html</a>", 520, 300, "O&K"); //ttt1 different for "unstable"
+    HtmlMsg::msg(this, 0, 0, &m_pCommonData->m_bWarnedAboutSel, HtmlMsg::DEFAULT, tr("Note"), tr("If you simply left-click, all the visible files get processed. However, it is possible to process only the selected files. To do that, either keep SHIFT pressed down while clicking or use the right button, as described at %1").arg("<a href=\"http://mp3diags.sourceforge.net" + QString(getWebBranch()) + "/140_main_window_tools.html\">http://mp3diags.sourceforge.net" + QString(getWebBranch()) + "/140_main_window_tools.html</a>"), 520, 300, tr("O&K"));
 
     if (!m_pCommonData->m_bWarnedAboutSel) { return; }
 
@@ -614,22 +622,23 @@ void MainFormDlgImpl::loadIgnored()
             QString s;
             if (1 == n)
             {
-                s = "An unknown note was found in the configuration. This note wasn't found:\n\n" + convStr(vstrNotFoundNotes[0]);
+                s = tr("An unknown note was found in the configuration. This note is unknown:\n\n%1").arg(convStr(vstrNotFoundNotes[0]));
             }
             else
             {
-                s = "An unknown note was found in the configuration. These notes weren't found:\n\n";
+                QString s1;
                 for (int i = 0; i < n; ++i)
                 {
-                    s += convStr(vstrNotFoundNotes[i]);
+                    s1 += convStr(vstrNotFoundNotes[i]);
                     if (i < n - 1)
                     {
-                        s += "\n";
+                        s1 += "\n";
                     }
                 }
+                s = tr("Unknown notes were found in the configuration. These notes are unknown:\n\n%1").arg(s1);
             }
 
-            QMessageBox::warning(this, "Error setting up the \"ignored notes\" list", s + "\n\nYou may want to check again the list and add any notes that you want to ignore.\n\n(If you didn't change the settings file manually, this is probably due to a code enhanement that makes some notes no longer needed, and you can safely ignore this message.)"); //ttt2 use MP3 Diags icon
+            showWarning(this, tr("Error setting up the \"ignored notes\" list"), s + tr("\n\nYou may want to check again the list and add any notes that you want to ignore.\n\n(If you didn't change the settings file manually, this is probably due to a code enhanement that makes some notes no longer needed, and you can safely ignore this message.)")); //ttt2 use MP3 Diags icon
 
             saveIgnored();
         }
@@ -727,7 +736,7 @@ struct SerSaveThread : public PausableThread
         {
             CompleteNotif notif(this);
 
-            bool bAborted (!load());
+            bool bAborted (!save());
 
             notif.setSuccess(!bAborted);
         }
@@ -738,14 +747,14 @@ struct SerSaveThread : public PausableThread
         }
     }
 
-    bool load()
+    bool save()
     {
         m_strErr = m_pCommonData->save(SessionEditorDlgImpl::getDataFileName(m_strSession));
         return true;
     }
 };
 
-
+//ttt1 "unstable" in html for analytics
 
 void listKnownFormats()
 {
@@ -765,16 +774,13 @@ void listKnownFormats()
 } // namespace
 
 
-extern const char* APP_VER;
 
-
-
-MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bUniqueSession) : QDialog(0, getMainWndFlags()), m_settings(strSession), m_nLastKey(0)/*, m_settings("Ciobi", "Mp3Diags_v01")*/ /*, m_nPrevTabIndex(-1), m_bTagEdtWasEntered(false)*/, m_pCommonData(0), m_strSession(strSession), m_bShowMaximized(false), m_nScanWidth(0), m_pQHttp(0), m_nGlobalX(0), m_nGlobalY(0)
+MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bDefaultForVisibleSessBtn) : QDialog(0, getMainWndFlags()), m_settings(strSession), m_nLastKey(0)/*, m_settings("Ciobi", "Mp3Diags_v01")*/ /*, m_nPrevTabIndex(-1), m_bTagEdtWasEntered(false)*/, m_pCommonData(0), m_strSession(strSession), m_bShowMaximized(false), m_nScanWidth(0), m_pQHttp(0), m_nGlobalX(0), m_nGlobalY(0)
 {
 //int x (2); CB_ASSERT(x > 4);
 //CB_ASSERT("345" == "ab");
 //CB_ASSERT(false);
-    s_fileTracer.setName(strSession.substr(0, m_strSession.size() - 4)); // also disables both flags
+    s_fileTracer.setName(SessionEditorDlgImpl::getBaseName(strSession)); // also disables both flags
 
     s_pGlobalDlg = 0;
     setupUi(this);
@@ -790,15 +796,15 @@ MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bUniqueSession) 
         m_pFilesG->installEventFilter(this);
     }
 
-    m_pCommonData = new CommonData(m_settings, m_pFilesG, m_pNotesG, m_pStreamsG, m_pUniqueNotesG, /*m_pCurrentFileG, m_pCurrentAlbumG,*/ /*m_pLogG,*/ /*m_pAssignedB,*/ m_pNoteFilterB, m_pDirFilterB, m_pModeAllB, m_pModeAlbumB, m_pModeSongB, bUniqueSession);
+    m_pCommonData = new CommonData(m_settings, m_pFilesG, m_pNotesG, m_pStreamsG, m_pUniqueNotesG, /*m_pCurrentFileG, m_pCurrentAlbumG,*/ /*m_pLogG,*/ /*m_pAssignedB,*/ m_pNoteFilterB, m_pDirFilterB, m_pModeAllB, m_pModeAlbumB, m_pModeSongB, bDefaultForVisibleSessBtn);
 
-    m_settings.loadMiscConfigSettings(m_pCommonData);
+    m_settings.loadMiscConfigSettings(m_pCommonData, SessionSettings::INIT_GUI);
 
     m_pCommonData->m_bScanAtStartup = m_settings.loadScanAtStartup();
 
     string strVersion;
     m_settings.loadVersion(strVersion);
-    if (strVersion == APP_VER)
+    if (strVersion == getAppVer())
     {
         bool bDirty;
         m_settings.loadDbDirty(bDirty);
@@ -816,35 +822,62 @@ MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bUniqueSession) 
                     if (fileExists(s_fileTracer.getStepFiles()[0])) { v.push_back(s_fileTracer.getStepFiles()[0]); }
                     if (fileExists(s_fileTracer.getStepFiles()[1])) { v.push_back(s_fileTracer.getStepFiles()[1]); }
                     CB_ASSERT (!v.empty()); // really v should have at least 2 elements
-                    QString qs (v.size() > 1 ? "files" : "file");
-                    qs += " <b>" + Qt::escape(toNativeSeparators(convStr(v[0]))) + "</b>";
-                    if (v.size() > 1)
-                    {
-                        qs += (v.size() > 2 ? "," : " and");
-                        qs += " <b>" + Qt::escape(toNativeSeparators(convStr(v[1]))) + "</b>";
-                        if (v.size() > 2)
-                        {
-                            qs += ", and";
-                            qs += " <b>" + Qt::escape(toNativeSeparators(convStr(v[2]))) + "</b>";
-                        }
-                    }
 
-                    if (v.size() > 1)
+                    QString qstrFiles ("<p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("MP3 Diags is restarting after a crash."));
+                    switch (v.size())
                     {
-                        showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. Information in the " + qs + " may help identify the cause of the crash, so please make them available to the developer by mailing them to <a href=\"mailto:ciobi@inbox.com?subject=000 MP3 Diags crash/\">ciobi@inbox.com</a>, by reporting an issue to the project's Issue Tracker at <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a> and attaching the files to the report, or by some other means (like putting them on a file sharing site.)</p><p style=\"margin-bottom:8px; margin-top:1px; \">These are plain text files, which you can review before sending, if you have privacy concerns.</p><p style=\"margin-bottom:8px; margin-top:1px; \">After getting the files, the developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">Note that these files <b>will be removed</b> when you close this window.</p>" + (m_pCommonData->isTraceToFileEnabled() ? "<p style=\"margin-bottom:8px; margin-top:1px; \">If there is a name of an MP3 file at the end of <b>" + Qt::escape(toNativeSeparators(convStr(v[0]))) + "</b>, that might be a file that consistently causes a crash. Please check if it is so. Then, if confirmed, please make that file available by mailing it to <a href=\"mailto:ciobi@inbox.com?subject=000 MP3 Diags crash report/\">ciobi@inbox.com</a> or by putting it on a file sharing site.</b></p>" : "<p style=\"margin-bottom:8px; margin-top:1px; \">Please also try to <b>repeat the steps that led to the crash</b> before reporting the crash, which will probably result in a new set of files being generated; these files are more likely to contain relevant information than the current set of files, because they will also have information on what happened before the crash, while the current files only tell where the crash occured.</p>") + "<p style=\"margin-bottom:8px; margin-top:1px; \">You should include in your report any other details that seem relevant (what might have caused the failure, steps to reproduce it, ...)</p>", "Remove these files and continue");
-                        //ttt3 as of 2009.10.24 there are 2 files that are expected to be found here, though sometimes there may be 3; if this is cut down to 1, a "them => it" would be needed
+                    case 1:
+                            qstrFiles += tr("Information in the file %1%5%2 may help identify the cause of the crash so please make it available to the developer by mailing it to %3, by reporting an issue to the project's Issue Tracker at %4 and attaching the files to the report, or by some other means (like putting it on a file sharing site.)", "%1 and %2 are HTML elements")
+                                .arg("<b>")
+                                .arg("</b>")
+                                .arg(g_qstrCrashMail)
+                                .arg(g_qstrBugReport)
+                                .arg(Qt::escape(toNativeSeparators(convStr(v[0])))); break;
+                    case 2:
+                        qstrFiles += tr("Information in the files %1%5%2 and %1%6%2 may help identify the cause of the crash so please make them available to the developer by mailing them to %3, by reporting an issue to the project's Issue Tracker at %4 and attaching the files to the report, or by some other means (like putting them on a file sharing site.)", "%1 and %2 are HTML elements")
+                                .arg("<b>")
+                                .arg("</b>")
+                                .arg(g_qstrCrashMail)
+                                .arg(g_qstrBugReport)
+                                .arg(Qt::escape(toNativeSeparators(convStr(v[0]))))
+                                .arg(Qt::escape(toNativeSeparators(convStr(v[1]))));
+                    case 3:
+                        qstrFiles += tr("Information in the files %1%5%2, %1%6%2, and %1%7%2 may help identify the cause of the crash so please make them available to the developer by mailing them to %3, by reporting an issue to the project's Issue Tracker at %4 and attaching the files to the report, or by some other means (like putting them on a file sharing site.)", "%1 and %2 are HTML elements")
+                                .arg("<b>")
+                                .arg("</b>")
+                                .arg(g_qstrCrashMail)
+                                .arg(g_qstrBugReport)
+                                .arg(Qt::escape(toNativeSeparators(convStr(v[0]))))
+                                .arg(Qt::escape(toNativeSeparators(convStr(v[1]))))
+                                .arg(Qt::escape(toNativeSeparators(convStr(v[2]))));
+                        break;
                     }
+                    qstrFiles += " </p>";
+
+                    showRestartAfterCrashMsg(qstrFiles +
+
+                                             "<p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("These are plain text files, which you can review before sending, if you have privacy concerns.") + "</p>"
+                                             "<p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("After getting the files, the developer will probably want to contact you for more details, so please check back on the status of your report.") + "</p>"
+                                             "<p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("Note that these files <b>will be removed</b> when you close this window.") + "</p>" +
+
+                                             (m_pCommonData->isTraceToFileEnabled() ?
+                                                  "<p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("If there is a name of an MP3 file at the end of <b>%1</b>, that might be a file that consistently causes a crash. Please check if it is so. Then, if confirmed, please make that file available by mailing it to %2 or by putting it on a file sharing site.").arg(Qt::escape(toNativeSeparators(convStr(v[0])))).arg(g_qstrCrashMail) + "</p>" :
+                                                  "<p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("Please also try to <b>repeat the steps that led to the crash</b> before reporting the crash, which will probably result in a new set of files being generated; these files are more likely to contain relevant information than the current set of files, because they will also have information on what happened before the crash, while the current files only tell where the crash occured.") + "</p>"
+                                             )
+
+                                             + "<p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("You should include in your report any other details that seem relevant (what might have caused the failure, steps to reproduce it, ...)") + "</p>", tr("Remove these files and continue"));
                 }
                 else
                 {
-                    showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. There was supposed to be some information about what led to the crash in the file <b>" + Qt::escape(toNativeSeparators(convStr(s_fileTracer.getTraceFile()))) + "</b>, but that file cannot be found. Please report this issue to the project's Issue Tracker at <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a></p><p style=\"margin-bottom:8px; margin-top:1px; \">The developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">Make sure to include the data below, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)</p>", "OK");
+                    showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("MP3 Diags is restarting after a crash. There was supposed to be some information about what led to the crash in the file <b>%1</b>, but that file cannot be found. Please report this issue to the project's Issue Tracker at %2.").arg(Qt::escape(toNativeSeparators(convStr(s_fileTracer.getTraceFile())))).arg(g_qstrBugReport) + "</p>"
+                                             + "<p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("The developer will probably want to contact you for more details, so please check back on the status of your report.</p><p style=\"margin-bottom:8px; margin-top:1px; \">Make sure to include the data below, as well as any other detail that seems relevant (what might have caused the failure, steps to reproduce it, ...)") + "</p>", "OK");
                 }
             }
 
 
             if (!m_pCommonData->isTraceToFileEnabled())
             {
-                showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">MP3 Diags is restarting after a crash. To help determine the reason for the crash, the <i>Log program state to _trace and _step files</i> option has been activated. This logs to 3 files what the program is doing, which might make it slightly slower.</p><p style=\"margin-bottom:8px; margin-top:1px; \">It is recommended to not process more than several thousand MP3 files while this option is turned on. You can turn it off manually, in the configuration dialog, in the <i>Others</i> tab, but keeping it turned on may provide very useful feedback to the developer, should the program crash again. With this feedback, future versions of MP3 Diags will get closer to being bug free.</p>", "OK");
+                showRestartAfterCrashMsg("<p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("MP3 Diags is restarting after a crash. To help determine the reason for the crash, the <i>Log program state to _trace and _step files</i> option has been activated. This logs to 3 files what the program is doing, which might make it slightly slower.") + "</p><p style=\"margin-bottom:8px; margin-top:1px; \">" + tr("It is recommended to not process more than several thousand MP3 files while this option is turned on. You can turn it off manually, in the configuration dialog, in the <i>Others</i> tab, but keeping it turned on may provide very useful feedback to the developer, should the program crash again. With this feedback, future versions of MP3 Diags will get closer to being bug free.") + "</p>", "OK");
 
                 m_pCommonData->setTraceToFile(true);
                 m_settings.saveMiscConfigSettings(m_pCommonData);
@@ -868,7 +901,7 @@ MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bUniqueSession) 
 #endif
     s_fileTracer.enable1(true); // !!! after loadMiscConfigSettings(), so the previous files aren't deleted too early
 
-    m_settings.saveVersion(APP_VER);
+    m_settings.saveVersion(getAppVer());
 
     TRACER("MainFormDlgImpl constr");
 
@@ -1028,6 +1061,10 @@ MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bUniqueSession) 
     }
 
     {
+        loadExternalTools();
+    }
+
+    {
         initializeUi();
     }
 
@@ -1058,6 +1095,7 @@ MainFormDlgImpl::MainFormDlgImpl(const string& strSession, bool bUniqueSession) 
     s_pGlobalDlg = this;
 
     { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("Ctrl+A")); connect(p, SIGNAL(triggered()), this, SLOT(emptySlot())); addAction(p); } // !!! needed because it takes a lot of time, during which the app seems frozen (caused by the cells being selected and unselected automatically) // ttt2 see if possible to disable selecting "note" cells with SHIFT pressed
+
 
     QTimer::singleShot(1, this, SLOT(onShow()));
 }
@@ -1248,7 +1286,7 @@ void MainFormDlgImpl::onShow()
     m_settings.loadCrashedAtStartup(bCrashedAtStartup);
     if (bCrashedAtStartup)
     {
-        QMessageBox::critical(this, "Error", "MP3 Diags crashed while reading song data from the disk. The whole collection will be rescanned.");
+        showCritical(this, tr("Error"), tr("MP3 Diags crashed while reading song data from the disk. The whole collection will be rescanned."));
     }
     else
     {
@@ -1261,7 +1299,7 @@ void MainFormDlgImpl::onShow()
         dlg.resize(m_nScanWidth, dlg.height());
         dlg.setWindowIcon(QIcon(":/images/logo.svg"));
 
-        dlg.setWindowTitle("Loading data");
+        dlg.setWindowTitle(tr("Loading data"));
         s_pSerThread = p;
         dlg.exec();
         s_pSerThread = 0;
@@ -1271,7 +1309,7 @@ void MainFormDlgImpl::onShow()
         if (!strErr.empty())
         {
             bLoadErr = true;
-            QMessageBox::critical(this, "Error", "An error occured while loading the MP3 information. Your files will be rescanned.\n\n" + convStr(strErr));
+            showCritical(this, tr("Error"), tr("An error occured while loading the MP3 information. Your files will be rescanned.\n\n").arg(convStr(strErr)));
         }
     }
 
@@ -1286,7 +1324,7 @@ void MainFormDlgImpl::onShow()
 
         if (m_transfConfig.m_options.m_bKeepOrigTime)
         {
-            QMessageBox::warning(this, "Warning", "It seems that MP3 Diags is restarting after a crash. Your files will be rescanned.\n\n(Since this may take a long time for large collections, you may want to abort the full rescanning and apply a filter to include only the files that you changed since the last time the program closed correctly, then manually rescan only those files.)");
+            showWarning(this, tr("Warning"), tr("It seems that MP3 Diags is restarting after a crash. Your files will be rescanned.\n\n(Since this may take a long time for large collections, you may want to abort the full rescanning and apply a filter to include only the files that you changed since the last time the program closed correctly, then manually rescan only those files.)"));
         }
         else
         {
@@ -1334,7 +1372,7 @@ void MainFormDlgImpl::fullReload(bool bForceReload)
     dlg.resize(m_nScanWidth, dlg.height());
     dlg.setWindowIcon(QIcon(":/images/logo.svg"));
 
-    dlg.setWindowTitle("Saving data");
+    dlg.setWindowTitle(tr("Saving data"));
     s_pSerThread = p;
     dlg.exec();
     s_pSerThread = 0;
@@ -1342,7 +1380,7 @@ void MainFormDlgImpl::fullReload(bool bForceReload)
 
     if (!strErr.empty())
     {
-        QMessageBox::critical(this, "Error", "An error occured while saving the MP3 information. You will have to scan your files again.\n\n" + convStr(strErr));
+        showCritical(this, tr("Error"), tr("An error occured while saving the MP3 information. You will have to scan your files again.\n\n%1").arg(convStr(strErr)));
     }
 }
 
@@ -1544,7 +1582,7 @@ struct Mp3ProcThread : public PausableThread
         catch (...)
         {
             LAST_STEP("Mp3ProcThread::run()");
-            CB_ASSERT (false);
+            CB_ASSERT (false); //ttt0 triggered according to https://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=50 and https://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=54
         }
     }
 
@@ -1620,7 +1658,7 @@ void MainFormDlgImpl::scan(FileEnumerator& fileEnum, bool bForce, deque<const Mp
         dlg.resize(m_nScanWidth, dlg.height());
         dlg.setWindowIcon(QIcon(":/images/logo.svg"));
 
-        dlg.setWindowTitle("Scanning MP3 files");
+        dlg.setWindowTitle(tr("Scanning MP3 files"));
         dlg.exec(); //ttt2 perhaps see if it ended with ok/reject and clear all on reject
         m_nScanWidth = dlg.width();
         vpAdd = p->m_vpAdd;
@@ -1637,11 +1675,11 @@ void MainFormDlgImpl::scan(FileEnumerator& fileEnum, bool bForce, deque<const Mp
         {
             s_bToldAboutSupportInCrtRun = true;
 
-            HtmlMsg::msg(this, 0, 0, &m_pCommonData->m_bToldAboutSupport, HtmlMsg::DEFAULT, "Info", "<p style=\"margin-bottom:1px; margin-top:12px; \">Your files are not fully supported by the current version of MP3 Diags. The main reason for this is that the developer is aware of some MP3 features but doesn't have actual MP3 files to implement support for those features and test the code.</p>"
+            HtmlMsg::msg(this, 0, 0, &m_pCommonData->m_bToldAboutSupport, HtmlMsg::DEFAULT, tr("Info"), "<p style=\"margin-bottom:1px; margin-top:12px; \">" + tr("Your files are not fully supported by the current version of MP3 Diags. The main reason for this is that the developer is aware of some MP3 features but doesn't have actual MP3 files to implement support for those features and test the code.") + "</p>"
 
-            "<p style=\"margin-bottom:1px; margin-top:12px; \">You can help improve MP3 Diags by making files with unsupported notes available to the developer. The preferred way to do this is to report an issue on the project's Issue Tracker at <a href=\"http://sourceforge.net/apps/mantisbt/mp3diags/\">http://sourceforge.net/apps/mantisbt/mp3diags/</a>, after checking if others made similar files available. To actually send the files, you can mail them to <a href=\"mailto:ciobi@inbox.com?subject=000 MP3 Diags support note/\">ciobi@inbox.com</a> or put them on a file sharing site. It would be a good idea to make sure that you have the latest version of MP3 Diags.</p>"
+            "<p style=\"margin-bottom:1px; margin-top:12px; \">" + tr("You can help improve MP3 Diags by making files with unsupported notes available to the developer. The preferred way to do this is to report an issue on the project's Issue Tracker at %1, after checking if others made similar files available. To actually send the files, you can mail them to %2 or put them on a file sharing site. It would be a good idea to make sure that you have the latest version of MP3 Diags.").arg(g_qstrBugReport).arg(g_qstrSupportMail) + "</p>"
 
-            "<p style=\"margin-bottom:1px; margin-top:12px; \">You can identify unsupported notes by the blue color that is used for their labels.</p>", 750, 300, "OK");
+            "<p style=\"margin-bottom:1px; margin-top:12px; \">" + tr("You can identify unsupported notes by the blue color that is used for their labels.") + "</p>", 750, 300, tr("O&K"));
 
             if (m_pCommonData->m_bToldAboutSupport)
             {
@@ -1796,7 +1834,7 @@ void MainFormDlgImpl::loadCustomTransf(int k)
 
         if (j == m)
         {
-            QMessageBox::warning(this, "Error setting up custom transformations", "Couldn't find a transformation with the name \"" + convStr(strName) + "\". The program will proceed, but you should review the custom transformations lists.");
+            showWarning(this, tr("Error setting up custom transformations"), tr("Couldn't find a transformation with the name \"%1\". The program will proceed, but you should review the custom transformations lists.").arg(convStr(strName)));
         }
     }
 
@@ -1829,7 +1867,7 @@ void MainFormDlgImpl::saveVisibleTransf()
 void MainFormDlgImpl::loadVisibleTransf()
 {
     bool bErr;
-    vector<string> vstrNames (m_settings.loadVector("visibleTransf", bErr));
+    vector<string> vstrNames (m_settings.loadVector("visibleTransf", bErr)); //ttt2 check bErr
     vector<int> v;
     const vector<Transformation*>& u (m_pCommonData->getAllTransf());
     int m (cSize(u));
@@ -1848,12 +1886,47 @@ void MainFormDlgImpl::loadVisibleTransf()
 
         if (j == m)
         {
-            QMessageBox::warning(this, "Error setting up visible transformations", "Couldn't find a transformation with the name \"" + convStr(strName) + "\". The program will proceed, but you should review the visible transformations list.");
+            showWarning(this, tr("Error setting up visible transformations"), tr("Couldn't find a transformation with the name \"%1\". The program will proceed, but you should review the visible transformations list.").arg(convStr(strName)));
         }
     }
 
     m_pCommonData->setVisibleTransf(v);
 }
+
+
+
+void MainFormDlgImpl::saveExternalTools()
+{
+    vector<string> vstrExternalTools;
+    for (int i = 0, n = cSize(m_pCommonData->m_vExternalToolInfos); i < n; ++i)
+    {
+        vstrExternalTools.push_back(m_pCommonData->m_vExternalToolInfos[i].asString());
+    }
+    m_settings.saveVector("externalTools", vstrExternalTools);
+}
+
+
+void MainFormDlgImpl::loadExternalTools()
+{
+    bool bErr;
+    vector<string> vstrExternalTools (m_settings.loadVector("externalTools", bErr)); //ttt2 check bErr
+    m_pCommonData->m_vExternalToolInfos.clear();
+    for (int i = 0, n = cSize(vstrExternalTools); i < n; ++i)
+    {
+        try
+        {
+            m_pCommonData->m_vExternalToolInfos.push_back(ExternalToolInfo(vstrExternalTools[i]));
+        }
+        catch (const ExternalToolInfo::InvalidExternalToolInfo&)
+        {
+            showWarning(this, tr("Error setting up external tools"), tr("Unable to parse \"%1\". The program will proceed, but you should review the external tools list.").arg(convStr(vstrExternalTools[i])));
+        }
+    }
+}
+
+
+
+
 
 
 //ttt2 keyboard shortcuts: next, prev, ... ;
@@ -1880,7 +1953,7 @@ void MainFormDlgImpl::on_m_pTransformB_clicked() //ttt2 an alternative is to use
     {
         Transformation* pTransf (vpTransf.at(vnVisualNdx[i]));
         QAction* pAct (new QAction(pTransf->getVisibleActionName(), &menu));
-        pAct->setToolTip(makeMultiline(pTransf->getDescription()));
+        pAct->setToolTip(makeMultiline(Transformation::tr(pTransf->getDescription())));
 
         //connect(pAct, SIGNAL(triggered()), this, SLOT(onExecTransform(i))); // !!! Qt doesn't seem to support parameter binding
         menu.addAction(pAct);
@@ -1902,7 +1975,7 @@ void MainFormDlgImpl::on_m_pTransformB_clicked() //ttt2 an alternative is to use
 
 void MainFormDlgImpl::onMenuHovered(QAction* pAction)
 {
-    QToolTip::showText(QCursor::pos(), "");
+    //QToolTip::showText(QCursor::pos(), ""); // this was needed initially but at some time tooltips on menus stopped working (e.g. in 11.4) and commenting this out fixed the problem
     QToolTip::showText(QCursor::pos(), pAction->toolTip());
     // see http://www.mail-archive.com/pyqt@riverbankcomputing.com/msg17214.html and http://www.mail-archive.com/pyqt@riverbankcomputing.com/msg17245.html ; apparently there's some inconsistency in when the menus are shown
 }
@@ -1923,7 +1996,7 @@ void MainFormDlgImpl::on_m_pNormalizeB_clicked()
     }
     if (l.isEmpty())
     {
-        QMessageBox::critical(this, "Error", "There are no files to normalize.");
+        showCritical(this, tr("Error"), tr("There are no files to normalize."));
         return;
     }
 
@@ -1932,13 +2005,13 @@ void MainFormDlgImpl::on_m_pNormalizeB_clicked()
     if (bSel && cSize(m_pCommonData->getViewHandlers()) != cSize(m_pCommonData->getSelHandlers()))
     {
         ++nIssueCount;
-        qstrWarn += "\n- you are requesting to normalize only some of the files";
+        qstrWarn += "\n- " + tr("you are requesting to normalize only some of the files");
     }
 
     if (CommonData::FOLDER != m_pCommonData->getViewMode())
     {
         ++nIssueCount;
-        qstrWarn += "\n- the \"Album\" mode is not selected";
+        qstrWarn += "\n- " + tr("the \"Album\" mode is not selected");
     }
 
     if (m_pCommonData->m_filter.isNoteEnabled() || m_pCommonData->m_filter.isDirEnabled())
@@ -1946,35 +2019,34 @@ void MainFormDlgImpl::on_m_pNormalizeB_clicked()
         ++nIssueCount;
         if (m_pCommonData->m_filter.isNoteEnabled() && m_pCommonData->m_filter.isDirEnabled())
         {
-            qstrWarn += "\n- filters are applied";
+            qstrWarn += "\n- " + tr("filters are applied");
         }
         else
         {
-            qstrWarn += "\n- a filter is applied";
+            qstrWarn += "\n- " + tr("a filter is applied");
         }
     }
 
     if (cSize(vpHndlr) > 50)
     {
         ++nIssueCount;
-        qstrWarn += "\n- the normalization will process more than 50 files, which is more than what an album usually has";
+        qstrWarn += "\n- " + tr("the normalization will process more than 50 files, which is more than what an album usually has");
     }
 
     if (0 != nIssueCount)
     {
-        QString s ("Normalization should process one whole album at a time, so it should only be run in \"Album\" mode, when no filters are active, and it should be applied to all the files in that album. But in the current case");
+        QString s;
         if (1 == nIssueCount)
         {
-            qstrWarn.remove(0, 2);
-            s += qstrWarn;
-            s += ".";
+            qstrWarn.remove(0, 3);
+            s = tr("Normalization should process one whole album at a time, so it should only be run in \"Album\" mode, when no filters are active, and it should be applied to all the files in that album. But in the current case %1.").arg(qstrWarn);
         }
         else
         {
-            s += " there are some issues:\n" + qstrWarn;
+            s = tr("Normalization should process one whole album at a time, so it should only be run in \"Album\" mode, when no filters are active, and it should be applied to all the files in that album. But in the current case  there are some issues:\n%1").arg(qstrWarn);
         }
 
-        int k (showMessage(this, QMessageBox::Warning, 1, 1, "Warning", s + "\n\nNormalize anyway?", "Normalize", "Cancel"));
+        int k (showMessage(this, QMessageBox::Warning, 1, 1, tr("Warning"), s + "\n\n" + tr("Normalize anyway?"), tr("Normalize"), tr("Cancel")));
 
         if (k != 0)
         {
@@ -1984,14 +2056,14 @@ void MainFormDlgImpl::on_m_pNormalizeB_clicked()
 
     if (0 == nIssueCount)
     {
-        if (0 != showMessage(this, QMessageBox::Question, 1, 1, "Confirm", "Normalize all the files in the current album? (Note that normalization is done \"in place\", by an external program, so it doesn't care about the transformation settings for original and modified files.)", "Normalize", "Cancel"))
+        if (0 != showMessage(this, QMessageBox::Question, 1, 1, tr("Confirm"), tr("Normalize all the files in the current album? (Note that normalization is done \"in place\", by an external program, so it doesn't care about the transformation settings for original and modified files.)"), tr("Normalize"), tr("Cancel")))
         {
             return;
         }
     }
 
-    NormalizeDlgImpl dlg (this, m_pCommonData->m_bKeepNormWndOpen, m_settings, m_pCommonData);
-    dlg.normalize(convStr(m_pCommonData->m_strNormalizeCmd), l);
+    ExternalToolDlgImpl dlg (this, m_pCommonData->m_bKeepNormWndOpen, m_settings, m_pCommonData, "Normalize", "230_normalize.html");
+    dlg.run(convStr(m_pCommonData->m_strNormalizeCmd), l);
 
     reload(bSel, FORCE);
 }
@@ -2100,7 +2172,7 @@ void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, Subset e
 {
     if (m_pCommonData->getViewHandlers().empty())
     {
-        QMessageBox::warning(this, "Warning", "The file list is empty, therefore no transformations can be applied.\n\nExiting ...");
+        showWarning(this, tr("Warning"), tr("The file list is empty, therefore no transformations can be applied.\n\nExiting ..."));
         return;
     }
 
@@ -2109,18 +2181,16 @@ void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, Subset e
     {
         case ALL:
         {
-            char bfr [10];
-
             int nCnt (cSize(m_pCommonData->getViewHandlers()));
             if (nCnt < 10)
             {
-                strcpy(bfr, "the");
+                qstrListInfo = tr("all the files shown in the file list");
             }
             else
             {
-                sprintf(bfr, "%d", nCnt);
+                qstrListInfo = tr("all %1 files shown in the file list").arg(nCnt);
             }
-            qstrListInfo = QString("all %1 files shown in the file list").arg(bfr);
+
             break;
         }
 
@@ -2129,7 +2199,7 @@ void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, Subset e
             int nCnt (cSize(m_pCommonData->getSelHandlers()));
             if (0 == nCnt)
             {
-                QMessageBox::warning(this, "Warning", "No file is selected, therefore no transformations can be applied.\n\nExiting ...");
+                showWarning(this, tr("Warning"), tr("No file is selected, therefore no transformations can be applied.\n\nExiting ..."));
                 return;
             }
             else if (1 == nCnt)
@@ -2138,11 +2208,11 @@ void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, Subset e
             }
             else if (2 == nCnt)
             {
-                qstrListInfo = "\"" + convStr(m_pCommonData->getSelHandlers()[0]->getShortName()) + QString("\" and the other selected file");
+                qstrListInfo = "\"" + convStr(m_pCommonData->getSelHandlers()[0]->getShortName()) + "\" " + tr("and the other selected file");
             }
             else
             {
-                qstrListInfo = "\"" + convStr(m_pCommonData->getSelHandlers()[0]->getShortName()) + QString("\" and the other %1 selected files").arg(nCnt - 1);
+                qstrListInfo = "\"" + convStr(m_pCommonData->getSelHandlers()[0]->getShortName()) + "\" " + tr("and the other %1 selected files").arg(nCnt - 1);
             }
             break;
         }
@@ -2163,18 +2233,18 @@ void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, Subset e
     {
         if (TransfConfig::Options::UPO_DONT_CHG == m_transfConfig.m_options.m_eUnprocOrigChange)
         {
-            QMessageBox::warning(this, "Warning", "The transformation list is empty.\n\nBased on the configuration, it is possible for changes to the files in the list to be performed, even in this case (the files may still be moved, renamed or erased). However, the current settings are to leave the original files unchanged, so currently there's no point in applying an empty transformation list.\n\nExiting ...");
+            showWarning(this, tr("Warning"), tr("The transformation list is empty.\n\nBased on the configuration, it is possible for changes to the files in the list to be performed, even in this case (the files may still be moved, renamed or erased). However, the current settings are to leave the original files unchanged, so currently there's no point in applying an empty transformation list.\n\nExiting ..."));
             return;
         }
-        qstrConf = "Apply an empty transformation list to all the files shown in the file list? (Note that even if no transformations are performed, the files may still be moved, renamed or erased, based on the current settings.)";
+        qstrConf = tr("Apply an empty transformation list to all the files shown in the file list? (Note that even if no transformations are performed, the files may still be moved, renamed or erased, based on the current settings.)");
     }
     else if (1 == cSize(vpTransf))
     {
-        qstrConf = (convStr(string("Apply transformation \"") + vpTransf[0]->getVisibleActionName() + "\" to ")) + qstrListInfo + "?";
+        qstrConf = tr("Apply transformation \"%1\" to %2?").arg(vpTransf[0]->getVisibleActionName()).arg(qstrListInfo);
     }
     else
     {
-        qstrConf = "Apply the following transformations to " + qstrListInfo + "?";
+        qstrConf = tr("Apply the following transformations to %1?").arg(qstrListInfo);
         for (int i = 0, n = cSize(vpTransf); i < n; ++i)
         {
             qstrConf += "\n      ";
@@ -2183,24 +2253,28 @@ void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, Subset e
     }
 
     {
-        const char* aOrig[] = { "don't change", "erase", "move", "move", "rename", "move if destination doesn't exist" };
+        const char* aOrig[] = {
+            QT_TR_NOOP("don't change"),
+            QT_TR_NOOP("erase"),
+            QT_TR_NOOP("move"),
+            QT_TR_NOOP("move"),
+            QT_TR_NOOP("rename"),
+            QT_TR_NOOP("move if destination doesn't exist") };
+
         if ((m_transfConfig.m_options.m_eProcOrigChange != TransfConfig::Options::PO_MOVE_OR_ERASE && m_transfConfig.m_options.m_eProcOrigChange != TransfConfig::Options::PO_ERASE) || m_transfConfig.m_options.m_eUnprocOrigChange != TransfConfig::Options::UPO_DONT_CHG) //ttt2 improve
         {
-            qstrConf += "\n\nActions to be taken:";
+            qstrConf += "\n\n" + tr("Actions to be taken:");
 
             if (!vpTransf.empty())
             {
-                qstrConf += "\n- original file that has been transformed: ";
-                qstrConf += aOrig[m_transfConfig.m_options.m_eProcOrigChange];
+                qstrConf += "\n- " + tr("original file that has been transformed: %1").arg(tr(aOrig[m_transfConfig.m_options.m_eProcOrigChange]));
             }
 
-            qstrConf += "\n- original file that has not been transformed: ";
-            qstrConf += aOrig[m_transfConfig.m_options.m_eUnprocOrigChange];
+            qstrConf += "\n- " + tr("original file that has not been transformed: %1").arg(tr(aOrig[m_transfConfig.m_options.m_eUnprocOrigChange]));
         }
     }
 
-    QMessageBox::StandardButton res (QMessageBox::question(this, "Confirmation", qstrConf, QMessageBox::Yes | QMessageBox::No));
-    if (QMessageBox::Yes != res) { return; }
+    if (showMessage(this, QMessageBox::Question, 1, 1, tr("Confirm"), qstrConf, tr("&Yes"), tr("&No")) != 0) { return; }
 
     deque<const Mp3Handler*> vpCrt;
     const deque<const Mp3Handler*>* pvpHandlers;
@@ -2212,7 +2286,7 @@ void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, Subset e
     default: CB_ASSERT (false);
     }
 
-    ::transform(*pvpHandlers, vpTransf, "Applying transformations to MP3 files", this, m_pCommonData, m_transfConfig);
+    ::transform(*pvpHandlers, vpTransf, convStr(tr("Applying transformations to MP3 files")), this, m_pCommonData, m_transfConfig);
 }
 
 
@@ -2243,8 +2317,7 @@ void MainFormDlgImpl::on_m_pConfigB_clicked()
 
 void MainFormDlgImpl::setTransfTooltip(int k)
 {
-    QString s1;
-    s1.sprintf("Apply custom transformation list #%d\n", k + 1);
+    QString s1 (tr("Apply custom transformation list #%1\n").arg(k + 1));
     QString s2;
     for (int i = 0, n = cSize(m_pCommonData->getCustomTransf()[k]); i < n; ++i)
     {
@@ -2252,7 +2325,7 @@ void MainFormDlgImpl::setTransfTooltip(int k)
         s2 += m_pCommonData->getAllTransf()[m_pCommonData->getCustomTransf()[k][i]]->getVisibleActionName();
         if (i < n - 1) { s2 += "\n"; }
     }
-    if (s2.isEmpty()) { s2 = "   <empty list>\n\n(you can edit the list in the Settings dialog)"; } // well; at startup it will get repopulated, so the only way for this to be empty is if it was configured like this in the current session
+    if (s2.isEmpty()) { s2 = tr("   <empty list>\n\n(you can edit the list in the Settings dialog)"); } // well; at startup it will get repopulated, so the only way for this to be empty is if it was configured like this in the current session
     m_vpTransfButtons[k]->setToolTip(s1 + s2);
 }
 
@@ -2305,7 +2378,7 @@ void MainFormDlgImpl::on_m_pTagEdtB_clicked()
 
     if (m_pCommonData->getViewHandlers().empty())
     {
-        QMessageBox::critical(this, "Error", "The file list is empty. You need to populate it before opening the tag editor.");
+        showCritical(this, tr("Error"), tr("The file list is empty. You need to populate it before opening the tag editor."));
         return;
     }
 
@@ -2341,7 +2414,7 @@ void MainFormDlgImpl::on_m_pRenameFilesB_clicked()
 
     if (m_pCommonData->getViewHandlers().empty())
     {
-        QMessageBox::critical(this, "Error", "The file list is empty. You need to populate it before opening the file rename tool.");
+        showCritical(this, tr("Error"), tr("The file list is empty. You need to populate it before opening the file rename tool."));
         return;
     }
 
@@ -2365,9 +2438,8 @@ void MainFormDlgImpl::updateUi(const string& strCrt) // strCrt may be empty
         setTransfTooltips();
     }
 
-    {
-        saveVisibleTransf();
-    }
+    saveVisibleTransf();
+    saveExternalTools();
 
     if (m_pCommonData->m_bShowExport || m_pCommonData->m_bShowSessions)
     {
@@ -2428,6 +2500,10 @@ void MainFormDlgImpl::on_m_pDebugB_clicked()
 
 void MainFormDlgImpl::on_m_pExportB_clicked()
 {
+    //TranslatorHandler& hndl (TranslatorHandler::getGlobalTranslator());
+    //hndl.setTranslation(hndl.getTranslations().back());
+    //retranslateUi(this);
+
     ExportDlgImpl dlg (this);
     dlg.run(); //ttt2 perhaps use ModifInfoToolButton
     m_settings.saveMiscConfigSettings(m_pCommonData);
@@ -2450,9 +2526,9 @@ class AddrRemover : public GenericRemover
     /*override*/ bool matches(DataStream* p) const { return m_spToRemove.count(p) > 0; }
 public:
     /*override*/ const char* getActionName() const { return getClassName(); }
-    /*override*/ const char* getDescription() const { return "Removes selected streams."; }
+    /*override*/ const char* getDescription() const { return QT_TRANSLATE_NOOP("Transformation", "Removes selected streams."); }
 
-    static const char* getClassName() { return "Remove selected stream(s)"; }
+    static const char* getClassName() { return QT_TRANSLATE_NOOP("Transformation", "Remove selected stream(s)"); }
 
     set<DataStream*> m_spToRemove;
 };
@@ -2493,6 +2569,28 @@ public:
         transform(v, CURRENT);
         return true;
     }
+    else if (m_pFilesG == pObj && 0 != pKeyEvent && Qt::Key_Delete == nKey && QEvent::ShortcutOverride == pKeyEvent->type())
+    {
+        const deque<const Mp3Handler*>& vpSelHandlers (m_pCommonData->getSelHandlers());
+        if (askConfirm(vpSelHandlers, tr("Delete %1?")))
+        {
+            for (int i = 0; i < cSize(vpSelHandlers); ++i)
+            {
+                try
+                {
+                    deleteFile(vpSelHandlers[i]->getName());
+                }
+                catch (const CannotDeleteFile&)
+                {
+                    showCritical(this, tr("Error"), tr("Cannot delete file %1").arg(convStr(vpSelHandlers[i]->getName())));
+                    break;
+                }
+            }
+            reload(IGNORE_SEL, DONT_FORCE);
+        }
+
+        return true;
+    }
     else if (pObj == m_pFilesG)
     {
         //qDebug("type %d", pEvent->type());
@@ -2501,7 +2599,7 @@ public:
         {
             m_nGlobalX = pCtx->globalX();
             m_nGlobalY = pCtx->globalY();
-            QTimer::singleShot(1, this, SLOT(onFixCurrentNote()));
+            QTimer::singleShot(1, this, SLOT(onMainGridRightClick()));
         }
     }
     return QDialog::eventFilter(pObj, pEvent);
@@ -2586,22 +2684,22 @@ void MainFormDlgImpl::on_m_pSessionsB_clicked()
 
 
 
-//ttt1 different for unstable
+
 void MainFormDlgImpl::checkForNewVersion() // returns immediately; when the request completes it will send a signal
 {
     const int MIN_INTERVAL_BETWEEN_CHECKS (24); // hours
 
     if ("yes" != m_pCommonData->m_strCheckForNewVersions && "no" != m_pCommonData->m_strCheckForNewVersions)
     {
-        int nRes (HtmlMsg::msg(this, 0, 0, 0, HtmlMsg::DEFAULT, "Info",
-        "<p style=\"margin-bottom:1px; margin-top:12px; \">MP3 Diags can check at startup if a new version of the program has been released. Here's how this is supposed to work:"
+        int nRes (HtmlMsg::msg(this, 0, 0, 0, HtmlMsg::DEFAULT, tr("Info"),
+        "<p style=\"margin-bottom:1px; margin-top:12px; \">" + tr("MP3 Diags can check at startup if a new version of the program has been released. Here's how this is supposed to work:") +
             "<ul>"
-                "<li>The check is done in the background, when the program starts, so there should be no performance penalties</li>"
-                "<li>A notification message is displayed only if there's a new version available</li>"
-                "<li>The update is manual. You are told that there is a new version and are offered links to see what's new, but nothing gets downloaded and / or installed automatically</li>"
-                "<li>There is no System Tray process checking periodically for updates</li>"
-                "<li>You can turn the notifications on and off from the configuration dialog</li>"
-                "<li>If you restart the program withing a day after a check, no new check is done</li>"
+                "<li>" + tr("The check is done in the background, when the program starts, so there should be no performance penalties") + "</li>"
+                "<li>" + tr("A notification message is displayed only if there's a new version available") + "</li>"
+                "<li>" + tr("The update is manual. You are told that there is a new version and are offered links to see what's new, but nothing gets downloaded and / or installed automatically") + "</li>"
+                "<li>" + tr("There is no System Tray process checking periodically for updates") + "</li>"
+                "<li>" + tr("You can turn the notifications on and off from the configuration dialog") + "</li>"
+                "<li>" + tr("If you restart the program within a day after a check, no new check is done") + "</li>"
             "</ul>"
         "</p>"
         /*"
@@ -2609,7 +2707,7 @@ void MainFormDlgImpl::checkForNewVersion() // returns immediately; when the requ
         "<p style=\"margin-bottom:1px; margin-top:12px; \">QQQ</p>"
         "<p style=\"margin-bottom:1px; margin-top:12px; \">QQQ</p>"
         */
-        , 750, 300, "Disable checking for new versions", "Enable checking for new versions"));
+        , 750, 300, tr("Disable checking for new versions"), tr("Enable checking for new versions")));
         qDebug("ret %d", nRes);
 
         m_pCommonData->m_strCheckForNewVersions = (1 == nRes ? "yes" : "no");
@@ -2635,7 +2733,7 @@ void MainFormDlgImpl::checkForNewVersion() // returns immediately; when the requ
 
     m_pQHttp->setHost("mp3diags.sourceforge.net");
     //http://mp3diags.sourceforge.net/010_getting_the_program.html
-    QHttpRequestHeader header ("GET", "/version.txt"); header.setValue("Host", "mp3diags.sourceforge.net"); //ttt1 use an "unstable" directory, have the app be aware that it's unstable for both "help" and new ver check
+    QHttpRequestHeader header ("GET", QString(getWebBranch()) + "/version.txt"); header.setValue("Host", "mp3diags.sourceforge.net");
     //QHttpRequestHeader header ("GET", "/mciobanu/mp3diags/010_getting_the_program.html"); header.setValue("Host", "web.clicknet.ro");
     m_pQHttp->request(header);
 }
@@ -2678,7 +2776,7 @@ void MainFormDlgImpl::onNewVersionQueryFinished(int /*nId*/, bool bError)
         return; // most likely some error message
     }
 
-    if (APP_VER == m_qstrNewVer)
+    if (getAppVer() == m_qstrNewVer)
     {
         return;
     }
@@ -2688,7 +2786,7 @@ void MainFormDlgImpl::onNewVersionQueryFinished(int /*nId*/, bool bError)
     //const int WAIT (12); // doesn't crash
     const int WAIT (14); //crashes
 #ifndef WIN32
-    qDebug("wait %d seconds", WAIT); sleep(WAIT); QMessageBox::critical(this, "resume", "resume resume resume resume resume"); // crashes
+    qDebug("wait %d seconds", WAIT); sleep(WAIT); showCritical(this, "resume", "resume resume resume resume resume"); // crashes
     //ttt2 see if this crash affects discogs dwnld //??? why doesn't crash if no message is shown?
 #else
     //Sleep(WAIT*1000); // Qt 4.5 doesn't seem to crash
@@ -2706,17 +2804,34 @@ void MainFormDlgImpl::onNewVersionQueryFinished2()
     //QMessageBox::critical(this, "resume", "bb urv huervhuervhuerv erve rvhu ervervhuer vher vrhe rv evr ev erv erv");
     if (m_pCommonData->m_strDontTellAboutVer == convStr(m_qstrNewVer)) { return; }
 
-    int nRes (HtmlMsg::msg(this, 0, 0, 0, HtmlMsg::VERT_BUTTONS, "Info",
-    "<p style=\"margin-bottom:1px; margin-top:12px; \">Version " + m_qstrNewVer + " has been published. You are running " + APP_VER + ". You can see what's new in the <a href=\"http://mp3diags.blogspot.com/\">MP3 Diags blog</a>. A more technical list with changes can be seen in the <a href=\"http://mp3diags.sourceforge.net/015_changelog.html\">change log</a>.</p>" //ttt1 different for "unstable"
+    QString qstrMsg;
+
+    qstrMsg = "<p style=\"margin-bottom:1px; margin-top:12px; \">" +
+            tr("Version %1 has been published. You are running %2. You can see what's new in %3. A more technical list with changes can be seen in %4.")
+            .arg(m_qstrNewVer)
+            .arg(getAppVer())
+            .arg(
+                tr("the %1MP3 Diags blog%2", "arguments are HTML elements")
+                .arg("<a href=\"http://mp3diags.blogspot.com/\">")
+                .arg("</a>"))
+            .arg(
+                tr("the %1change log%2", "arguments are HTML elements")
+                .arg("<a href=\"http://mp3diags.sourceforge.net" + QString(getWebBranch()) + "/015_changelog.html\">")
+                .arg("</a>"))
+            + "</p>";
+
+
 #ifndef WIN32
-    "<p style=\"margin-bottom:1px; margin-top:12px; \">This notification is about the availability of the source code. Binaries may or may not be available at this time, depending on your particular platform.</p>"
+    qstrMsg += "<p style=\"margin-bottom:1px; margin-top:12px; \">" + tr("This notification is about the availability of the source code. Binaries may or may not be available at this time, depending on your particular platform.") + "</p>";
 #else
 #endif
-    "<p style=\"margin-bottom:1px; margin-top:12px; \">You should review the changes and decide if you want to upgrade or not.</p>"
-    "<p style=\"margin-bottom:1px; margin-top:12px; \">Note: if you want to upgrade, you should <b>close MP3 Diags</b> first.</p>"
-    "<hr/><p style=\"margin-bottom:1px; margin-top:12px; \">Choose what do you want to do:</p>"
+    qstrMsg += "<p style=\"margin-bottom:1px; margin-top:12px; \">" + tr("You should review the changes and decide if you want to upgrade or not.") + "</p>";
+    qstrMsg += "<p style=\"margin-bottom:1px; margin-top:12px; \">" + tr("Note: if you want to upgrade, you should %1close MP3 Diags%2 first.", "arguments are HTML elements").arg("<b>").arg("</b>") + "</p>";
+    qstrMsg += "<hr/><p style=\"margin-bottom:1px; margin-top:12px; \">" + tr("Choose what do you want to do:") + "</p>";
     /*"<p style=\"margin-bottom:1px; margin-top:12px; \">QQQ</p>"*/
-    , 600, 400, "Just close this message", "Don't tell me about version " + m_qstrNewVer + " again", "Disable checking for new versions"));
+
+    int nRes (HtmlMsg::msg(this, 0, 0, 0, HtmlMsg::VERT_BUTTONS, tr("Info"), qstrMsg
+        , 600, 400, tr("Just close this message"), tr("Don't tell me about version %1 again").arg(m_qstrNewVer), tr("Disable checking for new versions")));
 
     //qDebug("ret %d", nRes);
     switch (nRes)
@@ -2753,12 +2868,13 @@ namespace
 
     class FixedAddrRemover : public GenericRemover
     {
+        Q_DECLARE_TR_FUNCTIONS(FixedAddrRemover)
         /*override*/ bool matches(DataStream* p) const
         {
             return m_pStream == p; // !!! normally there might be an issue with comparing pointers, in case something else gets allocated at the same address as a deleted object; however, in this case the stream passed on setStream() doesn't get destroyed
         }
         streampos m_pos;
-        string m_strDescr;
+        QString m_qstrAction;
         const DataStream* m_pStream;
     public:
         FixedAddrRemover() : m_pos(-1), m_pStream(0) {}
@@ -2767,16 +2883,14 @@ namespace
         {
             m_pStream = p;
             m_pos = p->getPos();
-            ostringstream out;
-            out << "Remove stream " << p->getDisplayName() << " at address 0x" << hex << p->getPos();
-            m_strDescr = out.str();
+            m_qstrAction = tr("Remove stream %1 at address 0x%2").arg(p->getTranslatedDisplayName()).arg(m_pos, 0, 16);
         }
 
         /*override*/ const char* getActionName() const { return getClassName(); }
-        /*override*/ const char* getVisibleActionName() const { return m_strDescr.c_str(); }
-        /*override*/ const char* getDescription() const { return "Removes specified stream."; }
+        /*override*/ QString getVisibleActionName() const { return m_qstrAction; }
+        /*override*/ const char* getDescription() const { return QT_TRANSLATE_NOOP("Transformation", "Removes specified stream."); }
 
-        static const char* getClassName() { return "Remove specified stream"; }
+        static const char* getClassName() { return QT_TRANSLATE_NOOP("Transformation", "Remove specified stream"); }
     };
 }
 
@@ -2999,14 +3113,31 @@ e1:;
 int getHeaderDrawOffset();
 
 
-void MainFormDlgImpl::onFixCurrentNote()
+void MainFormDlgImpl::onMainGridRightClick()
+{
+    QPoint coords (m_pFilesG->mapFromGlobal(QPoint(m_nGlobalX, m_nGlobalY)));
+    int nCol (m_pFilesG->columnAt(coords.x() - m_pFilesG->verticalHeader()->width()));
+    if (nCol >= 1)
+    {
+        fixCurrentNote(coords);
+        return;
+    } // header or file name
+
+    if (0 == nCol && coords.y() >= m_pFilesG->horizontalHeader()->height())
+    {
+        showExternalTools();
+    }
+}
+
+void MainFormDlgImpl::fixCurrentNote(const QPoint& coords)
 {
 LAST_STEP("MainFormDlgImpl::onFixCurrentNote()");
-    QPoint coords (m_pFilesG->mapFromGlobal(QPoint(m_nGlobalX, m_nGlobalY)));
+    //QPoint coords (m_pFilesG->mapFromGlobal(QPoint(m_nGlobalX, m_nGlobalY)));
     //int nHorHdrHght ();
     //if (coords.x() < nVertHdrWdth) { return; }
     int nCol (m_pFilesG->columnAt(coords.x() - m_pFilesG->verticalHeader()->width()));
-    if (nCol < 1) { return; } // header or file name
+    //if (nCol < 1) { return; } // header or file name
+    CB_ASSERT(nCol >= 1);
 
     if (coords.y() < m_pFilesG->horizontalHeader()->height())
     {
@@ -3076,7 +3207,7 @@ void MainFormDlgImpl::showFixes(vector<Transformation*>& vpTransf, Subset eSubse
     {
         Transformation* pTransf (vpTransf[i]);
         QAction* pAct (new QAction(pTransf->getVisibleActionName(), &menu));
-        pAct->setToolTip(makeMultiline(pTransf->getDescription()));
+        pAct->setToolTip(makeMultiline(Transformation::tr(pTransf->getDescription())));
 
         //connect(pAct, SIGNAL(triggered()), this, SLOT(onExecTransform(i))); // !!! Qt doesn't seem to support parameter binding
         menu.addAction(pAct);
@@ -3102,6 +3233,136 @@ void MainFormDlgImpl::showFixes(vector<Transformation*>& vpTransf, Subset eSubse
     }
 }
 
+
+void MainFormDlgImpl::showExternalTools()
+{
+    ModifInfoMenu menu;
+    vector<QAction*> vpAct;
+
+    QAction* pAct (new QAction(tr("Open containing folder ..."), &menu));
+    menu.addAction(pAct);
+    vpAct.push_back(pAct);
+
+    if (!m_pCommonData->m_vExternalToolInfos.empty())
+    {
+        menu.addSeparator();
+    }
+    for (int i = 0; i < cSize(m_pCommonData->m_vExternalToolInfos); ++i)
+    {
+        QAction* pAct (new QAction(convStr(m_pCommonData->m_vExternalToolInfos[i].m_strName), &menu));
+        menu.addAction(pAct);
+        vpAct.push_back(pAct);
+    }
+
+    QAction* p (menu.exec(QPoint(m_nGlobalX, m_nGlobalY + 10)));
+    if (0 != p)
+    {
+        int nIndex (std::find(vpAct.begin(), vpAct.end(), p) - vpAct.begin());
+        //qDebug("pressed %d", nIndex);
+        if (0 == nIndex)
+        {
+            CB_ASSERT (0 != m_pCommonData->getCrtMp3Handler());
+            QString qstrDir (convStr(m_pCommonData->getCrtMp3Handler()->getDir()));
+#if defined(WIN32) || defined(__OS2__)
+            //qstrDir = QDir::toNativeSeparators(qstrDir);
+            QDesktopServices::openUrl(QUrl("file:///" + qstrDir, QUrl::TolerantMode));
+#else
+            QDesktopServices::openUrl(QUrl("file://" + qstrDir, QUrl::TolerantMode));
+#endif
+        }
+        else
+        { // ttt1 copied from void MainFormDlgImpl::transform(std::vector<Transformation*>& vpTransf, Subset eSubset)
+            const ExternalToolInfo& info (m_pCommonData->m_vExternalToolInfos[nIndex - 1]);
+            Subset eSubset (0 != (Qt::ControlModifier & menu.getModifiers()) ? ALL : SELECTED); //ttt0 it's confusing that the external tools apply to selected files by default (you have to press CTRL to get all) while transformations apply to all files by default (you have to right-click to process selected ones; OTOH it seems to make sense that the default for transforms to be all the files while the default for external tools to be a single file
+            //deque<const Mp3Handler*> vpCrt;
+            const deque<const Mp3Handler*>* pvpHandlers;
+            switch (eSubset)
+            {
+            case SELECTED: pvpHandlers = &m_pCommonData->getSelHandlers(); break;
+            case ALL: pvpHandlers = &m_pCommonData->getViewHandlers(); break;
+            //case CURRENT: vpCrt.push_back(m_pCommonData->getCrtMp3Handler()); pvpHandlers = &vpCrt; break;
+            default: CB_ASSERT (false);
+            }
+            //qDebug("ctrl=%d", eSubset);
+
+            QString qstrAction (tr("Run \"%1\" on %2?").arg(convStr(info.m_strName)));
+            qstrAction.replace("%2", "%1");
+
+            if (info.m_bConfirmLaunch && !askConfirm(*pvpHandlers, qstrAction))
+            {
+                return;
+            }
+
+            QStringList lFiles;
+            for (int i = 0; i < cSize(*pvpHandlers); ++i)
+            {
+                lFiles << convStr((*pvpHandlers)[i]->getName());
+            }
+            switch (info.m_eLaunchOption)
+            {
+            case ExternalToolInfo::WAIT_AND_KEEP_WINDOW_OPEN:
+            case ExternalToolInfo::WAIT_THEN_CLOSE_WINDOW:
+                {
+                    ExternalToolDlgImpl dlg (this, info.m_eLaunchOption == ExternalToolInfo::WAIT_AND_KEEP_WINDOW_OPEN, m_settings, m_pCommonData, info.m_strName, "299_ext_tools.html");
+                    dlg.run(convStr(info.m_strCommand), lFiles);
+                }
+                break;
+            case ExternalToolInfo::DONT_WAIT:
+                {
+                    QString qstrProg;
+                    QStringList lArgs;
+                    ExternalToolDlgImpl::prepareArgs(convStr(info.m_strCommand), lFiles, qstrProg, lArgs);
+                    if (!QProcess::startDetached(qstrProg, lArgs))
+                    {
+                        showCritical(this, tr("Error"), tr("Cannot start process. Check that the executable name and the parameters are correct.")); //ttt0 add process name
+                    }
+                }
+                break;
+            }
+
+            //l << "p1" << "p 2" << "p:3'" << "p\"4" << "p5";
+            //QProcess proc (this);
+            //proc.startDetached("konqueror");
+            //proc.start("konqueror"); PausableThread::sleep(10);
+            //proc.start("ParamsGui", l); PausableThread::sleep(10);
+            //proc.startDetached("ParamsGui", l);
+
+            //proc.kill();
+        }
+    }
+    //add external tools
+}
+
+
+bool MainFormDlgImpl::askConfirm(const deque<const Mp3Handler*>& vpHandlers, const QString& qstrAction)
+{
+    if (vpHandlers.empty())
+    {
+        return false;
+    }
+
+    QString qstrList;
+
+
+    if (vpHandlers.size() == 1)
+    {
+        qstrList = convStr(vpHandlers[0]->getShortName());
+    }
+    else if (vpHandlers.size() == 2)
+    {
+        qstrList = tr("%1 and %2").arg(convStr(vpHandlers[0]->getShortName())).arg(convStr(vpHandlers[1]->getShortName()));
+    }
+    else if (vpHandlers.size() == 3)
+    {
+        qstrList = tr("%1, %2 and %3").arg(convStr(vpHandlers[0]->getShortName())).arg(convStr(vpHandlers[1]->getShortName())).arg(convStr(vpHandlers[2]->getShortName()));
+    }
+    else
+    {
+        qstrList = tr("%1, %2 and %3 other files").arg(convStr(vpHandlers[0]->getShortName())).arg(convStr(vpHandlers[1]->getShortName())).arg((int)vpHandlers.size() - 2);
+    }
+
+    return showMessage(this, QMessageBox::Question, 1, 1, tr("Confirm"), qstrAction.arg(qstrList), tr("&Yes"), tr("&No")) == 0;
+}
 
 //=============================================================================================================================
 //=============================================================================================================================
@@ -3215,8 +3476,77 @@ Development machine:
 //ttt2 fix on right-click for notes table
 
 
-//ttt1 Settings/Configuration name: different tooltip and dlg name
 
-//ttt2 perhaps "open file manager" on right-click (QDesktopServices::openUrl seems to do it)
+
 
 //ttt0 look at /d/test_mp3/1/tmp4/tmp2/unsupported/bad-decoding
+
+// favicon.ico : not sure how to create it; currently it's done with GIMP, with 8bpp/1 bit alpha, not compressed; however, konqueror doesn't show it when using a local page
+
+//ttt0 run CppCheck
+
+
+
+
+
+
+//ttt1 warn when folders are missing (perhaps as network drives are not mounted, usb sticks not inserted, ...), to avoid erasing the database
+
+
+
+
+//ttt0 link from stable to unstable in doc. perhaps also have a notification popup
+
+
+/*
+
+  ttt0:
+http://doc.qt.nokia.com/4.7-snapshot/internationalization.html
+
+Use QKeySequence() for Accelerator Values
+Accelerator values such as Ctrl+Q or Alt+F need to be translated too. If you hardcode Qt::CTRL + Qt::Key_Q for "quit" in your application, translators won't be able to override it. The correct idiom is
+     exitAct = new QAction(tr("E&xit"), this);
+     exitAct->setShortcuts(QKeySequence::Quit);
+
+
+
+Typically, your application's main() function will look like this:
+ int main(int argc, char *argv[])
+ {
+     QApplication app(argc, argv);
+
+     QTranslator qtTranslator;
+     qtTranslator.load("qt_" + QLocale::system().name(),
+             QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+     app.installTranslator(&qtTranslator);
+
+     QTranslator myappTranslator;
+     myappTranslator.load("myapp_" + QLocale::system().name());
+     app.installTranslator(&myappTranslator);
+
+     ...
+     return app.exec();
+ }
+Note the use of QLibraryInfo::location() to locate the Qt translations. Developers should request the path to the translations at run-time by passing QLibraryInfo::TranslationsPath to this function instead of using the QTDIR environment variable in their applications.
+*/
+
+//ttt0 doc & screenshots for translation
+//ttt0 something to add to SF in unstable, to get the date to change
+
+
+//ttt0 german translates "Previous [Ctrl+P]" as "Vorherige [Strg+V]"
+
+//ttt0 copy ID3V2 to ID3V1
+
+//ttt0 update references based on traffic volume
+
+//ttt0 delete LAME for CBR - https://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=117
+
+//ttt0 don't scan backup dir if it's inside the source
+//ttt0 compute bitrate in VBR headers //ttt0 see why the bitrate computed manually based on VBR data doesn't match exactly the one computed for the audio (see mail sent on 2012.10.14)
+
+//ttt1 mail on 2012.12.16 - It would be nice if MP3 Diags had more explicit support for multiple artists, too. For example, in WMP 11, if you select an artist field that contains multiple artists and try to edit the artist, it will only select one of the artists - clearly it knows that there are separate individual artists.
+
+//ttt2 ID3V2 frame TBPM should be numeric - see: 20 Rimsky-Korsakov - Flight of the Bumblebee from Tsar Sultan.mp3
+
+//ttt0 https://sourceforge.net/projects/mp3diags/forums/forum/947206/topic/6884554 - use http://coverartarchive.org/

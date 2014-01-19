@@ -109,7 +109,7 @@ LAST_STEP("FilesModel::headerData");
         const Note* pNote (notes.getList()[i]);
         if (j - 1 == m_pCommonData->findPos(pNote))
         {
-            return nRole == Qt::ToolTipRole ? makeMultiline(m_pCommonData->getUniqueNotes().getFlt(j - 1)->getDescription()) : "x";
+            return nRole == Qt::ToolTipRole ? makeMultiline(Notes::tr(m_pCommonData->getUniqueNotes().getFlt(j - 1)->getDescription())) : "x";
         }
     }
 
@@ -117,7 +117,7 @@ LAST_STEP("FilesModel::headerData");
 }
 
 
-/*override*/ QVariant FilesModel::headerData(int nSection, Qt::Orientation eOrientation, int nRole /*= Qt::DisplayRole*/) const
+/*override*/ QVariant FilesModel::headerData(int nSection, Qt::Orientation eOrientation, int nRole /* = Qt::DisplayRole*/) const
 {
 LAST_STEP("FilesModel::headerData");
 #if 0
@@ -147,7 +147,7 @@ LAST_STEP("FilesModel::headerData");
     if (nRole != Qt::DisplayRole) { return QVariant(); }
     if (Qt::Horizontal == eOrientation)
     {
-        if (0 == nSection) { return "File name"; }
+        if (0 == nSection) { return tr("File name"); }
         const vector<const Note*>& v (m_pCommonData->getUniqueNotes().getFltVec());
         int nSize (cSize(v));
         if (nSection > nSize)
@@ -162,7 +162,7 @@ LAST_STEP("FilesModel::headerData");
 
 
 // makes current and selects the specified row and emits a change signal regardless of the element that was selected before; makes current the default invalid index (-1,-1) if the table is empty;
-void FilesModel::selectRow(int nRow, const vector<int>& vnSel /*= std::vector<int>()*/)
+void FilesModel::selectRow(int nRow, const vector<int>& vnSel /* = std::vector<int>()*/)
 {
     QItemSelectionModel* pSelModel (m_pCommonData->m_pFilesG->selectionModel());
 //m_pCommonData->printFilesCrt();
@@ -482,7 +482,7 @@ FileHeaderView::FileHeaderView(CommonData* pCommonData, QWidget* pParent) : QHea
 
     if (k <= 0) { setToolTip(""); return; }
     --k;
-    setToolTip(makeMultiline(m_pCommonData->getUniqueNotes().getFlt(k)->getDescription()));
+    setToolTip(makeMultiline(Notes::tr(m_pCommonData->getUniqueNotes().getFlt(k)->getDescription())));
 }
 
 
