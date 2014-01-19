@@ -503,12 +503,12 @@ std::string DiscogsAlbumInfo::getGenre() const // combination of m_strGenre and 
 
 
 
-/*static*/ const char* DiscogsDownloader::SOURCE_NAME ("Discogs");
+/*static*/ const char* DiscogsDownloader::SOURCE_NAME ("Discogs"); // !!! non-translatable
 
 
 DiscogsDownloader::DiscogsDownloader(QWidget* pParent, SessionSettings& settings, bool bSaveResults) : AlbumInfoDownloaderDlgImpl(pParent, settings, bSaveResults), m_nPageSize(200) //ttt0 review "200" - really should be initialized in SearchXmlHandler::onSearchResultsStart() and here just get an invalid value
 {
-    setWindowTitle("Download album data from Discogs.com");
+    setWindowTitle(tr("Download album data from Discogs.com"));
 
     int nWidth, nHeight, nStyleOption;
     m_settings.loadDiscogsSettings(nWidth, nHeight, nStyleOption);
@@ -531,7 +531,7 @@ DiscogsDownloader::DiscogsDownloader(QWidget* pParent, SessionSettings& settings
     {
         QStringList l;
         //l << "< don't use >" << "Genre1, Genre2, ... , Style1, Style2, ..." << "Genre1, Genre2, ... (Style1, Style2, ...)" << "Style1, Style2, ...";
-        l << "Genres" << "Genres, Styles" << "Genres (Styles)" << "Styles";
+        l << tr("Genres") << tr("Genres, Styles") << tr("Genres (Styles)") << tr("Styles");
         m_pStyleCbB->addItems(l);
         m_pStyleCbB->setCurrentIndex(nStyleOption);
     }
@@ -650,6 +650,8 @@ http://api.discogs.com/database/search?artist=coldplay
 
 http://qtwiki.org/Parsing_JSON_with_QT_using_standard_QT_library
 http://nilier.blogspot.com/2010/08/json-parser-class-for-qt.html?spref=tw   http://ereilin.tumblr.com/post/6857765046/lightweight-json-parser-serializer-class-for-qt   https://github.com/ereilin/qt-json
+
+http://www.discogs.com/help/forums/topic/326725  - future of XML, JSON-only features
 */
 
 
@@ -681,7 +683,7 @@ LAST_STEP("DiscogsDownloader::requestAlbum");
     header.setValue("User-Agent" , "Mp3Diags");
     m_pQHttp->request(header);
     //cout << "sent album " << m_vAlbums[nAlbum].m_strId << " - " << m_pQHttp->request(header) << endl;
-    addNote("getting album info ...");
+    addNote(AlbumInfoDownloaderDlgImpl::tr("getting album info ..."));
 }
 
 //http://api.discogs.com/image/R-1565272-1228883740.jpeg vs http://www.discogs.com/image/R-1565272-1228883740.jpeg?api_key=f51e9c8f6c
@@ -704,7 +706,7 @@ LAST_STEP("DiscogsDownloader::requestImage");
     header.setValue("User-Agent" , "Mp3Diags");
     m_pQHttp->request(header);
     //cout << "sent img " <<  m_vAlbums[nAlbum].m_vstrImageNames[nImage] << " - " << m_pQHttp->request(header) << endl;
-    addNote("getting image ...");
+    addNote(AlbumInfoDownloaderDlgImpl::tr("getting image ..."));
 }
 
 

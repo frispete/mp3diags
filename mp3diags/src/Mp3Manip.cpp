@@ -52,6 +52,20 @@ using namespace pearl;
 //============================================================================================================
 //============================================================================================================
 
+/*static */ const QualThresholds& QualThresholds::getDefaultQualThresholds()
+{
+    static QualThresholds defaultQualThresholds = {
+
+        192000, // m_nStereoCbr
+        192000, // m_nJointStereoCbr
+        192000, // m_nDoubleChannelCbr
+        170000, // m_nStereoVbr
+        160000, // m_nJointStereoVbr
+        180000  // m_nDoubleChannelVbr
+    };
+
+    return defaultQualThresholds;
+};
 
 //============================================================================================================
 //============================================================================================================
@@ -88,6 +102,7 @@ Mp3Handler::Mp3Handler(const string& strFileName, bool bStoreTraceNotes, const Q
 {
     s_strPrevMp3Handler = s_strCrtMp3Handler;
     s_strCrtMp3Handler = strFileName;
+    //TRACER1A("Mp3Handler constr ", 1);
 
     TRACER("Mp3Handler constr: " + strFileName);
     ifstream_utf8 in (m_pFileName->s.c_str(), ios::binary);
@@ -99,6 +114,7 @@ Mp3Handler::Mp3Handler(const string& strFileName, bool bStoreTraceNotes, const Q
         trace("Couldn't open file: " + strFileName);
         CB_THROW1(FileNotFound());
     }
+    //TRACER1A("Mp3Handler constr ", 2);
 
     ostringstream out;
     time_t t (time(0));
@@ -108,19 +124,24 @@ Mp3Handler::Mp3Handler(const string& strFileName, bool bStoreTraceNotes, const Q
     trace("");
     trace(s);
 
-    cout << s << endl;
-
+    // cout << s << endl;
+//TRACER1A("Mp3Handler constr ", 3);
 
     parse(in);
+    //TRACER1A("Mp3Handler constr ", 4);
     m_notes.resetCounter();
+    //TRACER1A("Mp3Handler constr ", 5);
     analyze(qualThresholds);
+    //TRACER1A("Mp3Handler constr ", 6);
 
     if (!bStoreTraceNotes)
     {
+    //TRACER1A("Mp3Handler constr ", 7);
         m_notes.removeTraceNotes();
     }
-
+//TRACER1A("Mp3Handler constr ", 8);
     getFileInfo(strFileName, m_nTime, m_nSize);
+    //TRACER1A("Mp3Handler constr ", 9);
 }
 
 
@@ -139,6 +160,7 @@ Mp3Handler::~Mp3Handler()
     clearPtrContainer(m_vpUnknownStreams);*/
 
     clearPtrContainer(m_vpAllStreams);
+    //TRACER1A("Mp3Handler destr ", 1);
     delete m_pFileName;
 
 //qDebug("done destroying Mp3Handler at %p", this);
@@ -493,6 +515,7 @@ e1:
 
                     TruncatedMpegDataStream* pPrevTrunc (dynamic_cast<TruncatedMpegDataStream*>(pPrev));
                     UnknownDataStream* pPrevUnkn (dynamic_cast<UnknownDataStream*>(pPrev));
+                    UnsupportedDataStream* pPrevUnsupp (dynamic_cast<UnsupportedDataStream*>(pPrev));
 
                     if (MpegStream::getClassDisplayName() == szBrokenName && 1 == nBrokenMpegFrameCount)
                     { // a "broken audio" with a single sense doesn't make much sense at this point (but it mattered above, to add a truncated audio stream)
@@ -517,6 +540,12 @@ e1:
                         pPrevUnkn->append(*p);
                         delete p;
                     }
+                    else if (0 != pPrevUnsupp)
+                    { // append to unknown
+                        UnknownDataStream* p (new UnknownDataStream(nIndex, m_notes, in, nSize));
+                        pPrevUnsupp->append(*p);
+                        delete p;
+                    }
                     else
                     { // create unknown
                         UnknownDataStream* p (new UnknownDataStream(nIndex, m_notes, in, nSize));
@@ -539,7 +568,7 @@ e1:
     //cout << "=======================\n";
 
     //CB_ASSERT (!m_vpAllStreams.empty());
-    STRM_ASSERT (pos == m_posEnd);
+    STRM_ASSERT (pos == m_posEnd); // ttt1 triggered according to mail on 2012.12.16
     pos = 0;
     for (int i = 0; i < cSize(m_vpAllStreams); ++i)
     {

@@ -20,7 +20,7 @@ SOURCES +=  \
  MpegStream.cpp \
  MultiLineTvDelegate.cpp \
  MusicBrainzDownloader.cpp \
- NormalizeDlgImpl.cpp \
+ ExternalToolDlgImpl.cpp \
  NoteFilterDlgImpl.cpp \
  Notes.cpp \
  NotesModel.cpp \
@@ -57,7 +57,8 @@ SOURCES +=  \
  fstream_unicode.cpp \
  ExportDlgImpl.cpp \
  SerSupport.cpp \
-  FullSizeImgDlg.cpp
+  FullSizeImgDlg.cpp \
+    Translation.cpp
 TEMPLATE = app
 CONFIG += warn_on \
 	  thread \
@@ -102,7 +103,7 @@ MpegFrame.h \
 MpegStream.h \
 MultiLineTvDelegate.h \
 MusicBrainzDownloader.h \
-NormalizeDlgImpl.h \
+ExternalToolDlgImpl.h \
 NoteFilterDlgImpl.h \
 Notes.h \
 NotesModel.h \
@@ -128,7 +129,9 @@ UniqueNotesModel.h \
 Widgets.h \
  fstream_unicode.h \
  ExportDlgImpl.h \
- FullSizeImgDlg.h
+ FullSizeImgDlg.h \
+ Version.h \
+    Translation.h
 FORMS += About.ui \
 AlbumInfoDownloader.ui \
 Config.ui \
@@ -138,7 +141,7 @@ DoubleListWdg.ui \
 FileRenamer.ui \
 ImageInfoPanel.ui \
 MainForm.ui \
-Normalize.ui \
+ExternalTool.ui \
 NoteFilter.ui \
 Palette.ui \
 Patterns.ui \
@@ -155,10 +158,18 @@ ThreadRunner.ui \
 
 
 #DEFINES += DISABLE_CHECK_FOR_UPDATES
+#DEFINES += OS2
 
 
 QMAKE_CXXFLAGS_DEBUG += -DGENERATE_TOC_zz
 
 LIBS += -lz \
-  -lboost_serialization-mt
+  -lboost_serialization-mt \
+  -lboost_program_options-mt
+
+
+TRANSLATIONS = translations/mp3diags_cs.ts \
+    translations/mp3diags_de_DE.ts \
+    translations/mp3diags_fr_FR.ts
+
 

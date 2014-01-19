@@ -38,7 +38,7 @@ class SessionSettings
 {
     QSettings* m_pSettings;
 public:
-    SessionSettings(const std::string& strIniFile);
+    SessionSettings(const std::string& strSessFile);
     ~SessionSettings();
 
     void saveTransfConfig(const TransfConfig& transfConfig);
@@ -77,8 +77,8 @@ public:
     void saveMainSettings(int nWidth, int nHeight, int nNotesGW0, int nNotesGW2, int nStrmsGW0, int nStrmsGW1, int nStrmsGW2, int nStrmsGW3, int nUnotesGW0, const QByteArray& stateMainSpl, const QByteArray& stateLwrSpl, int nIconSize, int nScanWidth);
     void loadMainSettings(int& nWidth, int& nHeight, int& nNotesGW0, int& nNotesGW2, int& nStrmsGW0, int& nStrmsGW1, int& nStrmsGW2, int& nStrmsGW3, int& nUnotesGW0, QByteArray& stateMainSpl, QByteArray& stateLwrSpl, int& nIconSize, int& nScanWidth) const;
 
-    void saveNormalizeSettings(int nWidth, int nHeight);
-    void loadNormalizeSettings(int& nWidth, int& nHeight) const;
+    void saveExternalToolSettings(int nWidth, int nHeight);
+    void loadExternalToolSettings(int& nWidth, int& nHeight) const;
 
     void saveTagEdtPatternsSettings(int nWidth, int nHeight);
     void loadTagEdtPatternsSettings(int& nWidth, int& nHeight) const;
@@ -93,7 +93,8 @@ public:
     std::vector<std::string> loadVector(const std::string& strPath, bool& bErr) const; // allows empty entries, but stops at the first missing entry, in which case sets bErr
 
     void saveMiscConfigSettings(const CommonData*);
-    void loadMiscConfigSettings(CommonData*) const;
+    void loadMiscConfigSettings(CommonData*, bool bInitGui) const;
+    enum { DONT_INIT_GUI, INIT_GUI };
 
     void saveDbDirty(bool bDirty);
     void loadDbDirty(bool& bDirty);
@@ -120,8 +121,9 @@ public:
     GlobalSettings();
     ~GlobalSettings();
 
-    void saveSessions(const std::vector<std::string>& vstrSess, const std::string& strLastSess, bool bOpenLast);
-    void loadSessions(std::vector<std::string>& vstrSess, std::string& strLastSess, bool& bOpenLast) const;
+    enum { IGNORE_EXTERNAL_CHANGES = 0, LOAD_EXTERNAL_CHANGES = 1 };
+    void saveSessions(const std::vector<std::string>& vstrSess, const std::string& strLastSess, bool bOpenLast, const std::string& strTempSessTempl, const std::string& strDirSessTempl, const std::string& strTranslation, bool bLoadExternalChanges);
+    void loadSessions(std::vector<std::string>& vstrSess, std::string& strLastSess, bool& bOpenLast, std::string& strTempSessTempl, std::string& strDirSessTempl, std::string& strTranslation) const;
 
     void saveSessionsDlgSize(int nWidth, int nHeight);
     void loadSessionsDlgSize(int& nWidth, int& nHeight) const;

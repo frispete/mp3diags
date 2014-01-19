@@ -25,6 +25,7 @@
 
 #include  "MpegStream.h"
 #include  "Mp3Manip.h"
+#include  "Widgets.h"  // for GlobalTranslHlp
 
 
 using namespace std;
@@ -223,8 +224,8 @@ void MpegStream::removeLastFrame()
     ostringstream out;
     out << getDuration() << ", " << m_firstFrame.getSzVersion() << " " << m_firstFrame.getSzLayer() << ", " << m_firstFrame.getSzChannelMode() << ", " <<
         m_firstFrame.getFrequency() << "Hz, " << m_nBitrate << "bps " << (m_bVbr ? "VBR" : "CBR") << ", CRC=" <<
-        boolAsYesNo(m_firstFrame.getCrcUsage()) << ", frame count=" << m_nFrameCount;
-    out << "; last frame" << (m_bRemoveLastFrameCalled ? " removed; it was" : "") << " located at 0x" << hex << m_posLastFrame << dec;
+        convStr(GlobalTranslHlp::tr(boolAsYesNo(m_firstFrame.getCrcUsage()))) << ", " << convStr(DataStream::tr("frame count=")) << m_nFrameCount;
+    out << "; " << convStr((m_bRemoveLastFrameCalled ? DataStream::tr("last frame removed; it was located at 0x%1") : DataStream::tr("last frame located at 0x%1")).arg(m_posLastFrame, 0, 16));
     return out.str();
 }
 
@@ -287,7 +288,7 @@ bool MpegStream::findNextCompatFrame(std::istream& in, std::streampos posMax)
 }
 
 
-#ifdef GENERATE_TOC
+#ifdef GENERATE_TOC //ttt2 maybe improve and use
 // throws if it can't write to the disk
 void createXing(ostream& out, const MpegFrame& frame1, int nFrameCount, streamoff nStreamSize)
 {
@@ -331,7 +332,32 @@ void createXing(ostream& out, const MpegFrame& frame, int nFrameCount, streamoff
 
 void MpegStream::createXing(ostream& out)
 {
-    ::createXing(out, m_firstFrame, m_nFrameCount, getSize());
+    static const int MIN_FRAME_SIZE (200); // ttt2 this 200 is arbitrary, but there's probably enough room for TOC
+    if (m_firstFrame.getSize() >= MIN_FRAME_SIZE)
+    {
+        ::createXing(out, m_firstFrame, m_nFrameCount, getSize());
+        return;
+    }
+
+    static const int BFR_SIZE (2000);
+    static char aNewHeader [BFR_SIZE];
+    ::fill(aNewHeader, aNewHeader + BFR_SIZE, 0);
+    ::copy(m_firstFrame.getHeader(), m_firstFrame.getHeader() + MpegFrame::MPEG_FRAME_HDR_SIZE, aNewHeader);
+    NoteColl notes;
+    for (int i = 1; i <= 14; ++i)
+    {
+        aNewHeader[2] = (aNewHeader[2] & 0x0f) + (i << 4);
+        istringstream in (string(aNewHeader, BFR_SIZE));
+
+        MpegFrame frame (notes, in);
+        if (frame.getSize() >= MIN_FRAME_SIZE)
+        {
+            ::createXing(out, frame, m_nFrameCount, getSize());
+            return;
+        }
+    }
+
+    CB_ASSERT(false);
 }
 
 
@@ -358,6 +384,7 @@ XingStreamBase::XingStreamBase(int nIndex, NoteColl& notes, istream& in) : MpegS
     char* pLabel (bfr + MpegFrame::MPEG_FRAME_HDR_SIZE + nSideInfoSize);
     MP3_CHECK_T (0 == strncmp("Xing", pLabel, XING_LABEL_SIZE) || 0 == strncmp("Info", pLabel, XING_LABEL_SIZE), m_pos, "Not a Xing stream. Header not found.", NotXingStream());
 
+    // ttt0 perhaps if it gets this far it should generate some "broken xing": with the incorrect "vbr fix" which created a xing header longer than the mpeg frame that was supposed to contain it, followed by the removal of those extra bytes by the "unknown stream removal" causes the truncated xing header to be considered audio; that wouldn't happen if a "broken xing" stream would be tried before the "audio" stream in Mp3Handler::parse()
     MP3_CHECK_T (4 == read(in, bfr, 4) && 0 == bfr[0] && 0 == bfr[1] && 0 == bfr[2], m_pos, "Not a Xing stream. Header not found.", NotXingStream());
     m_cFlags = bfr[3];
     MP3_CHECK_T ((m_cFlags & 0x0f) == m_cFlags, m_pos, "Not a Xing stream. Invalid flags.", NotXingStream());
@@ -392,12 +419,12 @@ XingStreamBase::XingStreamBase(int nIndex, NoteColl& notes, istream& in) : MpegS
 
 void XingStreamBase::getXingInfo(std::ostream& out) const
 {
-    out << "[Xing header info:";
+    out << "[" << convStr(DataStream::tr("Xing header info:"));
     bool b (false);
-    if (0x01 == (m_cFlags & 0x01)) { out << " frame count=" << m_nFrameCount; b = true; }
-    if (0x02 == (m_cFlags & 0x02)) { out << (b ? "," : "") << " byte count=" << m_nByteCount; b = true; } //ttt2 see what to do with this: it's the size of the whole file, all headers&tags included (at least with c03 Valentin Moldovan - Marea Irlandei.mp3); ??? and anyway,  what's the point of including the size of the whole file as a field?
-    if (0x04 == (m_cFlags & 0x04)) { out << (b ? "," : "") << " TOC present"; b = true; }
-    if (0x08 == (m_cFlags & 0x08)) { out << (b ? "," : "") << " quality=" << m_nQuality; b = true; }
+    if (0x01 == (m_cFlags & 0x01)) { out << convStr(DataStream::tr(" frame count=")) << m_nFrameCount; b = true; }
+    if (0x02 == (m_cFlags & 0x02)) { out << (b ? "," : "") << convStr(DataStream::tr(" byte count=")) << m_nByteCount; b = true; } //ttt2 see what to do with this: it's the size of the whole file, all headers&tags included (at least with c03 Valentin Moldovan - Marea Irlandei.mp3); ??? and anyway,  what's the point of including the size of the whole file as a field?
+    if (0x04 == (m_cFlags & 0x04)) { out << (b ? "," : "") << convStr(DataStream::tr(" TOC present")); b = true; }
+    if (0x08 == (m_cFlags & 0x08)) { out << (b ? "," : "") << convStr(DataStream::tr(" quality=")) << m_nQuality; b = true; }
     out << "]";
 }
 
@@ -416,7 +443,7 @@ std::string XingStreamBase::getInfoForXml() const
 {
     ostringstream out;
     out << m_firstFrame.getSzVersion() << " " << m_firstFrame.getSzLayer() << ", " << m_firstFrame.getSzChannelMode() << ", " << m_firstFrame.getFrequency() << "Hz"
-        << ", " << m_firstFrame.getBitrate() << "bps, CRC=" << boolAsYesNo(m_firstFrame.getCrcUsage()) << "; ";
+        << ", " << m_firstFrame.getBitrate() << "bps, CRC=" << convStr(GlobalTranslHlp::tr(boolAsYesNo(m_firstFrame.getCrcUsage()))) << "; ";
     getXingInfo(out);
     return out.str();
 }
@@ -497,7 +524,7 @@ LameStream::LameStream(int nIndex, NoteColl& notes, istream& in) : XingStreamBas
 {
     ostringstream out;
     out << m_firstFrame.getSzVersion() << " " << m_firstFrame.getSzLayer() << ", " << m_firstFrame.getSzChannelMode() << ", " << m_firstFrame.getFrequency() << "Hz"
-        << ", " << m_firstFrame.getBitrate() << "bps, CRC=" << boolAsYesNo(m_firstFrame.getCrcUsage()) << "; ";
+        << ", " << m_firstFrame.getBitrate() << "bps, CRC=" << convStr(GlobalTranslHlp::tr(boolAsYesNo(m_firstFrame.getCrcUsage()))) << "; ";
     getXingInfo(out);
     return out.str();
 }
@@ -533,7 +560,7 @@ VbriStream::VbriStream(int nIndex, NoteColl& notes, istream& in) : MpegStreamBas
 {
     ostringstream out;
     out << m_firstFrame.getSzVersion() << " " << m_firstFrame.getSzLayer() << ", " << m_firstFrame.getSzChannelMode() << ", " << m_firstFrame.getFrequency() << "Hz"
-        << ", " << m_firstFrame.getBitrate() << "bps, CRC=" << boolAsYesNo(m_firstFrame.getCrcUsage());
+        << ", " << m_firstFrame.getBitrate() << "bps, CRC=" << convStr(GlobalTranslHlp::tr(boolAsYesNo(m_firstFrame.getCrcUsage())));
     return out.str();
 }
 
@@ -706,21 +733,21 @@ string Id3V1Stream::getStr(int nAddr, int nMaxSize) const
 }
 
 
-/*override*/ std::string Id3V1Stream::getTitle(bool* pbFrameExists /*= 0*/) const
+/*override*/ std::string Id3V1Stream::getTitle(bool* pbFrameExists /* = 0*/) const
 {
     if (0 != pbFrameExists) { *pbFrameExists = true; }
     return getStr(3, 30);
 }
 
 
-/*override*/ std::string Id3V1Stream::getArtist(bool* pbFrameExists /*= 0*/) const
+/*override*/ std::string Id3V1Stream::getArtist(bool* pbFrameExists /* = 0*/) const
 {
     if (0 != pbFrameExists) { *pbFrameExists = true; }
     return getStr(33, 30);
 }
 
 
-/*override*/ std::string Id3V1Stream::getTrackNumber(bool* pbFrameExists /*= 0*/) const
+/*override*/ std::string Id3V1Stream::getTrackNumber(bool* pbFrameExists /* = 0*/) const
 {
     if (V11b != m_eVersion) { if (0 != pbFrameExists) { *pbFrameExists = false; } return ""; }
     if (0 != pbFrameExists) { *pbFrameExists = true; }
@@ -730,7 +757,7 @@ string Id3V1Stream::getStr(int nAddr, int nMaxSize) const
 }
 
 
-/*override*/ std::string Id3V1Stream::getGenre(bool* pbFrameExists /*= 0*/) const
+/*override*/ std::string Id3V1Stream::getGenre(bool* pbFrameExists /* = 0*/) const
 {
     switch (m_eVersion)
     {
@@ -749,14 +776,14 @@ string Id3V1Stream::getStr(int nAddr, int nMaxSize) const
 }
 
 
-/*override*/ std::string Id3V1Stream::getAlbumName(bool* pbFrameExists /*= 0*/) const
+/*override*/ std::string Id3V1Stream::getAlbumName(bool* pbFrameExists /* = 0*/) const
 {
     if (0 != pbFrameExists) { *pbFrameExists = true; }
     return getStr(63, 30);
 }
 
 
-/*override*/ TagTimestamp Id3V1Stream::getTime(bool* pbFrameExists /*= 0*/) const
+/*override*/ TagTimestamp Id3V1Stream::getTime(bool* pbFrameExists /* = 0*/) const
 {
     if (0 != pbFrameExists) { *pbFrameExists = true; }
     string s (getStr(93, 4));
@@ -789,7 +816,7 @@ int Id3V1Stream::getCommSize() const
     int nCommSize (getCommSize());
     string strComm (getStr(97, nCommSize));
     if (strComm.empty()) { return ""; }
-    return "Comment: " + strComm;
+    return convStr(TagReader::tr("Comment: %1").arg(convStr(strComm)));
 }
 
 
@@ -799,7 +826,7 @@ const char* getId3V1Genre(int n)
 
     static const char* aGenres [148] =
     {
-        "Blues",
+        "Blues",  //ttt0 review transl - probably not, as ID3V2 is more important but hard to translate
         "Classic Rock",
         "Country",
         "Dance",
