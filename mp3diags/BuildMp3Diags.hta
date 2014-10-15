@@ -474,9 +474,10 @@
             while (!fIn.AtEndOfStream)
             {
                 line = fIn.ReadLine();
-                if (-1 != line.search(regExp1) && -1 != line.search(regExp2) && -1 != line.search(regExp3))
+                //if (-1 != line.search(regExp1) && -1 != line.search(regExp2) && -1 != line.search(regExp3)) 2014.10.15 - Boost 1.47 and above have different build dirs, so checking for regExp1 fails
+                if (-1 != line.search(regExp2) && -1 != line.search(regExp3))
                 {
-                    line = line.replace(regExp1, "debug\\threading-multi").replace(regExp1, "debug\\threading-multi");
+                    line = line.replace(regExp1, "debug\\threading-multi").replace(regExp1, "debug\\threading-multi");  // 2014.10.15 - this won't do anything for Boost 1.47 and above, but that's fine
                     line = line.replace(regExp2, "-mt-gd-1").replace(regExp2, "-mt-gd-1");
                 }
                 fOut.writeLine(line);
