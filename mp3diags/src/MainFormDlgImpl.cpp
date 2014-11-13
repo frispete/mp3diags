@@ -308,6 +308,9 @@ namespace
             {
                 deleteFile(m_vstrStepFile[m_nStepFile]);
             }
+            catch (const exception&)
+            { //ttt2
+            }
             catch (...)
             { //ttt2
             }
@@ -359,6 +362,9 @@ namespace
             deleteFile(m_strTraceFile);
             deleteFile(m_vstrStepFile[0]);
             deleteFile(m_vstrStepFile[1]);
+        }
+        catch (const exception&)
+        {
         }
         catch (...)
         { //ttt2
@@ -706,9 +712,15 @@ struct SerLoadThread : public PausableThread
 
             notif.setSuccess(!bAborted);
         }
+        catch (const exception& ex)
+        {
+            TRACER1("SerLoadThread::run()", 1);
+            TRACER1(ex.what(), 2);
+            CB_ASSERT1 (false, ex.what());
+        }
         catch (...)
         {
-            LAST_STEP("SerLoadThread::run()");
+            TRACER("SerLoadThread::run() - unknown exception");
             CB_ASSERT (false);
         }
     }
@@ -740,9 +752,15 @@ struct SerSaveThread : public PausableThread
 
             notif.setSuccess(!bAborted);
         }
+        catch (const exception& ex)
+        {
+            TRACER1("SerSaveThread::run()", 1);
+            TRACER1(ex.what(), 2);
+            CB_ASSERT1 (false, ex.what());
+        }
         catch (...)
         {
-            LAST_STEP("SerSaveThread::run()");
+            TRACER("SerSaveThread::run() - unknown exception");
             CB_ASSERT (false);
         }
     }
@@ -1311,7 +1329,7 @@ void MainFormDlgImpl::onShow()
         if (!strErr.empty())
         {
             bLoadErr = true;
-            showCritical(this, tr("Error"), tr("An error occured while loading the MP3 information. Your files will be rescanned.\n\n").arg(convStr(strErr)));
+            showCritical(this, tr("Error"), tr("An error occured while loading the MP3 information. Your files will be rescanned.\n\n%1").arg(convStr(strErr)));
         }
     }
 
@@ -1581,10 +1599,16 @@ struct Mp3ProcThread : public PausableThread
 
             notif.setSuccess(!bAborted);
         }
+        catch (const exception& ex)
+        {
+            TRACER1("Mp3ProcThread::run()", 1);
+            TRACER1(ex.what(), 2);
+            CB_ASSERT1 (false, ex.what());
+        }
         catch (...)
         {
-            LAST_STEP("Mp3ProcThread::run()");
-            CB_ASSERT (false); //ttt0 triggered according to https://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=50 and https://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=54
+            TRACER("Mp3ProcThread::run() - unknown exception");
+            CB_ASSERT (false); //ttt0 triggered according to https://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=50 and https://sourceforge.net/apps/mantisbt/mp3diags/view.php?id=54  2014.11.13 - one way to get here was disabled, by catching some exceptions
         }
     }
 
@@ -1669,6 +1693,7 @@ void MainFormDlgImpl::scan(FileEnumerator& fileEnum, bool bForce, deque<const Mp
 
     m_pCommonData->mergeHandlerChanges(vpAdd, vpDel, nKeepWhenUpdate);
 
+    /*
     if (!m_pCommonData->m_bToldAboutSupport && !s_bToldAboutSupportInCrtRun)
     {
         const vector<const Note*>& v (m_pCommonData->getUniqueNotes().getFltVec());
@@ -1688,7 +1713,7 @@ void MainFormDlgImpl::scan(FileEnumerator& fileEnum, bool bForce, deque<const Mp
                 m_settings.saveMiscConfigSettings(m_pCommonData);
             }
         }
-    }
+    }*/
 }
 
 
@@ -3133,7 +3158,7 @@ void MainFormDlgImpl::onMainGridRightClick()
 
 void MainFormDlgImpl::fixCurrentNote(const QPoint& coords)
 {
-LAST_STEP("MainFormDlgImpl::onFixCurrentNote()");
+//LAST_STEP("MainFormDlgImpl::onFixCurrentNote()");
     //QPoint coords (m_pFilesG->mapFromGlobal(QPoint(m_nGlobalX, m_nGlobalY)));
     //int nHorHdrHght ();
     //if (coords.x() < nVertHdrWdth) { return; }

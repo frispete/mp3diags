@@ -176,10 +176,10 @@ MpegStream::MpegStream(int nIndex, NoteColl& notes, istream& in) : MpegStreamBas
         {
             strInfo = decodeMpegFrame(bfr, ", ");
         }
-        MP3_THROW (m_pos, audioTooShort, StreamTooShort(strInfo, m_nFrameCount));
+        MP3_THROW (m_pos, audioTooShort, CB_EXCP2(StreamTooShort, strInfo, m_nFrameCount));
     }
 
-    MP3_CHECK (!m_bVbr || bVbr2, m_pos, diffBitrateInFirstFrame, UnknownHeader()); //ttt2 perhaps add test for "null": whatever is in the first bytes that allows Xing & Co to not generate audio in decoders that don't know about them
+    MP3_CHECK (!m_bVbr || bVbr2, m_pos, diffBitrateInFirstFrame, CB_EXCP(UnknownHeader)); //ttt2 perhaps add test for "null": whatever is in the first bytes that allows Xing & Co to not generate audio in decoders that don't know about them
 
     m_nSize = pos - m_pos;
     in.seekg(pos);
@@ -295,7 +295,7 @@ bool MpegStream::findNextCompatFrame(std::istream& in, std::streampos posMax)
 #ifdef GENERATE_TOC //ttt2 maybe improve and use
 #if 1
 // throws if it can't write to the disk
-void createXing(ostream& out, const MpegFrame& frame1, int nFrameCount, streamoff nStreamSize)
+void createXing(const string& /*strFileName*/, streampos /*nStreamPos*/, ostream& out, const MpegFrame& frame1, int nFrameCount, streamoff nStreamSize)
 {
     const MpegFrameBase& frame (frame1.getBigBps());
 
@@ -315,10 +315,10 @@ void createXing(ostream& out, const MpegFrame& frame1, int nFrameCount, streamof
         out.write(bfr, 1);
     }
     writeZeros(out, nSize - MpegFrame::MPEG_FRAME_HDR_SIZE - nSideInfoSize - 8 - 4 - 4 - 100);
-    CB_CHECK1 (out, WriteError());
+    CB_CHECK (out, WriteError);
 }
 #else // changes made while playing with gapless; later it turned out that various fields that have values copied from some file in the code below can actually be left as zero (at least LAME decodes them and players play them)
-void createXing(ostream& out, const MpegFrame& frame1, int nFrameCount, streamoff nStreamSize)
+void createXing(const string& /*strFileName*/, streampos /*nStreamPos*/, ostream& out, const MpegFrame& frame1, int nFrameCount, streamoff nStreamSize)
 {
     const MpegFrameBase& frame (frame1.getBigBps());
 
@@ -351,7 +351,7 @@ void createXing(ostream& out, const MpegFrame& frame1, int nFrameCount, streamof
     out.write("\x45\0\0\0\0\x90\x72\x56\x3e\x5e\x58\xd2", 12);
 
     writeZeros(out, nSize - MpegFrame::MPEG_FRAME_HDR_SIZE - nSideInfoSize - 8 - 4 - 4 - 100 - 4 - 9 - 2 - 8 - 2 - 3 - 12);
-    CB_CHECK1 (out, WriteError());
+    CB_CHECK (out, WriteError);
 }
 
 #endif
@@ -366,14 +366,8 @@ const int MPEG_SAMPLES_PER_FRAME (1152);
 const int CD_SAMPLES_PER_FRAME (588);
 const int MPEG_BFR_SIZE (65536);
 
-struct DecodeError : public CbException {
-    DecodeError (std::string strMsg, const char* szFile, int nLine) : CbException(strMsg, szFile, nLine) {}
-};
-
-struct ZeroesNotFound : public CbException {
-    ZeroesNotFound(std::string strMsg, const char* szFile, int nLine) : CbException(strMsg, szFile, nLine) {}
-    //ZeroesNotFound(std::string strMsg, const char* szFile, int nLine) : CbException(strMsg, szFile, nLine) {}
-};
+DEFINE_CB_EXCP(DecodeError);
+DEFINE_CB_EXCP(ZeroesNotFound);
 
 
 struct MpegFrameBfr : public MpegFrameBase
@@ -426,9 +420,9 @@ void Mp3Decoder::decode3(istream& in, streamoff nStreamSize) {
         nRead = read(in, (char*)(&bfr[HDR_SIZE]), frameSize - HDR_SIZE);
         nRead += HDR_SIZE;
         nStreamSize -= nRead;
-        CB_CHECK1a(nRead == frameSize || nStreamSize == 0, DecodeError);
+        CB_CHECK(nRead == frameSize || nStreamSize == 0, DecodeError);
         int nSamples (hip_decode(lameWrp.m_pHip, &bfr[0], frameSize, &pcmBfrL[0], &pcmBfrR[0]));
-        CB_CHECK1a(nSamples >= 0, DecodeError);
+        CB_CHECK(nSamples >= 0, DecodeError);
         if (nSamples > 0) {
             outL.write((const char*)(&pcmBfrL[0]), nSamples * 2);
             outR.write((const char*)(&pcmBfrR[0]), nSamples * 2);
@@ -444,7 +438,7 @@ int Mp3Decoder::decode(istream& in, streamoff nStreamSize, vector<int16_t>& vSam
 
     //decode3(in, nStreamSize);
     globalMax = 0;
-    CB_CHECK1a (vSamplesBeginLeft.size() == vSamplesBeginRight.size() && vSamplesEndLeft.size() == vSamplesEndRight.size(), DecodeError);
+    CB_CHECK (vSamplesBeginLeft.size() == vSamplesBeginRight.size() && vSamplesEndLeft.size() == vSamplesEndRight.size(), DecodeError);
     vector<int16_t> vLeftPcmBuffer (MPEG_SAMPLES_PER_FRAME * 2000);
     vector<int16_t> vRightPcmBuffer (MPEG_SAMPLES_PER_FRAME * 2000);
     uint nPcmBufferSampleCount (0); // number of samples in the PCM buffers
@@ -465,9 +459,9 @@ int Mp3Decoder::decode(istream& in, streamoff nStreamSize, vector<int16_t>& vSam
     {
         streamsize nToRead (min((size_t)nStreamSize, m_vcMp3Bfr.size() - nMp3BfrFirstFree));
         streamsize nRead (read(in, (char*)(&m_vcMp3Bfr[nMp3BfrFirstFree]), nToRead));
-        CB_CHECK1a (nToRead == nRead, DecodeError);
+        CB_CHECK (nToRead == nRead, DecodeError);
         nStreamSize -= nRead;
-        CB_CHECK1a(nStreamSize == 0 || nRead > 0, DecodeError);
+        CB_CHECK(nStreamSize == 0 || nRead > 0, DecodeError);
         for (;;)
         {
             NoteColl noteColl;
@@ -488,7 +482,7 @@ int Mp3Decoder::decode(istream& in, streamoff nStreamSize, vector<int16_t>& vSam
                 globalMax = max(max(globalMax, abs((int)vLeftPcmBuffer[nPcmBufferSampleCount + i])), abs((int)vRightPcmBuffer[nPcmBufferSampleCount + i]));
             }
 
-            CB_CHECK1a(nSamples >= 0, DecodeError);
+            CB_CHECK(nSamples >= 0, DecodeError);
             nPcmBufferSampleCount += nSamples;
 
             if (!bCopiedFirst && nPcmBufferSampleCount >= vSamplesBeginLeft.size())
@@ -520,15 +514,15 @@ int Mp3Decoder::decode(istream& in, streamoff nStreamSize, vector<int16_t>& vSam
         if (nStreamSize > 0)
         { // more data should be read; move the frame fragment at the end to the beginning and continue
             nMp3BfrFirstFree = m_vcMp3Bfr.size() - nCrtFrameAddr;
-            CB_CHECK1a (nMp3BfrFirstFree <= MAX_FRAME_SIZE, DecodeError);
+            CB_CHECK (nMp3BfrFirstFree <= MAX_FRAME_SIZE, DecodeError);
             copy(m_vcMp3Bfr.begin() + nCrtFrameAddr, m_vcMp3Bfr.end(), m_vcMp3Bfr.begin());
             nCrtFrameAddr = 0;
             nMp3BfrOffset += m_vcMp3Bfr.size() - nMp3BfrFirstFree;
         }
     }
 
-    CB_CHECK1a (bCopiedFirst, DecodeError);
-    CB_CHECK1a (nPcmBufferSampleCount >= vSamplesEndLeft.size(), DecodeError);
+    CB_CHECK (bCopiedFirst, DecodeError);
+    CB_CHECK (nPcmBufferSampleCount >= vSamplesEndLeft.size(), DecodeError);
     copy(vLeftPcmBuffer.begin() + nPcmBufferSampleCount - vSamplesEndLeft.size(), vLeftPcmBuffer.begin() + nPcmBufferSampleCount, vSamplesEndLeft.begin());
     copy(vRightPcmBuffer.begin() + nPcmBufferSampleCount - vSamplesEndRight.size(), vRightPcmBuffer.begin() + nPcmBufferSampleCount, vSamplesEndRight.begin());
 
@@ -681,13 +675,13 @@ void getDelayAndPadding(istream& in, streamoff nStreamSize, unsigned& nDelay, un
     int nDelay1 (-1);
     if (!isQuiet(vSamplesBeginLeft)) {
         nDelay1 = computeZeroes(vSamplesBeginLeft, globalMax);
-        CB_CHECK1a (nDelay1 == -1 || nDelay1 >= FRONT_ZEROES - 180, ZeroesNotFound); // the first 1105 samples were supposed to be zero
+        CB_CHECK (nDelay1 == -1 || nDelay1 >= FRONT_ZEROES - 180, ZeroesNotFound); // the first 1105 samples were supposed to be zero
     }
 
     int nDelay2 (-1);
     if (!isQuiet(vSamplesBeginRight)) {
         nDelay2 = computeZeroes(vSamplesBeginRight, globalMax);
-        CB_CHECK1a (nDelay2 == -1 || nDelay2 >= FRONT_ZEROES - 180, ZeroesNotFound);
+        CB_CHECK (nDelay2 == -1 || nDelay2 >= FRONT_ZEROES - 180, ZeroesNotFound);
     }
 
     nDelay = FRONT_ZEROES - LAME_DELAY;
@@ -699,7 +693,7 @@ void getDelayAndPadding(istream& in, streamoff nStreamSize, unsigned& nDelay, un
             int nNonZeroSamples1 (nTotalSamples - FRONT_ZEROES - nPadding1);
             nNonZeroSamples1 = (nNonZeroSamples1 + CD_SAMPLES_PER_FRAME/2) / CD_SAMPLES_PER_FRAME * CD_SAMPLES_PER_FRAME;
             nRoundedPadding1 = nTotalSamples - FRONT_ZEROES - nNonZeroSamples1;
-            //CB_CHECK1a (approxEq(nRoundedPadding1, nPadding1, 150), ZeroesNotFound); //ttt2 maybe put this back and do more testing; the thing is it is possible that there is no fadeout and the sound really stops 2000 samples before the end, with no relation to the CD frames
+            //CB_CHECK (approxEq(nRoundedPadding1, nPadding1, 150), ZeroesNotFound); //ttt2 maybe put this back and do more testing; the thing is it is possible that there is no fadeout and the sound really stops 2000 samples before the end, with no relation to the CD frames
             if (!approxEq(nRoundedPadding1, nPadding1, 150)) {
                 nRoundedPadding1 = -1;
             }
@@ -713,7 +707,7 @@ void getDelayAndPadding(istream& in, streamoff nStreamSize, unsigned& nDelay, un
             int nNonZeroSamples2 (nTotalSamples - FRONT_ZEROES - nPadding2);
             nNonZeroSamples2 = (nNonZeroSamples2 + CD_SAMPLES_PER_FRAME/2) / CD_SAMPLES_PER_FRAME * CD_SAMPLES_PER_FRAME;
             nRoundedPadding2 = nTotalSamples - FRONT_ZEROES - nNonZeroSamples2;
-            //CB_CHECK1a (approxEq(nRoundedPadding2, nPadding2, 150), ZeroesNotFound);
+            //CB_CHECK (approxEq(nRoundedPadding2, nPadding2, 150), ZeroesNotFound);
             if (!approxEq(nRoundedPadding2, nPadding2, 150)) {
                 nRoundedPadding2 = -1;
             }
@@ -732,7 +726,7 @@ void getDelayAndPadding(istream& in, streamoff nStreamSize, unsigned& nDelay, un
             nPadding = nRoundedPadding2 + LAME_DELAY;
         }
     } else {
-        //CB_CHECK1a (nRoundedPadding1 == nRoundedPadding2, ZeroesNotFound);
+        //CB_CHECK (nRoundedPadding1 == nRoundedPadding2, ZeroesNotFound);
         nPadding = min(nRoundedPadding1, nRoundedPadding2) + LAME_DELAY;
     }
 
@@ -781,10 +775,10 @@ void createXing(const string& strFileName, streampos nStreamPos, ostream& out, c
     //out.write("\x45\0\0\0\0\x90\x72\x56\x3e\x5e\x58\xd2", 12); //ttt1 these should be included too
     writeZeros(out, nSize - MpegFrame::MPEG_FRAME_HDR_SIZE - nSideInfoSize - 8 - 4 - 4 - 9 - 2 - 8 - 2 - 3);
 
-//CB_CHECK1 (false, DecodeError()); //ttt0
+//CB_OLD_CHECK1 (false, DecodeError()); //ttt0
 
     //ttt0 catch exceptions ...
-    CB_CHECK1 (out, WriteError());
+    CB_CHECK (out, WriteError);
 }
 
 #else // #ifdef GENERATE_TOC  / #elif defined(GAPLESS_SUPPORT)
@@ -802,7 +796,7 @@ void createXing(const string& /*strFileName*/, streampos /*nStreamPos*/, ostream
     put32BitBigEndian(nStreamSize, bfr);
     out.write(bfr, 4);
     writeZeros(out, nSize - MpegFrame::MPEG_FRAME_HDR_SIZE - nSideInfoSize - 8 - 4 - 4);
-    CB_CHECK1 (out, WriteError());
+    CB_CHECK (out, WriteError);
 }
 #endif
 
@@ -852,38 +846,38 @@ XingStreamBase::XingStreamBase(int nIndex, NoteColl& notes, istream& in) : MpegS
 
     int nBfrSize (MpegFrame::MPEG_FRAME_HDR_SIZE + nSideInfoSize + XING_LABEL_SIZE);
 
-    MP3_CHECK_T (nBfrSize <= m_firstFrame.getSize(), m_pos, "Not a Xing stream. This kind of MPEG audio doesn't support Xing.", NotXingStream()); // !!! some kinds of MPEG audio (e.g. "MPEG-1 Layer I, 44100Hz 32000bps" or "MPEG-2 Layer III, 22050Hz 8000bps") have very short frames, which can't accomodate a Xing header
+    MP3_CHECK_T (nBfrSize <= m_firstFrame.getSize(), m_pos, "Not a Xing stream. This kind of MPEG audio doesn't support Xing.", CB_EXCP(NotXingStream)); // !!! some kinds of MPEG audio (e.g. "MPEG-1 Layer I, 44100Hz 32000bps" or "MPEG-2 Layer III, 22050Hz 8000bps") have very short frames, which can't accomodate a Xing header
 
     streamsize nRead (read(in, bfr, nBfrSize));
     STRM_ASSERT (nBfrSize == nRead); // this was supposed to be a valid frame to begin with (otherwise the base class would have thrown) and nBfrSize is no bigger than the frame
 
     char* pLabel (bfr + MpegFrame::MPEG_FRAME_HDR_SIZE + nSideInfoSize);
-    MP3_CHECK_T (0 == strncmp("Xing", pLabel, XING_LABEL_SIZE) || 0 == strncmp("Info", pLabel, XING_LABEL_SIZE), m_pos, "Not a Xing stream. Header not found.", NotXingStream());
+    MP3_CHECK_T (0 == strncmp("Xing", pLabel, XING_LABEL_SIZE) || 0 == strncmp("Info", pLabel, XING_LABEL_SIZE), m_pos, "Not a Xing stream. Header not found.", CB_EXCP(NotXingStream));
 
     // ttt0 perhaps if it gets this far it should generate some "broken xing": with the incorrect "vbr fix" which created a xing header longer than the mpeg frame that was supposed to contain it, followed by the removal of those extra bytes by the "unknown stream removal" causes the truncated xing header to be considered audio; that wouldn't happen if a "broken xing" stream would be tried before the "audio" stream in Mp3Handler::parse()
-    MP3_CHECK_T (4 == read(in, bfr, 4) && 0 == bfr[0] && 0 == bfr[1] && 0 == bfr[2], m_pos, "Not a Xing stream. Header not found.", NotXingStream());
+    MP3_CHECK_T (4 == read(in, bfr, 4) && 0 == bfr[0] && 0 == bfr[1] && 0 == bfr[2], m_pos, "Not a Xing stream. Header not found.", CB_EXCP(NotXingStream));
     m_cFlags = bfr[3];
-    MP3_CHECK_T ((m_cFlags & 0x0f) == m_cFlags, m_pos, "Not a Xing stream. Invalid flags.", NotXingStream());
+    MP3_CHECK_T ((m_cFlags & 0x0f) == m_cFlags, m_pos, "Not a Xing stream. Invalid flags.", CB_EXCP(NotXingStream));
     if (0x01 == (m_cFlags & 0x01))
     { // has frames
-        MP3_CHECK_T (4 == read(in, bfr, 4), m_pos, "Not a Xing stream. File too short.", NotXingStream());
+        MP3_CHECK_T (4 == read(in, bfr, 4), m_pos, "Not a Xing stream. File too short.", CB_EXCP(NotXingStream));
         m_nFrameCount = get32BitBigEndian(bfr);
     }
 
     if (0x02 == (m_cFlags & 0x02))
     { // has bytes
-        MP3_CHECK_T (4 == read(in, bfr, 4), m_pos, "Not a Xing stream. File too short.", NotXingStream());
+        MP3_CHECK_T (4 == read(in, bfr, 4), m_pos, "Not a Xing stream. File too short.", CB_EXCP(NotXingStream));
         m_nByteCount = get32BitBigEndian(bfr);
     }
 
     if (0x04 == (m_cFlags & 0x04))
     { // has TOC
-        MP3_CHECK_T (100 == read(in, m_toc, 100), m_pos, "Not a Xing stream. File too short.", NotXingStream());
+        MP3_CHECK_T (100 == read(in, m_toc, 100), m_pos, "Not a Xing stream. File too short.", CB_EXCP(NotXingStream));
     }
 
     if (0x08 == (m_cFlags & 0x08))
     { // has quality
-        MP3_CHECK_T (4 == read(in, bfr, 4), m_pos, "Not a Xing stream. File too short.", NotXingStream());
+        MP3_CHECK_T (4 == read(in, bfr, 4), m_pos, "Not a Xing stream. File too short.", CB_EXCP(NotXingStream));
         m_nQuality = get32BitBigEndian(bfr);
     }
 
@@ -994,12 +988,12 @@ LameStream::LameStream(int nIndex, NoteColl& notes, istream& in) : XingStreamBas
     const int BFR_SIZE (LAME_OFFS + LAME_LABEL_SIZE); // MPEG header + side info + "Xing" size //ttt2 not sure if space for CRC16 should be added; then not sure if frame size should be increased by 2 when CRC is found
     char bfr [200]; // MSVC wants size to be a compile-time constant, so just use something bigger
 
-    MP3_CHECK_T (BFR_SIZE <= m_firstFrame.getSize(), m_pos, "Not a LAME stream. This kind of MPEG audio doesn't support LAME.", NotLameStream()); // !!! some kinds of MPEG audio have very short frames, which can't accomodate a VBRI header
+    MP3_CHECK_T (BFR_SIZE <= m_firstFrame.getSize(), m_pos, "Not a LAME stream. This kind of MPEG audio doesn't support LAME.", CB_EXCP(NotLameStream)); // !!! some kinds of MPEG audio have very short frames, which can't accomodate a VBRI header
 
     streamsize nRead (read(in, bfr, BFR_SIZE));
     STRM_ASSERT (BFR_SIZE == nRead); // this was supposed to be a valid frame to begin with (otherwise the base class would have thrown) and BFR_SIZE is no bigger than the frame
 
-    MP3_CHECK_T (0 == strncmp("LAME", bfr + LAME_OFFS, LAME_LABEL_SIZE), m_pos, "Not a LAME stream. Header not found.", NotLameStream()); // ttt0 lowercase
+    MP3_CHECK_T (0 == strncmp("LAME", bfr + LAME_OFFS, LAME_LABEL_SIZE), m_pos, "Not a LAME stream. Header not found.", CB_EXCP(NotLameStream)); // ttt0 lowercase
 
     streampos posEnd (m_pos);
     posEnd += m_firstFrame.getSize();
@@ -1030,13 +1024,13 @@ VbriStream::VbriStream(int nIndex, NoteColl& notes, istream& in) : MpegStreamBas
     const int BFR_SIZE (MpegFrame::MPEG_FRAME_HDR_SIZE + 32 + VBRI_LABEL_SIZE); // MPEG header + side info + "Xing" size //ttt2 not sure if space for CRC16 should be added; then not sure if frame size should be increased by 2 when CRC is found
     char bfr [BFR_SIZE];
 
-    MP3_CHECK_T (BFR_SIZE <= m_firstFrame.getSize(), m_pos, "Not a VBRI stream. This kind of MPEG audio doesn't support VBRI.", NotVbriStream()); // !!! some kinds of MPEG audio have very short frames, which can't accomodate a VBRI header
+    MP3_CHECK_T (BFR_SIZE <= m_firstFrame.getSize(), m_pos, "Not a VBRI stream. This kind of MPEG audio doesn't support VBRI.", CB_EXCP(NotVbriStream)); // !!! some kinds of MPEG audio have very short frames, which can't accomodate a VBRI header
 
     streamsize nRead (read(in, bfr, BFR_SIZE));
     STRM_ASSERT (BFR_SIZE == nRead); // this was supposed to be a valid frame to begin with (otherwise the base class would have thrown) and BFR_SIZE is no bigger than the frame
 
     char* pLabel (bfr + MpegFrame::MPEG_FRAME_HDR_SIZE + 32);
-    MP3_CHECK_T (0 == strncmp("VBRI", pLabel, VBRI_LABEL_SIZE), m_pos, "Not a VBRI stream. Header not found.", NotVbriStream());
+    MP3_CHECK_T (0 == strncmp("VBRI", pLabel, VBRI_LABEL_SIZE), m_pos, "Not a VBRI stream. Header not found.", CB_EXCP(NotVbriStream));
 
     streampos posEnd (m_pos);
     posEnd += m_firstFrame.getSize();
@@ -1072,10 +1066,10 @@ Id3V1Stream::Id3V1Stream(int nIndex, NoteColl& notes, istream& in) : DataStream(
 
     const int BFR_SIZE (128);
     streamsize nRead (read(in, m_data, BFR_SIZE));
-    MP3_CHECK_T (BFR_SIZE == nRead, m_pos, "Invalid ID3V1 tag. File too short.", NotId3V1Stream());
-    MP3_CHECK_T (0 == strncmp("TAG", m_data, 3), m_pos, "Invalid ID3V1 tag. Invalid header.", NotId3V1Stream());
+    MP3_CHECK_T (BFR_SIZE == nRead, m_pos, "Invalid ID3V1 tag. File too short.", CB_EXCP(NotId3V1Stream));
+    MP3_CHECK_T (0 == strncmp("TAG", m_data, 3), m_pos, "Invalid ID3V1 tag. Invalid header.", CB_EXCP(NotId3V1Stream));
 
-    MP3_CHECK (BFR_SIZE == nRead, m_pos, id3v1TooShort, NotId3V1Stream());
+    MP3_CHECK (BFR_SIZE == nRead, m_pos, id3v1TooShort, CB_EXCP(NotId3V1Stream));
 
     // not 100% correct, but should generally work
     if (0 == m_data[125] && 0 != m_data[126])
@@ -1089,11 +1083,11 @@ Id3V1Stream::Id3V1Stream(int nIndex, NoteColl& notes, istream& in) : DataStream(
     }
 
     // http://uweb.txstate.edu/~me02/tutorials/sound_file_formats/mpeg/tags.htm
-    TestResult eTrack (checkId3V1String(m_data + 3, 30)); MP3_CHECK (BAD != eTrack, m_pos, id3v1InvalidName, NotId3V1Stream());
-    TestResult eArtist (checkId3V1String(m_data + 33, 30)); MP3_CHECK (BAD != eArtist, m_pos, id3v1InvalidArtist, NotId3V1Stream());
-    TestResult eAlbum (checkId3V1String(m_data + 63, 30)); MP3_CHECK (BAD != eAlbum, m_pos, id3v1InvalidAlbum, NotId3V1Stream());
-    TestResult eYear (checkId3V1String(m_data + 93, 4)); MP3_CHECK (BAD != eYear, m_pos, id3v1InvalidYear, NotId3V1Stream());
-    TestResult eComment (checkId3V1String(m_data + 97, 28)); MP3_CHECK (BAD != eComment, m_pos, id3v1InvalidComment, NotId3V1Stream()); // "28" is for ID3V1.1b (there's no reliable way to distinguish among versions 1.0 and 1.1 by design, and in practice among any of them because some tools use 0 instead of space and 0 seems to be a valid value for 1.1b's track and genre, for "undefined") //ttt2 use m_eVersion
+    TestResult eTrack (checkId3V1String(m_data + 3, 30)); MP3_CHECK (BAD != eTrack, m_pos, id3v1InvalidName, CB_EXCP(NotId3V1Stream));
+    TestResult eArtist (checkId3V1String(m_data + 33, 30)); MP3_CHECK (BAD != eArtist, m_pos, id3v1InvalidArtist, CB_EXCP(NotId3V1Stream));
+    TestResult eAlbum (checkId3V1String(m_data + 63, 30)); MP3_CHECK (BAD != eAlbum, m_pos, id3v1InvalidAlbum, CB_EXCP(NotId3V1Stream));
+    TestResult eYear (checkId3V1String(m_data + 93, 4)); MP3_CHECK (BAD != eYear, m_pos, id3v1InvalidYear, CB_EXCP(NotId3V1Stream));
+    TestResult eComment (checkId3V1String(m_data + 97, 28)); MP3_CHECK (BAD != eComment, m_pos, id3v1InvalidComment, CB_EXCP(NotId3V1Stream)); // "28" is for ID3V1.1b (there's no reliable way to distinguish among versions 1.0 and 1.1 by design, and in practice among any of them because some tools use 0 instead of space and 0 seems to be a valid value for 1.1b's track and genre, for "undefined") //ttt2 use m_eVersion
 
     if (ZERO_PADDED == eTrack || ZERO_PADDED == eArtist || ZERO_PADDED == eAlbum || ZERO_PADDED == eYear || ZERO_PADDED == eComment)
     {
@@ -1157,7 +1151,7 @@ Id3V1Stream::Id3V1Stream(int nIndex, NoteColl& notes, istream& in) : DataStream(
 /*override*/ void Id3V1Stream::copy(std::istream&, std::ostream& out)
 {
     out.write(m_data, 128);
-    CB_CHECK1 (out, WriteError());
+    CB_CHECK (out, WriteError);
 }
 
 
