@@ -1064,6 +1064,10 @@ void TagWriter::reloadAll(string strCrt, bool bClearData, bool bClearAssgn)
     CB_ASSERT (v.empty() || cSize(v) == cSize(vpHndl));
 
     int n (cSize(vpHndl));
+    if (n > 500)
+    {
+        //ttt0
+    }
     bool bFullReaderNotFound (false); // ID3V1 is not full, while the others are
 
     for (int i = 0; i < n; ++i)
