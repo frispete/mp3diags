@@ -30,7 +30,7 @@
 using namespace std;
 //using namespace pearl;
 
-static const int IMG_SIZE (110);
+static const int IMG_SIZE (300);
 
 ImageInfoPanelWdgImpl::ImageInfoPanelWdgImpl(QWidget* pParent, const TagWrtImageInfo& tagWrtImageInfo, int nPos) :
         QFrame(pParent, 0),
