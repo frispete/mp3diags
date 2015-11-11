@@ -1663,6 +1663,20 @@ TagEditorDlgImpl::SaveOpt TagEditorDlgImpl::save(bool bImplicitCall)
 {
     string strCrt (m_pTagWriter->getCurrentName());
 
+    {
+	int nPanelCnt (m_pImgScrollArea->widget()->layout()->count());
+	int nSelected (m_pTagWriter->getImageColl().getSelected());
+
+	//printf("nPanelCnt: %d, nSelected: %d, bImplicitCall: %d\n", nPanelCnt, nSelected, bImplicitCall);
+
+	if (nPanelCnt && nSelected < 0)
+	{
+	    int nOpt (showMessage(this, QMessageBox::Question, 0, 1, tr("Confirm"), tr("There's at least one image available, but not assigned to any song yet! What do you want to do?"), tr("&Select'n'save"), tr("&Ignore"), tr("&Cancel")));
+	    if (0 == nOpt) { emit m_pTagWriter->onAssignImage(0); bImplicitCall = EXPLICIT; }
+	    if (2 == nOpt) { return CANCELLED; }
+	}
+    }
+
     deque<const Mp3Handler*> vpHndlr;
     bool bHasUnsavedAssgn (false);
     bool bHasUnsavedNonId3V2 (false);

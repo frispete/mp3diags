@@ -74,6 +74,7 @@ public:
     void addWidget(ImageInfoPanelWdgImpl*); // first addImage gets called by TagWriter and after it's done it tells MainFormDlgImpl to create widgets, which calls this;
     void clear(); // clears both m_vTagWrtImageInfo and m_vpWidgets
     void select(int n); // -1 deselects all
+    int getSelected() const { return m_nCurrent; } // returns -1, if none selected
     const TagWrtImageInfo& operator[](int n) const { return m_vTagWrtImageInfo.at(n); }
     int find(const ImageInfo& img) const;
     int size() const { return (int)m_vTagWrtImageInfo.size(); }
@@ -431,8 +432,10 @@ public:
     const TextCaseOptions& m_eArtistCase;
     const TextCaseOptions& m_eTitleCase;
 
-private slots:
+public slots:
     void onAssignImage(int);
+
+private slots:
     void onEraseFile(int);
     void onEraseFileDelayed();
     void onDelayedTrackSeqWarn();
