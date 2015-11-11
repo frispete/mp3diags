@@ -1655,7 +1655,7 @@ void TagWriter::onEraseFileDelayed()
         s = tr("Do you want to erase %1?").arg(s);
     }
 
-    if (0 != showMessage(m_pParentWnd, QMessageBox::Question, 1, 1, tr("Confirm"), s, tr("Erase"), tr("Cancel"))) { return; }
+    if (0 != showMessage(m_pParentWnd, QMessageBox::Question, 0, 1, tr("Confirm"), s, tr("Erase"), tr("Cancel"))) { return; }
 
     bool bAssigned, bNonId3V2;
     hasUnsaved(bAssigned, bNonId3V2);

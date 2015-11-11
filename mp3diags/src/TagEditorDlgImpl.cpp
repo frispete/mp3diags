@@ -28,6 +28,7 @@
 #include  <QTimer>
 #include  <QKeyEvent>
 #include  <QHeaderView>
+#include  <QSignalMapper>
 
 #include  "TagEditorDlgImpl.h"
 
@@ -417,6 +418,38 @@ TagEditorDlgImpl::TagEditorDlgImpl(QWidget* pParent, CommonData* pCommonData, Tr
         int nFileHght ((CELL_HEIGHT)*10 + m_pCurrentFileG->horizontalHeader()->height() + 2*QApplication::style()->pixelMetric(QStyle::PM_DefaultFrameWidth, 0, m_pCurrentFileG));
         m_pCurrentFileG->setMaximumHeight(nFileHght);
         m_pCurrentFileG->setMinimumHeight(nFileHght);
+    }
+
+    { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("S")); connect(p, SIGNAL(triggered()), this, SLOT(on_m_pSaveB_clicked())); addAction(p); }
+    { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("R")); connect(p, SIGNAL(triggered()), this, SLOT(on_m_pReloadB_clicked())); addAction(p); }
+    { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("P")); connect(p, SIGNAL(triggered()), this, SLOT(on_m_pPrevB_clicked())); addAction(p); }
+    { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("N")); connect(p, SIGNAL(triggered()), this, SLOT(on_m_pNextB_clicked())); addAction(p); }
+    { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("M")); connect(p, SIGNAL(triggered()), this, SLOT(on_m_pQueryMusicBrainzB_clicked())); addAction(p); }
+
+    {
+	QAction* p1 (new QAction(this)); 
+	QAction* p2 (new QAction(this)); 
+	QAction* p3 (new QAction(this)); 
+
+	QSignalMapper* mapper = new QSignalMapper(this);
+
+	mapper->setMapping(p1, 0);
+	mapper->setMapping(p2, 1);
+	mapper->setMapping(p3, 2);
+
+	p1->setShortcut(QKeySequence("1")); 
+	p2->setShortcut(QKeySequence("2")); 
+	p3->setShortcut(QKeySequence("3")); 
+
+	connect(p1, SIGNAL(triggered()), mapper, SLOT(map()));
+	connect(p2, SIGNAL(triggered()), mapper, SLOT(map()));
+	connect(p3, SIGNAL(triggered()), mapper, SLOT(map()));
+
+	connect(mapper, SIGNAL(mapped(int)), this, SLOT(onSelectImage(int))); 
+
+	addAction(p1);
+	addAction(p2);
+	addAction(p3);
     }
 
     { QAction* p (new QAction(this)); p->setShortcut(QKeySequence("F1")); connect(p, SIGNAL(triggered()), this, SLOT(onHelp())); addAction(p); }
@@ -1127,6 +1160,14 @@ void TagEditorDlgImpl::on_m_pSortB_clicked()
     //m_pCurrentAlbumModel->emitLayoutChanged();
 }
 
+
+void TagEditorDlgImpl::onSelectImage(int img)
+{
+    int nPanelCnt (m_pImgScrollArea->widget()->layout()->count());
+
+    if (img < nPanelCnt)
+        emit m_pTagWriter->onAssignImage(img);    
+}
 
 
 void TagEditorDlgImpl::onAlbSelChanged()
